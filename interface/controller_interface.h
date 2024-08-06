@@ -168,6 +168,8 @@ struct xcvr_api
 {
     xcvrStatus_t (*xcvr_wake_up_init)(void);
     int16_t (*xcvr_read_rssi)(data_rate_t rate);
+    void (*xcvr_enable_rfp_sync_irq)(bool_t);
+    uint8_t (*xcvr_get_rfp_sync_number)(void);
     uint32_t (*xcvr_get_recal_duration)(void);
     void (*xcvr_recalibrate)(void);
     void (*xcvr_temperature_update)(int32_t temperature);
