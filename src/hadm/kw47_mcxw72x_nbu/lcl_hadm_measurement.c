@@ -997,6 +997,11 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 hadm_info_p->sync_step_id = step_idx;
                 /* Record AGC index and keep the smallest */
                 hadm_proc->agc_idx = sync_info_p->agc_idx;
+                /* Record the estimated CFO and channel used for CFO estimation */
+                hadm_proc->cfo = sync_info_p->cfo;
+                hadm_proc->cfo_channel = step_config_p[step_idx].channel;
+                /* Compute ppm based on measured CFO */
+                hadm_proc->ppm = (int8_t)(hadm_proc->cfo / ((int32_t)2402 /* MHz */ + hadm_proc->cfo_channel));
             }
         }
     }
@@ -1012,17 +1017,10 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         /* Compute CFO & time grid adjustment */
         if (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)
         {
-            if ((!proc_agc_locked) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0))
+            if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0)
             {
-                sync_info_p = &hadm_meas_p->sync_info[hadm_info_p->sync_step_id];
-                /* Record the estimated CFO and channel used for CFO estimation */
-                hadm_proc->cfo = sync_info_p->cfo;
-                hadm_proc->cfo_channel = step_config_p[hadm_info_p->sync_step_id].channel;
                 /* Initial CFO compensation */
                 XCVR_LCL_RsmCompCfo(-hadm_proc->cfo);
-                
-                /* Compute ppm based on measured CFO */
-                hadm_proc->ppm = (int8_t)(hadm_proc->cfo / ((int32_t)2402 /* MHz */ + hadm_proc->cfo_channel));
 
 #ifdef HADM_CFO_COMP_PER_STEP
                 /* Update CFO programmed for already-built config steps */
@@ -1076,6 +1074,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_result;
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[circ_buff_p->curr_step_idx];
     hadm_info_t *hadm_info_p = &hadm_meas_p->info;
+    hadm_proc_t *hadm_proc_p = &hadm_procs[hadm_meas_p->config_p->connIdx];
     uint8_t *res_buff_in_p;
     uint8_t *res_buff_p;
     uint8_t nb_steps = 0;
@@ -1108,7 +1107,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     res_buff_in_p = hadm_meas_p->result_p->resultBuffer;
     res_buff_p = res_buff_in_p;
     hadm_meas_p->result_p->firstStepCollected = circ_buff_p->curr_step_idx;
-       
+    /* Copy CFO into frequencyCompensation from procedure */
+    hadm_meas_p->result_p->frequencyCompensation = hadm_proc_p->ppm;
+
     while (circ_buff_p->curr_step_idx < hadm_meas_p->config_p->stepsNb)
     {
         if ((hadm_meas_p->pkt_ram.result_read_ptr + circ_buff_p->max_step_size) > circ_buff_p->base_ptr + circ_buff_p->buff_len)
@@ -1168,12 +1169,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 if (role == HADM_ROLE_INITIATOR)
                 {
                     HADM_SET_RTT_CFO(vld, ppm, res_buff_p); /* Measured_Freq_Offset (2 bytes) */
-                
-                    if (hadm_info_p->sync_step_id == step_mode0_no)
-                    {
-                        /* This is the mode 0 retained for synch, copy CFO into frequencyCompensation */
-                        hadm_meas_p->result_p->frequencyCompensation = ppm;
-                    }
                 }
                 if (!synch_done && vld)
                 {
