@@ -1,0 +1,119 @@
+Reading 08042021_1Mbps/3m/24_22 true dist = 3m
+step:02 fracI=160ns fracR=-78ns ToF=23ns dist=3.45m
+step:03 fracI=-94ns fracR=-82ns ToF=15ns dist=2.25m
+step:04 fracI=-85ns fracR=-81ns ToF=25ns dist=3.75m
+step:05 fracI=160ns fracR=-74ns ToF=27ns dist=4.05m
+step:06 fracI=154ns fracR=-84ns ToF=11ns dist=1.65m
+step:07 fracI=-84ns fracR=-88ns ToF=19ns dist=2.85m
+step:08 fracI=157ns fracR=-81ns ToF=17ns dist=2.55m
+step:09 fracI=157ns fracR=-77ns ToF=21ns dist=3.15m
+step:10 fracI=157ns fracR=-81ns ToF=17ns dist=2.55m
+step:11 fracI=156ns fracR=169ns ToF=16ns dist=2.40m
+step:12 fracI=162ns fracR=-84ns ToF=19ns dist=2.85m
+step:13 fracI=158ns fracR=-77ns ToF=22ns dist=3.30m
+step:14 fracI=-88ns fracR=173ns ToF=26ns dist=3.90m
+step:15 fracI=158ns fracR=-77ns ToF=22ns dist=3.30m
+step:16 fracI=161ns fracR=-81ns ToF=21ns dist=3.15m
+step:17 fracI=160ns fracR=-77ns ToF=24ns dist=3.60m
+step:18 fracI=164ns fracR=-82ns ToF=23ns dist=3.45m
+step:19 fracI=156ns fracR=-85ns ToF=12ns dist=1.80m
+------------------------
+Reading 08042021_1Mbps/3m/24_24 true dist = 3m
+step:02 fracI=55ns fracR=34ns ToF=30ns dist=4.50m
+step:03 fracI=50ns fracR=22ns ToF=13ns dist=1.95m
+step:04 fracI=52ns fracR=29ns ToF=22ns dist=3.30m
+step:05 fracI=55ns fracR=32ns ToF=28ns dist=4.20m
+step:06 fracI=44ns fracR=32ns ToF=17ns dist=2.55m
+step:07 fracI=59ns fracR=25ns ToF=25ns dist=3.75m
+step:08 fracI=50ns fracR=31ns ToF=22ns dist=3.30m
+step:09 fracI=49ns fracR=39ns ToF=29ns dist=4.35m
+step:10 fracI=48ns fracR=26ns ToF=15ns dist=2.25m
+step:11 fracI=47ns fracR=32ns ToF=20ns dist=3.00m
+step:12 fracI=53ns fracR=27ns ToF=21ns dist=3.15m
+step:13 fracI=53ns fracR=29ns ToF=23ns dist=3.45m
+step:14 fracI=51ns fracR=30ns ToF=22ns dist=3.30m
+step:15 fracI=53ns fracR=29ns ToF=23ns dist=3.45m
+step:16 fracI=51ns fracR=30ns ToF=22ns dist=3.30m
+step:17 fracI=53ns fracR=24ns ToF=18ns dist=2.70m
+step:18 fracI=51ns fracR=27ns ToF=19ns dist=2.85m
+step:19 fracI=58ns fracR=35ns ToF=34ns dist=5.10m
+------------------------
+Reading 08042021_1Mbps/3m/24_25 true dist = 3m
+step:02 fracI=164ns fracR=165ns ToF=20ns dist=3.00m
+step:03 fracI=150ns fracR=-89ns ToF=2ns dist=0.30m
+step:04 fracI=-85ns fracR=-82ns ToF=24ns dist=3.60m
+step:05 fracI=150ns fracR=-73ns ToF=18ns dist=2.70m
+step:06 fracI=164ns fracR=-76ns ToF=29ns dist=4.35m
+step:07 fracI=-83ns fracR=-82ns ToF=26ns dist=3.90m
+step:08 fracI=155ns fracR=-81ns ToF=15ns dist=2.25m
+step:09 fracI=148ns fracR=-70ns ToF=19ns dist=2.85m
+step:10 fracI=159ns fracR=-78ns ToF=22ns dist=3.30m
+step:11 fracI=154ns fracR=172ns ToF=17ns dist=2.55m
+step:12 fracI=167ns fracR=-76ns ToF=32ns dist=4.80m
+step:13 fracI=163ns fracR=-74ns ToF=30ns dist=4.50m
+step:14 fracI=161ns fracR=-75ns ToF=27ns dist=4.05m
+step:15 fracI=-85ns fracR=-72ns ToF=34ns dist=5.10m
+step:16 fracI=164ns fracR=-79ns ToF=26ns dist=3.90m
+step:17 fracI=166ns fracR=-72ns ToF=35ns dist=5.25m
+step:18 fracI=161ns fracR=-82ns ToF=20ns dist=3.00m
+step:19 fracI=153ns fracR=-77ns ToF=17ns dist=2.55m
+------------------------
+Reading 08042021_1Mbps/9m/18_46 true dist = 9m
+step:02 fracI=160ns fracR=-48ns ToF=53ns dist=7.95m
+step:03 fracI=-88ns fracR=-42ns ToF=61ns dist=9.15m
+step:04 fracI=-83ns fracR=-51ns ToF=57ns dist=8.55m
+step:05 fracI=160ns fracR=-39ns ToF=62ns dist=9.30m
+step:06 fracI=158ns fracR=-43ns ToF=56ns dist=8.40m
+step:07 fracI=-84ns fracR=-46ns ToF=61ns dist=9.15m
+step:08 fracI=159ns fracR=-41ns ToF=59ns dist=8.85m
+step:09 fracI=158ns fracR=-49ns ToF=50ns dist=7.50m
+step:10 fracI=157ns fracR=-45ns ToF=53ns dist=7.95m
+step:11 fracI=159ns fracR=-50ns ToF=50ns dist=7.50m
+step:12 fracI=157ns fracR=-53ns ToF=45ns dist=6.75m
+step:13 fracI=158ns fracR=-44ns ToF=55ns dist=8.25m
+step:14 fracI=-88ns fracR=-48ns ToF=55ns dist=8.25m
+step:15 fracI=163ns fracR=-42ns ToF=62ns dist=9.30m
+step:16 fracI=164ns fracR=-46ns ToF=59ns dist=8.85m
+step:17 fracI=159ns fracR=-41ns ToF=59ns dist=8.85m
+step:18 fracI=-84ns fracR=-50ns ToF=57ns dist=8.55m
+step:19 fracI=156ns fracR=-43ns ToF=54ns dist=8.10m
+------------------------
+Reading 08042021_1Mbps/9m/18_47 true dist = 9m
+step:02 fracI=-24ns fracR=141ns ToF=58ns dist=8.70m
+step:03 fracI=-42ns fracR=142ns ToF=41ns dist=6.15m
+step:04 fracI=-21ns fracR=139ns ToF=59ns dist=8.85m
+step:05 fracI=-28ns fracR=148ns ToF=61ns dist=9.15m
+step:06 fracI=-33ns fracR=-101ns ToF=57ns dist=8.55m
+step:07 fracI=-27ns fracR=142ns ToF=56ns dist=8.40m
+step:08 fracI=-26ns fracR=147ns ToF=62ns dist=9.30m
+step:09 fracI=-46ns fracR=-98ns ToF=47ns dist=7.05m
+step:10 fracI=-29ns fracR=147ns ToF=59ns dist=8.85m
+step:11 fracI=-50ns fracR=142ns ToF=33ns dist=4.95m
+step:12 fracI=-28ns fracR=137ns ToF=50ns dist=7.50m
+step:13 fracI=-25ns fracR=143ns ToF=59ns dist=8.85m
+step:14 fracI=-29ns fracR=-112ns ToF=50ns dist=7.50m
+step:15 fracI=-25ns fracR=-110ns ToF=56ns dist=8.40m
+step:16 fracI=-31ns fracR=143ns ToF=53ns dist=7.95m
+step:17 fracI=-32ns fracR=-107ns ToF=52ns dist=7.80m
+step:18 fracI=-30ns fracR=-107ns ToF=54ns dist=8.10m
+step:19 fracI=-27ns fracR=147ns ToF=61ns dist=9.15m
+------------------------
+Reading 08042021_1Mbps/9m/18_50 true dist = 9m
+step:02 fracI=35ns fracR=81ns ToF=57ns dist=8.55m
+step:03 fracI=21ns fracR=85ns ToF=47ns dist=7.05m
+step:04 fracI=35ns fracR=85ns ToF=61ns dist=9.15m
+step:05 fracI=30ns fracR=85ns ToF=56ns dist=8.40m
+step:06 fracI=25ns fracR=90ns ToF=56ns dist=8.40m
+step:07 fracI=34ns fracR=82ns ToF=57ns dist=8.55m
+step:08 fracI=40ns fracR=79ns ToF=60ns dist=9.00m
+step:09 fracI=34ns fracR=82ns ToF=57ns dist=8.55m
+step:10 fracI=31ns fracR=89ns ToF=61ns dist=9.15m
+step:11 fracI=15ns fracR=88ns ToF=44ns dist=6.60m
+step:12 fracI=30ns fracR=76ns ToF=47ns dist=7.05m
+step:13 fracI=34ns fracR=87ns ToF=62ns dist=9.30m
+step:14 fracI=32ns fracR=75ns ToF=48ns dist=7.20m
+step:15 fracI=26ns fracR=81ns ToF=48ns dist=7.20m
+step:16 fracI=28ns fracR=88ns ToF=57ns dist=8.55m
+step:17 fracI=29ns fracR=83ns ToF=53ns dist=7.95m
+step:18 fracI=36ns fracR=91ns ToF=68ns dist=10.20m
+step:19 fracI=39ns fracR=84ns ToF=64ns dist=9.60m

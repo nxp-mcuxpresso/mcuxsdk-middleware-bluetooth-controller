@@ -1,0 +1,470 @@
+build_filename(tag, add_role)
+{
+    __var filename;
+    __var systime;
+    __var exitcode;
+    __var role;
+    __var i;
+    
+    exitcode = __system2("echo %TIME%", &systime);
+
+    /* HH:MM:SS */
+    systime = __subString(systime, 0, 8);
+    for (i=0; i<sizeof(systime); i++) {
+        if (systime[i] == ' ') {
+            systime[i] = '0';
+        } else if (systime[i] == ':') {
+            systime[i] = '_';        
+        }
+    }
+    if (add_role == 1)
+    {
+        if (hadm_meas.config_p->role == 0) {
+            role = "_initiator_";
+        } else {
+            role = "_reflector_";
+        }
+    }
+    else
+    {
+        role = "_";
+    }
+    filename = "$PROJ_DIR$\\" + tag + role + systime + ".csv";
+
+    return filename;
+}
+
+dump_hadm_dbg_data()
+{
+    __var fhandle;
+    __var temp_ctune;
+    __var temp_hpm;
+    __var temp_channel;
+    __var temp_stepno;
+    __var temp_stepno_prev;
+    __var count;
+    __var filename;
+
+    filename = build_filename("ctune", 1);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {
+        __fmessage fhandle,"stepno,channel,ctune_cal,hpm_cal\n";
+        temp_stepno_prev = 255;
+        /* count represents the number of pairs of samples */
+        for( count=0;count<rsm_iter;count++)
+        {
+            temp_stepno = rsm_dbg[count].step_no;
+            temp_channel = hadm_meas.config_p->chModePmAntMap[temp_stepno].channel;
+            temp_ctune = (signed short)(rsm_dbg[count].ctune);
+            temp_hpm = (signed short)(rsm_dbg[count].hpm_cal);
+            if (temp_stepno_prev != temp_stepno)
+            {
+                __fmessage fhandle,temp_stepno:%d,",",temp_channel:%d,",",temp_ctune:%d,",",temp_hpm:%d,"\n";
+            }
+            temp_stepno_prev = temp_stepno;
+        }
+    __message ">>HADM DBG saved to:", filename:%s;
+    }
+    else
+    {
+      __message "File open failed!!!!\n";
+    }
+}
+
+dump_rtt_dbg_data()
+{
+    __var fhandle;
+    __var temp_t1;
+    __var temp_t2;
+    __var temp_hartt_stat;
+    __var temp_stat0;
+    __var temp_hpmcal;
+    __var temp_aa;
+    __var step_no;
+    __var filename;
+
+    filename = build_filename("rtt_dbg", 1);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {
+    __fmessage fhandle, "rssi[0]=", hadm_meas.sync_info[0].rssi:%d," rssi[1]=", hadm_meas.sync_info[1].rssi:%d,"\n";
+    __fmessage fhandle, "agc_idx=", hadm_meas.info->sync_rxgain:%d,"\n";
+
+        __fmessage fhandle,"stepno,t1,t2,hartt_stat,stat0,AA\n";
+        /* steps */
+        for(step_no=0;step_no<20;step_no++)
+        {
+            temp_t1 = hadm_full_info.rtt_dbg_buffer[step_no].t1;
+            temp_t2 = hadm_full_info.rtt_dbg_buffer[step_no].t2;
+            temp_hartt_stat = hadm_full_info.rtt_dbg_buffer[step_no].hartt_stat;
+            temp_stat0 = hadm_full_info.rtt_dbg_buffer[step_no].stat0;
+        temp_aa = hadm_meas.config_p->pnList[step_no].pn1;
+
+            __fmessage fhandle, step_no:%d,",", temp_t1:%d,",", temp_t2:%d,",", temp_hartt_stat:%X,",", temp_stat0:%X,",",  "0x",temp_aa:%X, "\n";
+        }
+
+    __message ">>RTT DBG saved to:", filename:%s;
+        __closeFile(fhandle);
+    }
+    else
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+    }
+}
+
+dump_cs_drbg_data()
+{
+    __var filename;
+    __var fhandle;
+    __var step_no;
+    __var step_nb;
+    __var mode;
+    __var pm_ext;
+    __var ant_perm;
+    __var ch;
+    __var i;
+    __var event_nb;
+    __var cs_algo;
+        
+    filename = build_filename("cs_drbg", 1);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {    
+        /* Print DRBG inputs */
+        __fmessage fhandle, "IV[],";
+        for (i=0;i<16;i++)
+        {
+            __fmessage fhandle, "0x", drbgInitVect.IV[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n";
+        __fmessage fhandle, "IN[],";
+        for (i=0;i<8;i++)
+        {
+            __fmessage fhandle, "0x", drbgInitVect.IN[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n";
+        __fmessage fhandle, "PV[],";
+        for (i=0;i<16;i++)
+        {
+            __fmessage fhandle, "0x", drbgInitVect.PV[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n\n";
+        
+        
+        /* Print CS config  */
+        __fmessage fhandle, "ChMap[],";
+        for (i=0;i<10;i++)
+        {
+            __fmessage fhandle, "0x", gHadmConfigurations[0].aucChannel_Map[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n";
+        cs_algo = gHadmConfigurations[0].ucChannel_Selection_Type;
+        __fmessage fhandle, "Role:", gHadmConfigurations[0].ucRole:%d, ",MainMode:", gHadmConfigurations[0].ucMain_Mode_Type:%d, ",SubMode:", gHadmConfigurations[0].ucSub_Mode_Type:%d, ",min:", gHadmConfigurations[0].ucMain_Mode_Min_Steps:%d, ",max:", gHadmConfigurations[0].ucMain_Mode_Max_Steps:%d, ",rep:", gHadmConfigurations[0].ucMain_Mode_Repetition:%d, ",Mode0Nb:", gHadmConfigurations[0].ucMode_0_Steps:%d, ",ChMapRep:", gHadmConfigurations[0].ucChannel_Map_Repetition:%d, "\n";
+        __fmessage fhandle, "CSAlgo:", cs_algo:%d, ",Shape:", gHadmConfigurations[0].ucCh3c_Shape:%d, ",Jump:", gHadmConfigurations[0].ucCh3c_Jump:%d, "\n";
+        __fmessage fhandle, "T_FCS:", gT_FCS_Table[gHadmConfigurations[0].ucT_FCS]:%d, ",T_IP1:", gT_IP_Table[gHadmConfigurations[0].ucT_IP1]:%d, ",T_IP2:", gT_IP_Table[gHadmConfigurations[0].ucT_IP2]:%d, ",T_PM:", gT_PM_Table[gHadmConfigurations[0].ucT_PM]:%d, ",T_SW:", gHadmConfigurations[0].ucT_SW_time:%d, ",AntCfg:", gHadmConfigurations[0].ucToneAntCfgSel:%d, ",PHY:", gHadmConfigurations[0].ucCS_Sync_Phy:%d, "Mbps\n\n";
+    
+        /* Print key and nonce */
+        __fmessage fhandle, "K[],";
+        for (i=0;i<16;i++)
+        {
+            __fmessage fhandle, "0x", gHadmConnections[0].drbgContext.drbgInt.k[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n";
+        __fmessage fhandle, "V[],";
+        for (i=0;i<16;i++)
+        {
+            __fmessage fhandle, "0x", gHadmConnections[0].drbgContext.drbgInt.v[i]:%x, ",";
+        }
+        __fmessage fhandle, "\n\n";
+        
+        /* Print CS procedure properties */
+        step_nb = gHadmConnections[0].drbgContext.nCSSteps;
+        event_nb = gHadmConnections[0].drbgContext.nCSEvents;
+        
+        __fmessage fhandle,"Proc count, ", gHadmConnections[0].drbgContext.procCount:%d, "\n";
+        __fmessage fhandle,"SubEventLen, ", gHadmConfigurations[0].ulSubeventLen:%d, "\n";
+        __fmessage fhandle,"TRemain, ";
+        for (i=0;i<event_nb;i++)
+        {
+            __fmessage fhandle, gHadmConnections[0].drbgContext.tRemaining[i]:%d, ",";
+        }
+        __fmessage fhandle, "\n";
+        
+        /* Print CS#3c intermediate data */
+        if (cs_algo == 1)
+        {
+            __fmessage fhandle, "ShapeChSeq[", ShapeChSeqLen:%d, "], ";
+            for (i=0;i<ShapeChSeqLen;i++)
+            {
+                __fmessage fhandle, ShapeChSeq[i]:%d, ",";
+            }
+            __fmessage fhandle, "\n";
+            __fmessage fhandle, "FirstAndEndSaltChSeq[", FirstAndEndSaltChSeqLen:%d, "], ";
+            for (i=0;i<FirstAndEndSaltChSeqLen;i++)
+            {
+                __fmessage fhandle, FirstAndEndSaltChSeq[i]:%d, ",";
+            }
+            __fmessage fhandle, "\n";
+            __fmessage fhandle, "MiddleSaltChSeq[", MiddleSaltChSeqLen:%d, "], ";
+            for (i=0;i<MiddleSaltChSeqLen;i++)
+            {
+                __fmessage fhandle, MiddleSaltChSeq[i]:%d, ",";
+            }
+            __fmessage fhandle, "\n";
+            __fmessage fhandle, "SaltedChSeq[", SaltedChSeqLen:%d, "], ";
+            for (i=0;i<SaltedChSeqLen;i++)
+            {
+                __fmessage fhandle, SaltedChSeq[i]:%d, ",";
+            }
+            __fmessage fhandle, "\n";
+        }
+        __fmessage fhandle, "nonMode0Shuffled[", gHadmConnections[0].drbgContext.nChannelsNoneMode0:%d, "], ";
+        for (i=0;i<gHadmConnections[0].drbgContext.nChannelsNoneMode0;i++)
+        {
+            __fmessage fhandle, gHadmConnections[0].drbgContext.ShuffledChannelArray[i]:%d, ",";
+        }
+        __fmessage fhandle, "\n";
+
+        __fmessage fhandle, "\n";
+        __fmessage fhandle,"CS procedure, step_nb:", step_nb:%d, ", subevent_nb:", event_nb:%d, "\n";
+        __fmessage fhandle,"CS step duration, ", gHadmConnections[0].drbgContext.modeDurationUs[0]:%d, ", ", gHadmConnections[0].drbgContext.modeDurationUs[1]:%d, ", ", gHadmConnections[0].drbgContext.modeDurationUs[2]:%d, "\n\n";
+        
+        /* Go through all steps and dump DRBG data */
+        __fmessage fhandle,"step_id, channel, mode, ant_perm\n";
+        for(step_no=0;step_no<step_nb;step_no++)
+        {
+            ch = gHadmConnections[0].drbgContext.chModePmAntSeq[step_no].channel;
+            mode = gHadmConnections[0].drbgContext.chModePmAntSeq[step_no].mode;
+            ant_perm = gHadmConnections[0].drbgContext.chModePmAntSeq[step_no].ant_perm;
+            
+            __fmessage fhandle, step_no:%d, " , " , ch:%d, " , " , mode:%d, " , ", ant_perm:%d, "\n";
+        }
+
+        __message ">>CS proc saved to:", filename:%s;
+        __closeFile(fhandle);
+    }
+    else
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+    }
+}
+
+dump_cs_subevent()
+{
+    __var filename;
+    __var fhandle;
+    __var step_no;
+    __var step_nb;
+    __var step_rtt_nb;
+    __var mode;
+    __var pm_ext;
+    __var ant_perm;
+    __var ch;
+    __var aa1;
+    __var aa2;
+
+    filename = build_filename("cs_subevent",1);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {
+        step_rtt_nb = hadm_meas.config_p->pnSeqNb;
+        step_nb = hadm_meas.config_p->stepsNb;
+                                   
+        __fmessage fhandle,"CS event, step_nb:", step_nb:%d, ", step_rtt_nb:", step_rtt_nb:%d, "\n\n";
+        
+        /* Go through all steps and dump DRBG data */
+        step_rtt_nb = 0;
+        __fmessage fhandle,"step_id, channel, mode, pm_ext, ant_perm, AA1, AA2\n";
+        for(step_no=0;step_no<step_nb;step_no++)
+        {
+            ch = hadm_meas.config_p->chModePmAntMap[step_no].channel;
+            mode = hadm_meas.config_p->chModePmAntMap[step_no].mode;
+            pm_ext = hadm_meas.config_p->chModePmAntMap[step_no].pm_ext;
+            ant_perm = hadm_meas.config_p->chModePmAntMap[step_no].ant_perm;
+            
+            if (mode != 2)
+            {
+                aa1 = hadm_meas.config_p->pnList[step_rtt_nb].pn1;
+                aa2 = hadm_meas.config_p->pnList[step_rtt_nb].pn2;
+                step_rtt_nb++;
+            }
+            else
+            {
+                aa1 = 0;
+                aa2 = 0;
+            }
+            
+            __fmessage fhandle, step_no:%d, " , " , ch:%d, " , " , mode:%d, " , ", pm_ext:%d, " , ", ant_perm:%d, " , 0x", aa1:%x," , 0x", aa2:%x, "\n";
+        }
+
+        __message ">>DRBG saved to:", filename:%s;
+        __closeFile(fhandle);
+    }
+    else
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+    }
+}
+
+/* Dump ramlog. Output is shown with most recent entry first (opposite of chronological order). */
+dump_ramlog_core(fhandle)
+{
+    __var cur_index;
+    __var entry;
+    __var ramlog_tag;
+    __var ramlog_level;
+    __var ramlog_prev_numargs;
+    __var ramlog_numargs;
+    __var timestamp;
+    __var prev_timestamp;
+    __var ts_diff;
+    __var wrapped;
+    __var temp;
+    __var _i;
+
+    __message "index, value, tag, level, ts, ts_diff\n";
+    __fmessage fhandle,"index, value, tag, level, ts/param, hex, ts_diff\n";
+
+    /* Start from the last entry logged (ramlog.index points to the end tag, not a real entry) */
+    cur_index = (int)ramlog.index;
+    ramlog_prev_numargs = (int) ramlog.last_numargs;
+    prev_timestamp = 0;
+    /* We end either when ramlog_prev_numargs == 0 (no wrap hapened) or when a wrap occured */
+    while (ramlog_prev_numargs > 0) {
+      cur_index = (int)(cur_index - ramlog_prev_numargs - 1);
+      if (cur_index < 0) {
+        cur_index = cur_index + (int)ramlog.bufsz;
+        wrapped = 1;
+      }
+      if ((wrapped == 1) && (cur_index < ramlog.index)) {
+        return;
+      }
+
+      /* Decode ramlog entry - see btble_ramlog() in LL code */
+      entry = ramlog.buffer[(int)cur_index];
+      ramlog_tag = entry/100000;
+      ramlog_level = (entry - ramlog_tag*100000)/1000;
+      ramlog_prev_numargs = (entry - ramlog_tag*100000 - ramlog_level*1000)/10;
+      ramlog_numargs = (entry - ramlog_tag*100000 - ramlog_level*1000 - ramlog_prev_numargs*10);
+      timestamp = ramlog.buffer[(cur_index+1)%ramlog.bufsz];
+      ts_diff = (int)(prev_timestamp-timestamp);
+      prev_timestamp = timestamp;
+      __message "[",cur_index:%d,"]=",ramlog.buffer[cur_index]:%d," tag=", ramlog_tag:%d," lvl=",ramlog_level:%d," ts=",
+        timestamp:%d," ts_diff=",ts_diff:%d,"\n";
+      __fmessage fhandle,cur_index:%d," , ",ramlog.buffer[cur_index]:%d," , ", ramlog_tag:%d," , ",ramlog_level:%d," , ",
+        timestamp:%d," ,, ",ts_diff:%d,"\n";
+      /* Print arguments */
+      for (_i = 1; _i < ramlog_numargs; _i++) {
+        temp = ramlog.buffer[(cur_index+_i+1)%ramlog.bufsz];
+        __message "   ",_i:%d,": ",temp:%d," 0x",temp:%x,"\n";
+        __fmessage fhandle,",,,,",temp:%d," , 0x",temp:%x,"\n";
+      }
+    };
+}
+
+dump_ramlog()
+{
+    __var filename;
+    __var fhandle;
+
+    filename = build_filename("ramlog_dbg", 1);
+    fhandle = __openFile(filename,"w"); 
+    if (!fhandle)
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+        return;
+    }
+
+    __message "RAMLOG dump:\n";
+    dump_ramlog_core(fhandle);
+
+    __message ">>RAMLOG DBG saved to:", filename:%s;
+    __closeFile(fhandle);
+}
+
+dump_iq_data()
+{
+    __var filename;
+    __var fhandle;
+    __var fhandle;
+    __var iq_ptr;
+    __var iq;
+    __var q;
+    __var i;
+    __var loop;
+	
+    iq_ptr = (short *)hadm_meas.debug_buff_address;
+	
+    filename = build_filename("dbg_iq", 0);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {       
+        for(loop=0; loop<hadm_meas.debug_buff_size/2; loop+=2)
+        {
+            i = (short)iq_ptr[loop];
+            q = (short)iq_ptr[loop+1];
+            i=i/32;
+            q=q/32;
+            __fmessage fhandle, i:%d, ",", q:%d, "\n";
+        }
+        __message ">>IQs saved to:", filename:%s;
+        __closeFile(fhandle);
+    }
+    else
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+    }
+}
+
+dump_tqi()
+{
+    __var filename;
+    __var fhandle;
+    __var fhandle;
+    __var tqi_ptr;
+    __var tqi;
+    __var tqi_per_step;
+    __var ch;
+    __var step_no;
+    __var step_nb;
+    __var mode;
+    __var i;
+    __var pm_ext;
+	
+    tqi_ptr = (char *)tone_quality_buffer;
+    step_nb = hadm_meas.config_p->stepsNb;
+    tqi_per_step = hadm_meas.n_ap + 1;
+            
+    filename = build_filename("dbg_tqi", 0);
+    fhandle = __openFile(filename,"w"); 
+    if (fhandle)
+    {
+        __fmessage fhandle,"step_id, channel, mode, pm_ext, tqi\n";
+        for(step_no=0;step_no<step_nb;step_no++)
+        {
+            ch = hadm_meas.config_p->chModePmAntMap[step_no].channel;
+            mode = hadm_meas.config_p->chModePmAntMap[step_no].mode;
+            pm_ext = hadm_meas.config_p->chModePmAntMap[step_no].pm_ext;
+            
+            if (mode == 2)
+            {
+                __fmessage fhandle, step_no:%d, " , " , ch:%d, " , " , mode:%d, " , ", pm_ext:%d, " , ";
+            
+                for(i=0;i<tqi_per_step;i++)
+                {
+                    tqi = *tqi_ptr;
+                    __fmessage fhandle, tqi:%d, " , ";
+                    tqi_ptr++;
+                }
+                __fmessage fhandle, "\n";
+            }
+        }
+        __message ">>TQIs saved to:", filename:%s;
+        __closeFile(fhandle);
+    }
+    else
+    {
+        __message "File open failed for ", filename:%s, "!!!!\n";
+    }
+}

@@ -1,0 +1,10 @@
+NXP Software Content Register
+ 
+Release Name:           Bluetooth Low Energy Controller
+Version:                1.9.18
+Date Created:           October-2024
+Release Location:       https://github.com/nxp-mcuxpresso/mcux-sdk-middleware-bluetooth-controller
+Description:            Bluetooth Low Energy Controller Firmware. Host Command Interface (HCI).
+Outgoing License:       LA_OPT_Online_Code_Hosting
+License File:           LICENSE
+Type of Content: library & source code

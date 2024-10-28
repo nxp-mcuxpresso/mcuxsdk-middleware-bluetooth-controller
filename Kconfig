@@ -1,0 +1,43 @@
+# Copyright 2024 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+menu "ble_controller"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_threadx
+        bool "Component middleware.wireless.ble_controller_threadx"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_nbu
+        bool "Component middleware.wireless.ble_controller_nbu"
+        select MCUX_COMPONENT_middleware.wireless.ble_controller_threadx
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base
+        bool "Component middleware.wireless.ble_controller_nbu_app_base"
+        select MCUX_COMPONENT_middleware.wireless.ble_controller_threadx
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_dtm
+        bool "Component middleware.wireless.ble_controller_dtm"
+    config MCUX_COMPONENT_middleware.wireless.controller_api
+        bool "Component middleware.wireless.controller_api"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_hadm
+        bool "Component middleware.wireless.ble_controller_hadm"
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu || MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk || MCUX_HW_BOARD_mcxw71evk
+    config MCUX_COMPONENT_middleware.wireless.nbu_hosted_lib
+        bool "Component middleware.wireless.nbu_hosted_lib"
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu
+    config MCUX_COMPONENT_middleware.wireless.nbu_hadm_hosted_lib
+        bool "Component middleware.wireless.nbu_hadm_hosted_lib"
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu
+    config MCUX_COMPONENT_middleware.wireless.nbu_xp_hosted_lib
+        bool "Component middleware.wireless.nbu_xp_hosted_lib"
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu
+    config MCUX_COMPONENT_middleware.wireless.nbu_all_hosted_lib
+        bool "Component middleware.wireless.nbu_all_hosted_lib"
+        #depends on MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_MWS
+        bool "Component middleware.wireless.ble_controller_MWS"
+        depends on !MCUX_HW_BOARD_kw45b41zevk && !MCUX_HW_BOARD_k32w148evk && !MCUX_HW_BOARD_kw45b41zloc
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_bin
+        bool "Component middleware.wireless.ble_controller_bin"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_hybrid_gfsk
+        bool "Component middleware.wireless.ble_controller_hybrid_gfsk"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_interface
+        bool "Component middleware.wireless.ble_controller_interface"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_thread_interface
+        bool "Component middleware.wireless.ble_controller_thread_interface"
+endmenu
