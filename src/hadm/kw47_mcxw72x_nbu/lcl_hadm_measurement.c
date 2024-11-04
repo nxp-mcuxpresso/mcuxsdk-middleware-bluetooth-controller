@@ -80,6 +80,14 @@
 int hadm_ut_config_cnt;
 #endif
 
+//#define RTT_DEBUG
+#ifdef RTT_DEBUG
+int32_t rtt_tpm_dbg_buffer[HADM_MAX_NB_STEPS];
+int32_t rtt_frac_dbg_buffer[HADM_MAX_NB_STEPS];
+int16_t rtt_p_delta_dbg_buffer[HADM_MAX_NB_STEPS];
+int32_t rtt_int_adj_dbg_buffer[HADM_MAX_NB_STEPS];
+#endif
+
 static BLE_HADM_HalProperties_t hadm_hal_properties;
 
 /* This reflects the capabilities of our IC */
@@ -1126,6 +1134,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             rtt_data_raw = *hadm_meas_p->pkt_ram.result_read_ptr;
             hadm_meas_p->pkt_ram.result_read_ptr += 2U; /* skip cfo_est */
             tpm = *hadm_meas_p->pkt_ram.result_read_ptr++;
+#ifdef RTT_DEBUG
+            rtt_tpm_dbg_buffer[circ_buff_p->curr_step_idx] = tpm;
+#endif
         }
         
          /* Decode tone status if present */
@@ -1191,6 +1202,11 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     DEBUG_PIN1_SET
                     /* Compute integer and fractional adjustment in ns */
                     frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx, rtt_data.p_delta, rtt_data.int_adj);
+#ifdef RTT_DEBUG
+                    rtt_frac_dbg_buffer[circ_buff_p->curr_step_idx] = frac_delay;
+                    rtt_p_delta_dbg_buffer[circ_buff_p->curr_step_idx] = rtt_data.p_delta;
+                    rtt_int_adj_dbg_buffer[circ_buff_p->curr_step_idx] = rtt_data.int_adj;
+#endif
                     if (role == HADM_ROLE_REFLECTOR)
                     {
                         frac_delay = -frac_delay; /* On reflector side, substract frac delay */
