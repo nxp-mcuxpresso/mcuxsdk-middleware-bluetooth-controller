@@ -16,7 +16,7 @@ menu "ble_controller"
         bool "Component middleware.wireless.controller_api"
     config MCUX_COMPONENT_middleware.wireless.ble_controller_hadm
         bool "Component middleware.wireless.ble_controller_hadm"
-        depends on MCUX_HW_BOARD_kw45b41zevk_nbu || MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk || MCUX_HW_BOARD_mcxw71evk
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu || MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk || MCUX_HW_BOARD_mcxw71evk || MCUX_HW_BOARD_frdmmcxw72
     config MCUX_COMPONENT_middleware.wireless.nbu_hosted_lib
         bool "Component middleware.wireless.nbu_hosted_lib"
         depends on MCUX_HW_BOARD_kw45b41zevk_nbu
