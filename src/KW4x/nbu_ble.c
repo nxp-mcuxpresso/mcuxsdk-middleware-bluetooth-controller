@@ -690,15 +690,16 @@ void NBU_Init()
     /* Init Framework Intercore Service */
     PLATFORM_FwkSrvInit();
 
+#if defined(PHY_15_4_ENABLED) && (PHY_15_4_ENABLED == 1)
+    /* Init 15.4 Phy must be after PLATFORM_FwkSrvInit() for the RNG seeding
+       and before SFC_Init() to have the 15.4 RPMSG endpoints initialized without delay */
+    init_15_4_Phy();
+#endif
+
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     /* SFC module requires FwkSrv service to be initialized */
     SFC_Init();
 #endif /* FPGA_TARGET */
-#endif
-
-#if defined(PHY_15_4_ENABLED) && (PHY_15_4_ENABLED == 1)
-    /* Init 15.4 Phy must be after PLATFORM_FwkSrvInit() for the RNG seeding */
-    init_15_4_Phy();
 #endif
 
 #if defined(CS_HANDOFF_ENABLED) && (CS_HANDOFF_ENABLED!=0)
