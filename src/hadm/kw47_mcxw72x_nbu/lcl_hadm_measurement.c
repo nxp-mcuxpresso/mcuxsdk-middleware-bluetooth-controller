@@ -16,6 +16,7 @@
 #include "fsl_ltc.h" /* LTC driver for AES */
 #include "EmbeddedTypes.h"
 #include "nxp_xcvr_lcl_ctrl.h"
+#include "nxp_xcvr_lcl_step_mgr.h"
 #include "lcl_hadm_measurement.h"
 #include "lcl_xcvr_hal.h"
 #include "lcl_hadm_utils.h"
@@ -86,6 +87,7 @@ int32_t rtt_tpm_dbg_buffer[HADM_MAX_NB_STEPS];
 int32_t rtt_frac_dbg_buffer[HADM_MAX_NB_STEPS];
 int16_t rtt_p_delta_dbg_buffer[HADM_MAX_NB_STEPS];
 int32_t rtt_int_adj_dbg_buffer[HADM_MAX_NB_STEPS];
+int32_t rtt_common_stat_dbg_buffer[HADM_MAX_NB_STEPS];
 #endif
 
 static BLE_HADM_HalProperties_t hadm_hal_properties;
@@ -1084,7 +1086,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     BLE_HADM_role_t role = hadm_meas_p->config_p->role;
 
     uint32_t common_stat;
-    uint32_t nadm_rssi;
+    uint32_t nadm_error_rssi;
     uint32_t rtt_data_raw;
     uint32_t tpm;  /* TPM timestamp unit is 1/32MHz */
     int ap;
@@ -1131,12 +1133,13 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
         /* Decode packet status if present */
         if (step_config_p->mode != HADM_STEP_MODE2)
         {
-            nadm_rssi = *hadm_meas_p->pkt_ram.result_read_ptr++;
+            nadm_error_rssi = *hadm_meas_p->pkt_ram.result_read_ptr++;
             rtt_data_raw = *hadm_meas_p->pkt_ram.result_read_ptr;
             hadm_meas_p->pkt_ram.result_read_ptr += 2U; /* skip cfo_est */
             tpm = *hadm_meas_p->pkt_ram.result_read_ptr++;
 #ifdef RTT_DEBUG
             rtt_tpm_dbg_buffer[circ_buff_p->curr_step_idx] = tpm;
+            rtt_common_stat_dbg_buffer[circ_buff_p->curr_step_idx] = common_stat & 0x30000000U;
 #endif
         }
         
@@ -1189,6 +1192,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             {
                 int32_t frac_delay = 0;
                 int32_t rtt_ts = 0;
+                uint8_t nadm_metric = 0xFF; /* NADM not available by default */
                 BLE_HADM_rttPhyMode_t rate = hadm_meas_p->config_p->rttPhy;
                 rtt_pkt_no++;
                 XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)&rtt_data_raw, &rtt_data, (XCVR_RSM_SQTE_RATE_T)rate); /* OJE TODO: optimize...*/
@@ -1223,6 +1227,11 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         //rtt_data.rtt_vld = false;
                         rtt_ts = 12345; /* OJE TODO */
                     }
+                    if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
+                    {
+                        uint32_t nadm_fm_corr_value = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
+                        XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, (XCVR_RSM_SQTE_RATE_T)rate, nadm_metric);
+                    }
                 }
                 if (step_config_p->mode == HADM_STEP_MODE1)
                 {
@@ -1233,8 +1242,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     *res_buff_p++ = BLE_HADM_STEP3_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                 }
                 *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld, rtt_data.rtt_found); /* Packet_AA_Quality (1 byte) */
-                *res_buff_p++ = HADM_SET_RTT_NADM(nadm_rssi); /* Packet_NADM */
-                *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, (uint8_t)(nadm_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK)); /* Packet_RSSI (1 byte) */
+                *res_buff_p++ = nadm_metric; /* Packet_NADM */
+                *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, (uint8_t)(nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK)); /* Packet_RSSI (1 byte) */
                 HADM_SET_RTT_TS_DIFF(rtt_data.rtt_vld, rtt_ts, res_buff_p); /* ToX-ToX time diff (2 bytes) */
                 *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
 

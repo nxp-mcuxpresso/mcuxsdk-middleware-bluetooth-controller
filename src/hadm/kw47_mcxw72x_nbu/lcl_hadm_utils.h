@@ -87,10 +87,6 @@
 #define HADM_SET_RTT_RSSI(valid, rssi) \
     (valid ? rssi : 0x7F);
 
-/*! OJE TODO: Set packet NADM */
-#define HADM_SET_RTT_NADM(raw_nadm) \
-    (0xFF);
-
 /*! Translates RSM RTT CFO result to HADM CFO (2 bytes, unit 0.01 ppm, SQ15.0 format) */
 #define HADM_SET_RTT_CFO(valid, ppm_in, report_p) \
     do \
