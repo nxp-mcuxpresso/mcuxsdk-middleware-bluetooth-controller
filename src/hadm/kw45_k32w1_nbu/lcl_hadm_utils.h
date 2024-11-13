@@ -93,11 +93,11 @@
 #define HADM_SET_RTT_CFO(valid, ppm_in, report_p) \
     if (valid) \
     { \
-        /* Clip to 15bits signed max : -100 ppm (0xD8F0) to +100 ppm (0x2710)*/ \
+        /* Clip to 15bits signed max : -100 ppm (0x58F0) to +100 ppm (0x2710)*/ \
         if (ppm_in > 10000) ppm_in = 10000; \
         else if (ppm_in < -10000) ppm_in = -10000; \
         *report_p++ = (ppm_in & 0x000000FF); \
-        *report_p++ = (ppm_in & 0x0000FF00) >> 8; \
+        *report_p++ = (ppm_in & 0x00007F00) >> 8; \
     } \
     else \
     { \

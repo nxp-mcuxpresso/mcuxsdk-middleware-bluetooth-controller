@@ -1109,8 +1109,11 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     res_buff_in_p = hadm_meas_p->result_p->resultBuffer;
     res_buff_p = res_buff_in_p;
     hadm_meas_p->result_p->firstStepCollected = circ_buff_p->curr_step_idx;
-    /* Copy CFO into frequencyCompensation from procedure */
-    hadm_meas_p->result_p->frequencyCompensation = hadm_proc_p->ppm;
+    /* Copy CFO into frequencyCompensation from procedure if initiator (already set to fixed value otherwise) */
+    if (role == HADM_ROLE_INITIATOR)
+    {
+        hadm_meas_p->result_p->frequencyCompensation = hadm_proc_p->ppm;
+    }
 
     while (circ_buff_p->curr_step_idx < hadm_meas_p->config_p->stepsNb)
     {
