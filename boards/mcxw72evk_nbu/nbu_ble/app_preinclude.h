@@ -22,9 +22,7 @@
 #define gNbuDisableLowpower_d   0
 
 /* Uncomment to avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
-//#define gNbuJtagCapability      1
-
-#if defined(gNbu_Hadm_d) && (gNbu_Hadm_d == 1)
+#ifndef NDEBUG
 #undef gNbuJtagCapability 
 #define gNbuJtagCapability 1
 #endif
