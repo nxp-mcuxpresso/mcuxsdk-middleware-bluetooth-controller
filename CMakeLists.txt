@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 mcux_set_list(KW45_NBU_FAMILY "KW45B41Z52xxxA_NBU KW45B41Z53xxxA_NBU  KW45B41Z82xxxA_NBU  KW45B41Z83xxxA_NBU  K32W1480xxxA_NBU")
 mcux_set_list(MCXW71_NBU_FAMILY "MCXW716CxxxA_NBU MCXW716AxxxA_NBU")
+mcux_set_list(KW45_FAMILY_WITHOUT_K32W1 "KW45B41Z52xxxA KW45B41Z53xxxA  KW45B41Z82xxxA  KW45B41Z83xxxA")
 
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_source(
@@ -97,6 +98,78 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
     mcux_add_source(
         SOURCES bin/mcxw72_nbu_ble_all_hosted.bin
         DEVICE_IDS ${MCXW72_FAMILY}
+    )
+	mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_hadm_hosted.sb3
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+    mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_hadm_hosted.xip
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+	mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_hosted.sb3
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+    mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_hosted.xip
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+	mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_xp_hosted.sb3
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+    mcux_add_source(
+        SOURCES bin/kw45b41_nbu_ble_xp_hosted.xip
+        DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
+    )
+	mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_hadm_hosted.sb3
+        DEVICE_IDS K32W1480xxxA
+    )
+    mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_hadm_hosted.xip
+        DEVICE_IDS K32W1480xxxA
+    )
+	mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_hosted.sb3
+        DEVICE_IDS K32W1480xxxA
+    )
+    mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_hosted.xip
+        DEVICE_IDS K32W1480xxxA
+    )
+	mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_xp_hosted.sb3
+        DEVICE_IDS K32W1480xxxA
+    )
+    mcux_add_source(
+        SOURCES bin/k32w1_nbu_ble_xp_hosted.xip
+        DEVICE_IDS K32W1480xxxA
+    )
+	mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_hadm_hosted.sb3
+        DEVICE_IDS ${MCXW71_FAMILY}
+    )
+    mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_hadm_hosted.xip
+        DEVICE_IDS ${MCXW71_FAMILY}
+    )
+	mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_hosted.sb3
+        DEVICE_IDS ${MCXW71_FAMILY}
+    )
+    mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_hosted.xip
+        DEVICE_IDS ${MCXW71_FAMILY}
+    )
+	mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_xp_hosted.sb3
+        DEVICE_IDS ${MCXW71_FAMILY}
+    )
+    mcux_add_source(
+        SOURCES bin/mcxw71_nbu_ble_xp_hosted.xip
+        DEVICE_IDS ${MCXW71_FAMILY}
     )
 endif()
 
