@@ -24,6 +24,12 @@
 #define HADM_ENABLE_DEBUG_PINS /* Disable in case of conflicts with PTD2-3 PINs */
 #endif
 
+/* Control CFO compensation refinment on each step */
+/* TKT0598229: disabled due to HW issue on KW47 A0 */
+//#define HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
+/* Use SW implementation instead */
+#define HADM_CFO_COMP_PER_STEP_VIA_FOM
+
 #define HADM_TPM                   TPM2
 #define HADM_TPM_IRQ               TPM2_INT_IRQn
 #define HADM_TPM_TIMER_CHANNEL     kTPM_Chnl_1
@@ -173,6 +179,11 @@ void lcl_hadm_utils_free_config_buffer(uint8 connIdx);
 void lcl_hadm_utils_free_result_buffer(uint8 connIdx);
 void lcl_hadm_enable_lcl_interrupts(void);
 void lcl_hadm_disable_interrupts(void);
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+void lcl_hadm_enable_interrupts_for_subevent(void);
+void lcl_hadm_restore_interrupts_for_subevent(void);
+void lcl_hadm_apply_cfo_per_step(int32_t cfo);
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 void lcl_hadm_restore_interrupts(void);
 void lcl_hadm_init_tpms(void);
 void lcl_hadm_start_tpms(void);

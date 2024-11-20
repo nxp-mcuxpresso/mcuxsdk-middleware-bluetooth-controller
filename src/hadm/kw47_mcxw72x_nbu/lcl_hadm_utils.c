@@ -249,7 +249,34 @@ void lcl_hadm_enable_lcl_interrupts(void)
 {
     NVIC_ClearPendingIRQ(RSM_INT_IRQn);
     EnableIRQ(RSM_INT_IRQn);
+    NVIC_SetPriority(RSM_INT_IRQn, 1);
 }
+
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+void lcl_hadm_enable_interrupts_for_subevent(void)
+{
+    NVIC_ClearPendingIRQ(BRF_INT_IRQn);
+    EnableIRQ(BRF_INT_IRQn);
+    NVIC_SetPriority(BRF_INT_IRQn, 0);
+    XCVR_TSM->CTRL |= XCVR_TSM_CTRL_TSM_IRQ0_EN_MASK;
+    XCVR_TSM->TIMING03 &= ~(XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
+    XCVR_TSM->TIMING03 |= XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI(26) | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO(27);
+}
+
+void lcl_hadm_restore_interrupts_for_subevent(void)
+{
+    DisableIRQ(BRF_INT_IRQn);
+    XCVR_TSM->CTRL &= ~XCVR_TSM_CTRL_TSM_IRQ0_EN_MASK;
+    XCVR_TSM->TIMING03 |= (XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
+}
+
+void lcl_hadm_apply_cfo_per_step(int32_t cfo)
+{
+    /* Hz to 0.95Hz unit */
+    cfo = (cfo * 67) / 64;
+    XCVR_MISC->IPS_FO_DRS0_DATA[3] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+}
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 
 #if 0 /* not used anymore */
 /* Disable all interrupts for NVIC except RSM IRQ and global interrupt enable */

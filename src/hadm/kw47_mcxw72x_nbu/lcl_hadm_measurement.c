@@ -34,9 +34,6 @@
 /* === Macros ============================================================== */
 #define T_SLOT_US  (625U)
 
-/* TKT0598229: disabled due to HW issue on KW47 A0 */
-//#define HADM_CFO_COMP_PER_STEP /* Enable CFO compensation refinment on each step */
-
 /* The following timings have been measured in debug mode with IAR 9.30.1 */
 /* TODO OJE: Exact HAL timings need to be measured on KW47 */
 /*! Time needed to execute BLE_HADM_Calibrate()
@@ -799,12 +796,27 @@ static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm
 {
 #ifndef SIMULATOR
     lcl_hal_xcvr_hadm_init(hadm_meas_p, hadm_config);
-#endif
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+    if (hadm_config->role == HADM_ROLE_INITIATOR)
+    {
+        /* In this mode, an additional per-step IRQ is setup with higher priority than RSM IRQ, in order to program CFO via Fast Override Module */
+        lcl_hadm_enable_interrupts_for_subevent();
+        /* FOM override occurs on fom_tx/tx_en which happens before TSM raises the IT, so will apply to the next step. */
+        LCL_HAL_SET_PLL_OFFSET_FO_ENTRY();
+    }
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
+#endif /* SIMULATOR */
 }
 
 static void lcl_hadm_measurement_teardown(const BLE_HADM_SubeventConfig_t *hadm_config)
 {
     lcl_hal_xcvr_hadm_deinit(hadm_config);
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+    if (hadm_config->role == HADM_ROLE_INITIATOR)
+    {
+        lcl_hadm_restore_interrupts_for_subevent();
+    }
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 }
 
 static hadm_meas_t *lcl_hadm_alloc_meas_instance(void)
@@ -869,7 +881,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
     uint32_t step_idx;
     hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[circ_buff_p->curr_step_idx];
-#ifdef HADM_CFO_COMP_PER_STEP
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_meas_p->config_p->connIdx];
     bool_t compensate_cfo = (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR) && (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0);
 #endif
@@ -905,7 +917,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
 #else
         hpm_cal_val = hadm_device->cal_data[hadm_meas_p->config_p->rttPhy][step_config_p->channel].hpm_cal_val;
 #endif
-#ifdef HADM_CFO_COMP_PER_STEP
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
         /* Compute CFO compensation */
         if (compensate_cfo && (step_config_p->mode != HADM_STEP_MODE0))
         {
@@ -1021,23 +1033,32 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         {
             if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0)
             {
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+                /* Enable FOM entry trigger for next step */
+                LCL_HAL_ENABLE_FO_ENTRY();
+                /* Compute CFO compensation to apply at next step */
+                int32_t cfo;
+                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel, hadm_proc->ppm);
+                lcl_hadm_apply_cfo_per_step(cfo);
+#else
                 /* Initial CFO compensation */
                 XCVR_LCL_RsmCompCfo(-hadm_proc->cfo);
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 
-#ifdef HADM_CFO_COMP_PER_STEP
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
                 /* Update CFO programmed for already-built config steps */
                 /* At this point only 1 step has been prepared in addition of the mode 0 steps */
                 hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_result;
-                int16_t cfo;
+                int16_t step_cfo;
                 step_idx = mode0Nb + 1U;
 
-                LCL_HAL_COMPUTE_STEP_CFO(cfo, hadm_proc->cfo_channel, step_config_p[step_idx].channel, hadm_proc->ppm);
+                LCL_HAL_COMPUTE_STEP_CFO(step_cfo, hadm_proc->cfo_channel, step_config_p[step_idx].channel, hadm_proc->ppm);
               
                 circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
                 assert(circ_buff_p->curr_step_idx == step_idx);
                 uint32_t *config_write_ptr = circ_buff_p->base_ptr + (mode0Nb * LCL_HAL_PKT_RAM_STEP_CONFIG_MODE0_SIZE); /* skip mode 0s */
                 
-                LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(config_write_ptr, cfo);
+                LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(config_write_ptr, step_cfo);
 #endif
             }
             
@@ -1515,5 +1536,36 @@ void RSM_INT_IRQHandler(void)
 
     DEBUG_PIN0_CLR
 }
+
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+void BRF_INT_IRQHandler(void)
+{
+    uint32_t irq_status = XCVR_MISC->XCVR_STATUS;
+
+    if ((irq_status & XCVR_MISC_XCVR_STATUS_TSM_IRQ0_MASK) != 0)
+    {
+        /* Write one to clear status bit */
+        XCVR_MISC->XCVR_STATUS = XCVR_MISC_XCVR_STATUS_TSM_IRQ0_MASK;
+        hadm_meas_t *hadm_meas_p = hadm_device.active_meas_p;
+        hadm_proc_t *hadm_proc = &hadm_procs[hadm_meas_p->config_p->connIdx];
+        bool_t compensate_cfo = (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR) && (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0);
+
+        if (compensate_cfo)
+        {
+            uint32_t rsm_curr_step = ((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_CURRENT_STEPS_MASK) >> XCVR_MISC_RSM_CSR_RSM_CURRENT_STEPS_SHIFT);
+            /* Prepare CFO for next step */
+            rsm_curr_step ++;
+            if ((rsm_curr_step > hadm_meas_p->config_p->mode0Nb) && (rsm_curr_step < hadm_meas_p->config_p->stepsNb))
+            {
+                BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
+                int32_t cfo;
+                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, step_config_p->channel, hadm_proc->ppm);
+                lcl_hadm_apply_cfo_per_step(cfo);
+            }
+        }
+    }
+
+}
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 
 /* EOF */

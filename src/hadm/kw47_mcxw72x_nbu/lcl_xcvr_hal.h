@@ -290,8 +290,10 @@ typedef enum
     }
 
 #define LCL_HAL_COMPUTE_STEP_CFO(cfo, proc_cfo_channel, step_channel, ppm) \
-        cfo = ((int16_t)step_channel - (int16_t)proc_cfo_channel) * ppm; /* in Hz */\
-        cfo = (cfo * 67) / 64; /* convert to 0.95Hz units */\
+        cfo = ((int16_t)step_channel - (int16_t)proc_cfo_channel) * ppm; /* in Hz */
+
+#define LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, channel, ppm) \
+        cfo = (2402U + (channel)) * (ppm); /* in Hz */
 
 #define LCL_HAL_PROGRAM_MODE0_TIMEOUT(timeout_us) \
     {\
@@ -315,6 +317,25 @@ typedef enum
         temp &= ~XCVR_RX_DIG_CTRL1_RX_CFO_EST_OVRD_MASK; \
         temp |= XCVR_RX_DIG_CTRL1_RX_CFO_EST_OVRD_EN_MASK; \
         XCVR_RX_DIG->CTRL1 = temp; \
+    }
+
+#define HADM_FO_ENTRY (3U)
+
+#define LCL_HAL_ENABLE_FO_ENTRY() \
+    {\
+        XCVR_MISC->IPS_FO_ADDR[HADM_FO_ENTRY] |= XCVR_MISC_IPS_FO_ADDR_ENTRY_TX_MASK; \
+    }
+
+#define LCL_HAL_DISABLE_FO_ENTRY() \
+    {\
+        XCVR_MISC->IPS_FO_ADDR[HADM_FO_ENTRY] &= ~XCVR_MISC_IPS_FO_ADDR_ENTRY_TX_MASK; \
+    }
+
+/* Initilize FOM to write XCVR_PLL_DIG_PLL_OFFSET_CTRL on FOM_TX_EN */
+#define LCL_HAL_SET_PLL_OFFSET_FO_ENTRY() \
+    {\
+        uintptr_t reg_addr = (uintptr_t)&(XCVR_PLL_DIG->PLL_OFFSET_CTRL); \
+        XCVR_MISC->IPS_FO_ADDR[HADM_FO_ENTRY] = XCVR_MISC_IPS_FO_ADDR_ADDR(reg_addr) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0); \
     }
 
 #define LCL_HAL_T_PM_MEAS (650U) /* T_PM_MEAS shall be 650us */

@@ -302,6 +302,10 @@ void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
     XCVR_RX_DIG->AGC_CTRL_STAT = xcvr_settings.xcvr_rx_dig_agc_ctrl_stat;
        
     (void)lcl_hal_xcvr_dtest_set_page(xcvr_settings.dtest_page_backup);
+
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+    LCL_HAL_DISABLE_FO_ENTRY();
+#endif
     
     NbuPwrPeakReductionActivityStop();
 }
