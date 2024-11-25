@@ -193,7 +193,7 @@ typedef struct
     bool                   is_proc_init_done;   /*!< Set to TRUE if procedure intialization has been done  */
     uint8_t                cfo_channel;         /*!< Channel index of the retained mode 0 */
     uint8_t                agc_idx;             /*!< AGC idx for the procedure (0xFF means AGC unlocked) */
-    int8_t                 ppm;                 /*!< ppm computed based on mode0 CFO */
+    int16_t                ppm;                 /*!< ppm Unit: 0.01 ppm, computed based on mode0 CFO */
     int32_t                cfo;                 /*!< CFO [Hz] measured during alignment phase */
 } hadm_proc_t;
 

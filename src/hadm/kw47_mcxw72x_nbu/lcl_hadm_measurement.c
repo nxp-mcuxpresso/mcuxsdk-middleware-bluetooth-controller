@@ -1015,7 +1015,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 hadm_proc->cfo = sync_info_p->cfo;
                 hadm_proc->cfo_channel = step_config_p[step_idx].channel;
                 /* Compute ppm based on measured CFO */
-                hadm_proc->ppm = (int8_t)(hadm_proc->cfo / ((int32_t)2402 /* MHz */ + hadm_proc->cfo_channel));
+                hadm_proc->ppm = (int16_t)((hadm_proc->cfo * HADM_PPM_DIVIDER)/ ((int32_t)HADM_CHAN_NUM_TO_MHZ(hadm_proc->cfo_channel)));
             }
         }
     }
@@ -1063,7 +1063,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             }
             
             /* Program time-grid adjustment (Initiator only) */
-            lcl_hal_xcvr_program_time_adjustement((int32_t)hadm_proc->ppm);
+            lcl_hal_xcvr_program_time_adjustement((int32_t)hadm_proc->ppm/HADM_PPM_DIVIDER);
         }
         else
         {   /* Reflector Only */
@@ -1133,7 +1133,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     /* Copy CFO into frequencyCompensation from procedure if initiator (already set to fixed value otherwise) */
     if (role == HADM_ROLE_INITIATOR)
     {
-        hadm_meas_p->result_p->frequencyCompensation = hadm_proc_p->ppm;
+        uint8_t *freq_comp_p = (uint8_t *)&hadm_meas_p->result_p->frequencyCompensation;
+        HADM_SET_RTT_CFO(TRUE, hadm_proc_p->ppm, freq_comp_p);
     }
 
     while (circ_buff_p->curr_step_idx < hadm_meas_p->config_p->stepsNb)
@@ -1188,7 +1189,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 static bool_t synch_done = FALSE;
                 bool vld = hadm_meas_p->sync_info[step_mode0_no].valid;
                  /* (Hz*100) / MHz  => 0.01 ppm unit */
-                int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * 100) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
+                int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
                 *res_buff_p++ = BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
                 *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(vld, 1); /* Packet_AA_Quality */
                 *res_buff_p++ = HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */

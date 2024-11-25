@@ -289,11 +289,13 @@ typedef enum
         pkt_ram_result_ptr_offset = (uint32_t)((temp & XCVR_MISC_RSM_PTR_RSM_WR_PTR_MASK) >> XCVR_MISC_RSM_PTR_RSM_WR_PTR_SHIFT);\
     }
 
+#define HADM_PPM_DIVIDER (100)
+
 #define LCL_HAL_COMPUTE_STEP_CFO(cfo, proc_cfo_channel, step_channel, ppm) \
-        cfo = ((int16_t)step_channel - (int16_t)proc_cfo_channel) * ppm; /* in Hz */
+        cfo = (((int32_t)step_channel - (int32_t)proc_cfo_channel) * ppm)/HADM_PPM_DIVIDER; /* in Hz */
 
 #define LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, channel, ppm) \
-        cfo = (2402U + (channel)) * (ppm); /* in Hz */
+        cfo = (((int32_t)2402U + (channel)) * (ppm))/HADM_PPM_DIVIDER; /* in Hz */
 
 #define LCL_HAL_PROGRAM_MODE0_TIMEOUT(timeout_us) \
     {\
