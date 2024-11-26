@@ -240,6 +240,8 @@ void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx)
         uint32_t temp = XCVR_RX_DIG->AGC_OVRD;
         temp &= ~(XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_MASK);
         temp |= (XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD(man_agc_idx));
+        /* Lock AGC state machine to avoid RSSI reset in case AA match arrives before end of RSSI measurement completion */
+        temp |= XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD_EN(1) | XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD(1);
         XCVR_RX_DIG->AGC_OVRD |= temp;
     }
     /* else : Invalid index, remain in automatic mode */
