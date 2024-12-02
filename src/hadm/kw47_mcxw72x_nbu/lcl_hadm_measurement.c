@@ -1112,6 +1112,12 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     /* Copy CFO into frequencyCompensation from procedure */
     hadm_meas_p->result_p->frequencyCompensation = hadm_proc_p->ppm;
 
+    /* Prepare for NADM metric calculations */
+    BLE_HADM_rttPhyMode_t rate = hadm_meas_p->config_p->rttPhy;
+    uint8_t fm_corr_target;
+    uint8_t fm_corr_div;
+    XCVR_LCL_GetNadmMetricCalFactors((XCVR_RSM_SQTE_RATE_T)rate, (XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, fm_corr_target, fm_corr_div);
+	
     while (circ_buff_p->curr_step_idx < hadm_meas_p->config_p->stepsNb)
     {
         if ((hadm_meas_p->pkt_ram.result_read_ptr + circ_buff_p->max_step_size) > circ_buff_p->base_ptr + circ_buff_p->buff_len)
@@ -1193,7 +1199,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 int32_t frac_delay = 0;
                 int32_t rtt_ts = 0;
                 uint8_t nadm_metric = 0xFF; /* NADM not available by default */
-                BLE_HADM_rttPhyMode_t rate = hadm_meas_p->config_p->rttPhy;
                 rtt_pkt_no++;
                 XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)&rtt_data_raw, &rtt_data, (XCVR_RSM_SQTE_RATE_T)rate); /* OJE TODO: optimize...*/
                 if (rtt_data.rtt_vld && rtt_data.rtt_found)
@@ -1230,7 +1235,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
                     {
                         uint32_t nadm_fm_corr_value = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
-                        XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, (XCVR_RSM_SQTE_RATE_T)rate, nadm_metric);
+                        XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, fm_corr_target, fm_corr_div, nadm_metric);
                     }
                 }
                 if (step_config_p->mode == HADM_STEP_MODE1)
