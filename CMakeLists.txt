@@ -186,8 +186,10 @@ endif()
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.controller_api)
     mcux_add_source(
         SOURCES src/controller_api.c
+                src/hybrid_gfsk/hybrid_gfsk.c
                 interface/controller_api.h
                 interface/controller_interface.h
+                interface/hybrid_gfsk.h
     )
     mcux_add_include(
         INCLUDES interface
@@ -325,9 +327,9 @@ endif()
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hybrid_gfsk)
     mcux_add_source(
         SOURCES src/hybrid_gfsk/hybrid_gfsk.c
-                src/hybrid_gfsk/hybrid_gfsk.h
+                interface/hybrid_gfsk.h
     )
     mcux_add_include(
-        INCLUDES src/hybrid_gfsk
+        INCLUDES interface
     )
 endif()
