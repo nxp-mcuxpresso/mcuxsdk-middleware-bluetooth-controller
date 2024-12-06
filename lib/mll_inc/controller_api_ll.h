@@ -257,4 +257,7 @@ void LL_API_WaitForClkUpdtFromLowPwr(void);
 
 extern void main_nbu_ll(void);
 
+/* SWO Debug API in framework */
+extern void DBG_SWO_PrintDoubleWordStim0(uint32 dw);
+
 #endif // CONTROLLER_API_H_

@@ -20,6 +20,11 @@
 #include "hci_transport.h"
 #include "controller_init.h"
 
+#if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
+#include "fwk_debug_swo.h"
+#endif
+
+
 #if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
 #include "lcl_hadm_measurement.h"
 #endif
@@ -561,15 +566,43 @@ static void NBU_CheckTemperatureChange(void)
 #endif // gNbu_Hadm_d
 }
 
+#if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
+/* Implement a syncronization pattern sends trought SWO regularly */
+void generate_synchro_swo(void) {
+
+  static uint64_t initial_timer_value = 0;
+  static int NBU_Idle_cpt = 0;
+  uint32_t timeInterval = 1000 * 1000; // 1s
+  uint64_t current_timer_value = 0;
+
+  if (NBU_Idle_cpt == 0) {
+    initial_timer_value = *(uint64_t *)TSTMR0;
+    NBU_Idle_cpt += 1;
+  }
+
+  current_timer_value = *(uint64_t *)TSTMR0;
+  if ((current_timer_value - initial_timer_value) > timeInterval) {
+    DBG_SWO_PrintDoubleWord(0xDEADBEEF, 0);
+    initial_timer_value = current_timer_value;
+  }
+}
+#endif
+
 /* Hook from LL Idle Task */
 void NBU_Idle(void)
 {
+
 #if defined(CS_HANDOFF_ENABLED) && (CS_HANDOFF_ENABLED!=0)
     if( p_hadm_config != NULL )
     {
         NBU_HADM_CopyConfig();
         p_hadm_config = NULL;
     }
+#endif
+
+#if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
+    /* Implement a syncronization pattern sends trought SWO regularly */
+    generate_synchro_swo();
 #endif
 
     NBU_CheckTemperatureChange();
@@ -823,11 +856,35 @@ void tx_application_define_hook(void)
 }
 #endif
 
+#if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
+void init_debug_swo(void) {
+  /* Configuration for sending data over SWO on CM33 NBU */
+  trace_swo_config_t swo_cfg;
+  swo_cfg.baudRate = 6000000; // SWO baudrate 6Mhz
+  swo_cfg.itmPort = 0;        // We use ITM stimuli port 0
+  swo_cfg.protocol =
+      kSwoProtocolNrz; // Protocol UART NRZ for trace output from the TPIU
+  swo_cfg.traceId = 2;
+
+  /* Configuration for sending data over SWO on CM33 NBU */
+  swo_cfg.clockRate =
+      BOARD_GetSystemCoreClockFreq(); // retrieve System CPU clock frequency 32
+                                      // MHz on CM3
+  /* Initialise SWO cfg via SW */
+  DBG_SwInit_SWO(&swo_cfg);
+}
+#endif
+
 int main(void)
 {
     /* Configure FRO192M clock */
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     PLATFORM_InitFro192M();
+#endif
+
+#if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
+    /* Configure and initialize SWO on NBU core*/
+    init_debug_swo();
 #endif
 
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
@@ -889,3 +946,4 @@ int main(void)
     assert(0);
     return 0;
 }
+
