@@ -583,6 +583,9 @@ void NBU_Idle(void)
     SFC_Process();
 #endif /* FPGA_TARGET */
 
+    /* Check if a nbu api indication message is pending and send it to host if it is the case */
+    PLATFORM_FwkSrvCheckAndSendNbuApiIndicationInIdle();
+
     OSA_DisableIRQGlobal();
 
     if(pendingPktInfo > 0)
