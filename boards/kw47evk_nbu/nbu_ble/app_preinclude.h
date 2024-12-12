@@ -13,7 +13,7 @@
 /* Enable MWS (Mobile Wireless System) coexistence at protocol level */
 #define gMWS_Enabled_d          0
 
-/*  Enables NbuDbg module (need to generate the project with --debug-mode)
+/* Enable NbuDbg module (need to generate the project with --debug-mode)
  *  This will enable debug IO toggling by the LL , logging and dtest*/
 #define gDbg_Enabled_d          0
 
@@ -42,6 +42,13 @@
 #define DBG_SWO_CORE_NBU_CORE  2 // Nbu Core
 #define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 #endif
+
+/* Enable dump of debug info into NBU RAM log if fwk_fault_handlers.c is added to the project (internal use only)
+ * To add fwk_fault_handlers.c into NBU project, add the following Kconfig to project prj.conf file
+ *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private=y
+ *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg=y
+ *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg.fault_handlers=y */
+//#define gDBG_LogInLinkLayerDebugStructEnabled_d 1
 
 /* Force disabling lowpower on CM3 - Even if set to 0, CM33 requires to enable Radio domain lowpower
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
