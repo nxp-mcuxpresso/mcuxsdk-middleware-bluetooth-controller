@@ -566,7 +566,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->rtt_type = (XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes;
     rsm_config_p->role = (hadm_config->role == HADM_ROLE_INITIATOR) ? XCVR_RSM_TX_MODE : XCVR_RSM_RX_MODE;
     rsm_config_p->enable_inpr = (bool)hadm_config->inlinePhaseReturn;
-    
+    rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
+
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
     {
         rsm_config_p->op_mode = XCVR_RSM_SQTE_MODE;
@@ -618,7 +619,6 @@ config_error:
     assert(0);
     return HADM_HAL_FAIL;
 }
-
 
 BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm_config_p)
 {
@@ -906,13 +906,15 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         /* Compute HPM cal factor */
         uint16_t hpm_cal_val;
 #ifdef HADM_PLL_CAL_INTERPOLATION
-        if (step_config_p->mode >= HADM_STEP_MODE2)
+        if (step_config_p->mode == HADM_STEP_MODE2)
         {
-            hpm_cal_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val; /* fixed HPM cal for tones */
+            /* Per-step HPM cal not used for mode2 */
+            hpm_cal_val = 0;
         }
-        else /* mode 0 or 1 */
+        else /* mode 0, 1 or 3 */
         {
-            hpm_cal_val = lcl_hadm_get_hpm_cal_interpolation(step_config_p->channel, hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val); /* interpolated HPM cal for packets */
+            /* Per-step HPM cal for packets - interpolated */
+            hpm_cal_val = lcl_hadm_get_hpm_cal_interpolation(step_config_p->channel, hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val);
         }
 #else
         hpm_cal_val = hadm_device->cal_data[hadm_meas_p->config_p->rttPhy][step_config_p->channel].hpm_cal_val;
