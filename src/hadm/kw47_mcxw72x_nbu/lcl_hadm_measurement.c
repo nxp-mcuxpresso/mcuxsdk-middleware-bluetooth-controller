@@ -1139,6 +1139,15 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
         HADM_SET_RTT_CFO(TRUE, hadm_proc_p->ppm, freq_comp_p);
     }
 
+    /* Compute RPL once per subevent.*/
+    if (hadm_meas_p->result_p->referencePwrLevel == HADM_INVALID_REFERENCE_POWER_LEVEL)
+    {
+        if (hadm_proc_p->agc_idx <= 11)
+        {
+            hadm_meas_p->result_p->referencePwrLevel = lcl_hal_xcvr_compute_rpl(hadm_proc_p->agc_idx);
+        }
+    }
+
     /* Prepare for NADM metric calculations */
     BLE_HADM_rttPhyMode_t rate = hadm_meas_p->config_p->rttPhy;
     uint8_t fm_corr_target;
@@ -1289,28 +1298,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             {
                 /* Keep pm extension bit corresponding to peer device role */
                 uint8_t t_pm_ext = (step_config_p->pm_ext >> role) & 0x1U;
-
-                /* Compute RPL once per event.*/
-                if (hadm_meas_p->result_p->referencePwrLevel == HADM_INVALID_REFERENCE_POWER_LEVEL)
-                {
-                    /* The computation is not optimal in term of accuracy as the only RSSI available whatever the main mode is the one from mode0 step.
-                     * Ideally, we would need an RSSI for the captured IQ data, but we do not have that from the HW.
-                     * We use averaged mode0's RSSI as the best alternative.
-                     */
-                    hadm_sync_info_t *sync_info_p = &hadm_meas_p->sync_info[0];
-                    int32_t mode0_rssi = 0, rssi_nb = 0;
-                    for (int i = 0; i < hadm_meas_p->config_p->mode0Nb; i++, sync_info_p++)
-                    {
-                        if (sync_info_p->valid)
-                        {
-                            mode0_rssi += sync_info_p->rssi;
-                            rssi_nb++;
-                        }
-                    }
-                    assert(rssi_nb != 0);
-                    mode0_rssi /= rssi_nb;
-                    hadm_meas_p->result_p->referencePwrLevel = lcl_hadm_utils_compute_rpl(iq[0], (int8_t)mode0_rssi);
-                }
                 if (step_config_p->mode == HADM_STEP_MODE2)
                 {
                     *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */

@@ -352,6 +352,7 @@ extern "C" {
 #endif
 
 void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx);
+int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx);
 void lcl_hal_xcvr_setup_rssi_continuous(bool_t continuous);
 uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx);
 uint16_t lcl_hal_xcvr_calc_aa_delay(bool_t warmup);

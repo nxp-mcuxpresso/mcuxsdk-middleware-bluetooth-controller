@@ -1408,7 +1408,12 @@ xcvrLclStatus_t lcl_hadm_measurement_post_processing(hadm_proc_t *hadm_proc, XCV
         }
     }
 #endif
-    
+    /* Compute RPL based on AGC from chosen mode0 */
+    if (hadm_meas.sync_info[hadm_info_p->sync_step_id].agc_idx <= 11)
+    {
+        hadm_meas.result_p->referencePwrLevel = lcl_hal_xcvr_compute_rpl(hadm_meas.sync_info[hadm_info_p->sync_step_id].agc_idx);
+    }
+
     for (step_no = 0; step_no < hadm_rsm_config.num_steps; step_no++)
     {
         XCVR_RSM_FSTEP_TYPE_T step_mode = (XCVR_RSM_FSTEP_TYPE_T)hadm_meas.config_p->chModePmAntMap[step_no].mode;
@@ -1533,12 +1538,6 @@ xcvrLclStatus_t lcl_hadm_measurement_post_processing(hadm_proc_t *hadm_proc, XCV
                     t_pm_ext >>= 1U;
                 }
                 t_pm_ext &= 0x1U;
-                /* Compute RPL once per event */
-                if (hadm_meas.result_p->referencePwrLevel == HADM_INVALID_REFERENCE_POWER_LEVEL)
-                {
-                    hadm_meas.result_p->referencePwrLevel = lcl_hadm_utils_compute_rpl(*capture_buffer_p, hadm_rssi_buffer[step_no]);
-                }
-
                 /* Store Step_Data_Len */
                 *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas.n_ap);
                 /* Store Antenna_Permutation_Index - 1 byte*/

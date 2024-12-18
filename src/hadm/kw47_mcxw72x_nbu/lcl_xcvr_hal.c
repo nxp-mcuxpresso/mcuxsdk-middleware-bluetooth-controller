@@ -247,6 +247,32 @@ void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx)
     /* else : Invalid index, remain in automatic mode */
 }
 
+/*
+ * RPL is the opposite of internal RX gain applied on mode0, converted to dBm (+13)
+ * RPL(dBm) = rssi_nb_adj(dB) - agc_gain(dB) + 13
+ */
+int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx)
+{
+    int32_t *agc_log_gain_table;
+    int16_t lna_gain_db;
+    int32_t rssi_adj;
+    int32_t rpl;
+
+    rssi_adj = XCVR_RX_DIG->NB_RSSI_CTRL0 & XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_MASK;
+    /* Stored in s5.2 format, left aligned in register, divide to keep sign bits */
+    rssi_adj = rssi_adj / (1 << XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_SHIFT);
+
+    /* AGC_IDXN_GAIN_VAL array is sorted from index 11 to 0 */
+    agc_log_gain_table = (int32_t *)(&XCVR_RX_DIG->AGC_IDX11_GAIN_VAL);
+    lna_gain_db = agc_log_gain_table[11-agc_idx] & XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_MASK;
+    /* Stored in s7.2 format, left align then divide to keep signed bits */
+    lna_gain_db = (int16_t)(lna_gain_db << 6) / (1 << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6));
+
+    /* Convert sX.2 to integer, then to dBm */
+    rpl = (rssi_adj - lna_gain_db)/4 + 13;
+    return rpl;
+}
+
 /* Store DCOC values from current ones */
 void lcl_xcvr_hal_store_dcoc_cal(BLE_HADM_rttPhyMode_t rate)
 {

@@ -238,6 +238,7 @@ void lcl_hal_xcvr_iq_capture_ctrl(uint8_t page);
 uint32_t lcl_hal_xcvr_get_pll_lock_error_flags(void);
 uint32_t lcl_hal_xcvr_get_rx_hazard_flags(void);
 void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx);
+int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx);
 void lcl_hal_xcvr_set_tsm_state(xcvr_state_t state);
 uint8_t lcl_hal_xcvr_get_rxgain(void);
 int8_t lcl_hal_xcvr_get_wb_rssi(void);

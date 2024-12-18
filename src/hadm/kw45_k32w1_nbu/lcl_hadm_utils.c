@@ -521,30 +521,6 @@ void lcl_hadm_utils_compute_pct(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, 
     }
 }
 
-int8_t lcl_hadm_utils_compute_rpl(uint32_t iq, int8_t rssi)
-{
-    int32_t rpl;
-    int16_t i,q;
-    uint32_t mag;
-    
-    /* Compute IQ magnitude */
-    i = ((int16_t)(iq & 0xFFFF)) / 32;
-    q = ((int16_t)((iq >> 16U) & 0xFFFF)) / 32;
-    mag = MAG(ABS(i), ABS(q));
-
-    /* RPL = RSSI +20log(1024/mag) = RSSI + 60 - 20log(mag) */
-
-    if (mag > 0)
-    {
-        rpl = rssi + 60 - (int32_t)(20 * log10(mag));
-    }
-    else
-    {
-        rpl = HADM_INVALID_REFERENCE_POWER_LEVEL;
-    }
-    return (int8_t)rpl;
-}
-
 uint32_t lcl_hadm_utils_wait_for_rsm_irq(uint32_t *rsm_step_no, uint32_t role)
 {
     uint32_t rsm_irq_status;

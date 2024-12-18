@@ -370,35 +370,6 @@ void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_
     mode_dur[3U] = 0;
 }
 
-/* Note: 78 us exec time on CM33 */
-int8_t lcl_hadm_utils_compute_rpl(uint32_t iq, int8_t rssi)
-{
-    int32_t rpl;
-    int16_t i,q;
-    uint32_t mag;
-    
-    /* Compute IQ magnitude. IQ are signed 12 bits MSB left aligned: need signed shift by 4 bits */
-    i = ABS(((int16_t)(iq & 0xFFFF)) / 16);
-    q = ABS(((int16_t)((iq >> 16U) & 0xFFFF)) / 16);
-    mag = MAG(i, q);
-
-    /*
-     * Maximum magnitude is 2048 (12bits)
-     * RPL = RSSI +20log(2048/mag) = RSSI + 66 - 20log(mag)
-     */
-
-    if (mag > 0)
-    {
-        rpl = rssi + 66 - (int32_t)(20 * log10(mag));
-    }
-    else
-    {
-        rpl = HADM_INVALID_REFERENCE_POWER_LEVEL;
-    }
-    return (int8_t)rpl;
-}
-
-
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p)
 {
     bool ena_antsw_pa_ramping = false; /* OJE TODO, for now disable PA ramping */

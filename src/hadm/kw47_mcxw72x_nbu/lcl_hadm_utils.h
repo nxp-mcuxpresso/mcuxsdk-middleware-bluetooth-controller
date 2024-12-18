@@ -198,7 +198,6 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
 void lcl_hadm_utils_compute_pct_and_tqi(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);
 void lcl_hadm_utils_compute_pct(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p);
-int8_t lcl_hadm_utils_compute_rpl(uint32_t iq, int8_t rssi);
 uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 

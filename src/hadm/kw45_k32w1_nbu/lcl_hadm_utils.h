@@ -205,7 +205,6 @@ void lcl_hadm_utils_compute_pct(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, 
 int32_t lcl_hadm_utils_compute_time_adjustement_period(int32_t ppm, hadm_meas_t *hadm_meas_p);
 void lcl_hadm_utils_handle_antenna_permutation(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint32_t irq_flag);
 void lcl_hadm_utils_handle_t_pm_ext(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint32_t irq_flag);
-int8_t lcl_hadm_utils_compute_rpl(uint32_t iq, int8_t rssi);
 uint8_t lcl_hadm_utils_set_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint32_t lcl_hadm_utils_dtest_set_page(uint32_t page);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
