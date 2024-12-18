@@ -13,9 +13,14 @@ static const uint32_t froPostDivFreq[] = {
     16000000U, 24000000U, 32000000U, 48000000U, 64000000U
 };
 
+uint32_t BOARD_GetSystemCoreClockSel(void)
+{
+    return (FRO192M0->FROCCSR & FRO192M_FROCCSR_POSTDIV_SEL_MASK) >> FRO192M_FROCCSR_POSTDIV_SEL_SHIFT;
+}
+
 void BOARD_SystemCoreClockUpdate(void)
 {
-    uint32_t froPostDivSel = (FRO192M0->FROCCSR & FRO192M_FROCCSR_POSTDIV_SEL_MASK) >> FRO192M_FROCCSR_POSTDIV_SEL_SHIFT;
+    uint32_t froPostDivSel = BOARD_GetSystemCoreClockSel();
 
     SystemCoreClock = froPostDivFreq[froPostDivSel];
 }
@@ -25,6 +30,5 @@ uint32_t BOARD_GetSystemCoreClockFreq(void)
     BOARD_SystemCoreClockUpdate();
     return SystemCoreClock;
 }
-
 
 /*${function:end}*/

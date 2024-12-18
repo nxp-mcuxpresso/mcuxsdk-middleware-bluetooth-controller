@@ -24,6 +24,12 @@ extern "C" {
  ******************************************************************************/
 
 /**
+ * @brief Return the current clock select
+ *
+ */
+uint32_t BOARD_GetSystemCoreClockSel(void);
+
+/**
  * @brief Updates SystemCoreClock global variable
  *
  */
@@ -35,6 +41,13 @@ void BOARD_SystemCoreClockUpdate(void);
  * @return uint32_t SystemCoreClock frequency
  */
 uint32_t BOARD_GetSystemCoreClockFreq(void);
+
+/**
+ * @brief Returns current FRO post divider clock select
+ *
+ * @return uint32_t FRO post divider clock select
+ */
+uint32_t BOARD_GetSystemCoreClockSel(void);
 
 #if defined(__cplusplus)
 }
