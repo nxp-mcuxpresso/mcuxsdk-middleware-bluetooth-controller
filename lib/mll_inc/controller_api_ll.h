@@ -36,7 +36,7 @@ typedef void (*nbuPhySwitchIntf_t)(unsigned char rate);
 typedef void (*nbuEnterCritical_t)(void);
 #else /*EP_MEAS_CRITICAL_SECTION*/
 typedef void (*nbuEnterCritical_t)(unsigned int source);
-#define CR_SECT_LL_ID_MAX    73U
+#define CR_SECT_FREE_ID_START         100U /* lower IDs are reserved by LL */
 #endif /*EP_MEAS_CRITICAL_SECTION*/
 typedef void (*nbuExitCritical_t)(void);
 
@@ -250,6 +250,14 @@ extern int PLATFORM_NotifyNbuIssue(void);
 extern int PLATFORM_NotifySecurityEvents(uint32 securityEventBitmask);
 void NbuHosted_Config(const nbuIntf_t* nbuIf);
 void NbuHci_SendPktToController(unsigned long packetType, void *pPacket, unsigned short packetSize);
+/* NBU clock related APIs */
+#define MAX_FREQ_CONSTRAINT    4U  // max frequency selection
+extern void   PLATFORM_SetFrequencyConstraintFromController(uint8 freq_constraint);
+extern uint32 BOARD_GetSystemCoreClockSel(void);
+extern uint32 BOARD_GetSystemCoreClockFreq(void);
+
+/* Get critical section measurement context */
+extern void GetCriticalSectionStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
 
 // workaround for too late native clock update after wakeup
 void LL_API_UpdateLastNativeClkBeforeSleep(void);

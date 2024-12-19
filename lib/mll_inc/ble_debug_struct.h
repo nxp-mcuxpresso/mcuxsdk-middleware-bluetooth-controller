@@ -116,4 +116,5 @@ typedef struct
   /*1 x 32 bit*/
   uint32 reserved2;
 }DEBUG_STRUCT;
+extern DEBUG_STRUCT debug_struct;
 #endif // BLE_DEBUG_STRUCT
