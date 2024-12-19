@@ -380,7 +380,7 @@ uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx)
 
 void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16 m_hadmbuffer_size, uint32 m_hadmbuffer_start)
 {
-  if(m_hadmbuffer_start != NULL)
+  if(m_hadmbuffer_start != 0U)
   {
     uint32 temp;
     /* Initialize DSB */

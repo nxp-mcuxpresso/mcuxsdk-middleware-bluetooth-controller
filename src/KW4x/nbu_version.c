@@ -40,7 +40,7 @@
                                     .versionBuildNo = versionNoBuild}
 #elif defined(__CC_ARM)
 #define RegisterNbuInfo(versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild) \
-    const NbuInfo_t nbu_version =  { .versionNumber = {versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild}, \
+    const NbuInfo_t nbu_version =  { .versionNumber = {versionNoMajor, versionNoMinor, versionNoPatch}, \
                                      .repo_digest = {VERSION_SHA},\
                                      .repo_tag = {VERSION_TAG},\
                                      .variant = {VERSION_VARIANT}, \
@@ -48,13 +48,12 @@
                                      .versionBuildNo = versionNoBuild}
 #elif defined(__GNUC__)
 #define RegisterNbuInfo(versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild) \
-    const NbuInfo_t nbu_version __attribute__((section (".NBU_VERSION_TAGS"), used)) \
-      = { .versionNumber = {versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild}, 
-          .repo_digest = {VERSION_SHA},\
-          .repo_tag = {VERSION_TAG},\
-          .variant = {VERSION_VARIANT}, \
-          .build_type = {VERSION_BUILD_TYPE}, \
-          .versionBuildNo = versionNoBuild}
+    const NbuInfo_t nbu_version =  { .versionNumber = {versionNoMajor, versionNoMinor, versionNoPatch}, \
+                                     .repo_digest = {VERSION_SHA},\
+                                     .repo_tag = {VERSION_TAG},\
+                                     .variant = {VERSION_VARIANT}, \
+                                     .build_type = {VERSION_BUILD_TYPE}, \
+                                     .versionBuildNo = versionNoBuild}
 #else
 #define RegisterNbuInfo(versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild) \
     const NbuInfo_t nbu_version = {
