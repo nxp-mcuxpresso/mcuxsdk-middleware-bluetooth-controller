@@ -31,16 +31,6 @@
 #define DBG_SWO_CORE_NBU_CORE  2 // Nbu Core
 #define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 
-#else
-
-/* Define to 1 if you want to configure the DWT/ITM/TPIU-SWO via SW i.s.o.the probe */
-#define DBG_SWO_INIT_VIA_SW 0
-
-/* CoreSight Funnel SWO route Muxing configuration    */
-/* Setting shall be done on Main Application Core PPB */
-#define DBG_SWO_CORE_MAIN_CORE 1 // Main Core
-#define DBG_SWO_CORE_NBU_CORE  2 // Nbu Core
-#define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 #endif
 
 /* Enable dump of debug info into NBU RAM log if fwk_fault_handlers.c is added to the project (internal use only)

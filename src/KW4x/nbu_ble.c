@@ -582,7 +582,9 @@ void generate_synchro_swo(void) {
 
   current_timer_value = *(uint64_t *)TSTMR0;
   if ((current_timer_value - initial_timer_value) > timeInterval) {
+    OSA_InterruptDisable();
     DBG_SWO_PrintDoubleWord(0xDEADBEEF, 0);
+    OSA_InterruptEnable();
     initial_timer_value = current_timer_value;
   }
 }
