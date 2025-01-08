@@ -270,11 +270,18 @@ void lcl_hadm_restore_interrupts_for_subevent(void)
     XCVR_TSM->TIMING03 |= (XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
 }
 
+/* Programm FOM register values.
+ * Those values do not have to be reset after use since they are not relevant
+ * without a FOM trigger (cleared via LCL_HAL_DISABLE_FO_ENTRY)
+ */
 void lcl_hadm_apply_cfo_per_step(int32_t cfo)
 {
     /* Hz to 0.95Hz unit */
     cfo = (cfo * 67) / 64;
-    XCVR_MISC->IPS_FO_DRS0_DATA[3] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+    /* 1Mbps PHY */
+    XCVR_MISC->IPS_FO_DRS0_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+    /* 2 Mbps PHY */
+    XCVR_MISC->IPS_FO_DRS1_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
 }
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 
