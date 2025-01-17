@@ -172,9 +172,6 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 uint32_t clock;
                 uint16_t qus;  
                 
-                // workaround for native clock value after wakeup
-                LL_API_WaitForClkUpdtFromLowPwr();
-                
                 LL_API_GetBleTiming(&clock, &qus);
                 api_status = (uint32_t)(((uint64_t)clock*625U*2U + (uint64_t)qus) / 4U);
                 break;
@@ -190,7 +187,7 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
 
                 // use atomic section to have LL timing and TSTMR0 at the same time
                 OSA_InterruptDisable();
-                LL_API_GetBleTiming(&hslot, &qus);
+                LL_API_GetBleTimingNoNativeClockCheck(&hslot, &qus);
                 tstmr = *(uint64_t *)TSTMR0;
                 OSA_InterruptEnable();
 
