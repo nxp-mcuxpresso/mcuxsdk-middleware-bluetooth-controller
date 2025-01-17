@@ -238,6 +238,7 @@ typedef struct TBleHadmConfiguration_tag
     uint16  uiSubeventInterval;     /* interval(625 us) between the start of two consecutive CS subevents of the same CS event, initially chosen by LL internally */
     uint32  ulSubeventLen;          /* max duration(us) of sub-event (T_SUBEVENT_LEN) [1250us,4s], initially chosen by LL in HCI range ulMinSubeventLen , ulMaxSubeventLen*/
     uint8   ucSubeventsPerEvent;    /* number of CS subevents that anchored off of the same LE anchor point initially chosen by LL internally */
+    uint8   ucMaxNumSubevents;      /* Maximum number of CS subevents per procedure. Only for testmode, N_MAX_SUBEVENTS_PER_PROCEDURE otherwise */
 
     /* Derived configuration parameters */
     int8    cSelectedTxPower;       /* Derived from Tx_Power_Delta in CS_REQ procedure or from HCI */
