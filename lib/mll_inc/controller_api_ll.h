@@ -174,6 +174,7 @@ uint32 LL_API_SetClockAccuracy(uint8 ucSCA);
  */
 uint32 LL_API_ConfigureIDSSecurityEvent(uint32 securityEventsBitmask);
 
+#if 0
 /*!
  * \brief Get the anchor point timing of the current connection event. LL timing includes two parts: free running half slot counter in unit of 312.5us
  *        and 1/4 us offset in the half slot.
@@ -186,6 +187,7 @@ uint32 LL_API_ConfigureIDSSecurityEvent(uint32 securityEventsBitmask);
 #ifdef SUPPORT_HALF_SLOT_SCHED
 void LL_API_GetConnAnchorTiming(uint16 uiConnHandle, uint16 *pCurrentEvCnt, uint32 *pAnchorHSlot, uint16 *pAnchorOffsetQUs);
 #endif
+#endif
 
 extern unsigned char NbuGetCodedIndicator(void);
 extern void NbuPwrPeakReductionActivityStart(void);
@@ -194,8 +196,14 @@ extern void NbuPwrPeakReductionDisable(void);
 
 extern unsigned long long PLATFORM_GetTimestamp(void);
 
-/* Get BLE native clock in half slot and the native clock offset in quater us */
+/* Get BLE native clock in half slot and the native clock offset in quarter us */
+/*This function shall not be called in a critical section. If BLE timing is needed in a critical section, the function to be called 
+instead in critical section shall be: void LL_API_GetBleTimingNoNativeClockCheck.
+In this case, make sure to call LL_API_WaitForClkUpdtFromLowPwr() outside the critical section.*/
 void LL_API_GetBleTiming(uint32 *pNativeClock, uint16 *pNativeClockOffset);
+
+/* Get BLE native clock in half slot and the native clock offset in quarter us */
+void LL_API_GetBleTimingNoNativeClockCheck(uint32 *pNativeClock, uint16 *pNativeClockOffset);
 
 /* Determine if LL state machine allows sleep mode to gate off clk */
 uint8 LL_API_SCHED_IsSleepAllowed(void);
