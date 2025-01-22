@@ -1172,6 +1172,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             hadm_info_p->num_time_adj++; /* record time_adj for debug */
         }
         
+        bool missed_pkt = ((common_stat & 0x80000000U) == 0U);
+        
         /* Decode packet status if present */
         if (step_config_p->mode != HADM_STEP_MODE2)
         {
@@ -1208,7 +1210,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                  /* (Hz*100) / MHz  => 0.01 ppm unit */
                 int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
                 *res_buff_p++ = BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
-                *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(vld, 1); /* Packet_AA_Quality */
+                *res_buff_p++ = (missed_pkt ? HADM_AA_QUALITY_NOT_FOUND : HADM_SET_RTT_AA_QUALITY(vld, 1)); /* Packet_AA_Quality */
                 *res_buff_p++ = HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */
                 *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
                 if (role == HADM_ROLE_INITIATOR)
@@ -1282,7 +1284,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 {
                     *res_buff_p++ = BLE_HADM_STEP3_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                 }
-                *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld, rtt_data.rtt_found); /* Packet_AA_Quality (1 byte) */
+                *res_buff_p++ = (missed_pkt ? HADM_AA_QUALITY_NOT_FOUND : HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld, rtt_data.rtt_found)); /* Packet_AA_Quality (1 byte) */
                 *res_buff_p++ = nadm_metric; /* Packet_NADM */
                 *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, (uint8_t)(nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK)); /* Packet_RSSI (1 byte) */
                 HADM_SET_RTT_TS_DIFF(rtt_data.rtt_vld, rtt_ts, res_buff_p); /* ToX-ToX time diff (2 bytes) */
