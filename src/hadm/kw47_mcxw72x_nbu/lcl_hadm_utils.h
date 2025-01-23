@@ -86,8 +86,8 @@
 #define HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(phy)  (((phy) == HADM_RTT_PHY_2MBPS) ? HADM_1ST_BIT_TO_AA_MATCH_DURATION_2MBPS_US:HADM_1ST_BIT_TO_AA_MATCH_DURATION_1MBPS_US)
 
 /*! Translates RSM RTT validity results to HADM AA quality */
-#define HADM_SET_RTT_AA_QUALITY(valid, missed) \
-    (missed ? HADM_AA_QUALITY_NOT_FOUND : (valid ? HADM_AA_QUALITY_SUCCESS : HADM_AA_QUALITY_ERROR))
+#define HADM_SET_RTT_AA_QUALITY(valid) \
+    (valid ? HADM_AA_QUALITY_SUCCESS : HADM_AA_QUALITY_NOT_FOUND)
 
 /*! Set packet RSSI */
 #define HADM_SET_RTT_RSSI(valid, rssi) \
