@@ -1309,7 +1309,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     HADM_SET_RTP_PCT(iq[ap], res_buff_p);
                     HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, false, 0);
                 }
-                /* Determine if N_AP+1 PCT has beein received or not */
+                /* Determine if N_AP+1 PCT has been received or not */
                 if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1) != 0))
                 {
                     HADM_SET_RTP_PCT(iq[ap], res_buff_p);
@@ -1317,8 +1317,12 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 }
                 else
                 {
+                    /* Extension slot for Mode 3 initiator does not exist in case DRBG pm_ext is 0.
+                     * The reason is that even though the PM extension duration is always part of the overall step duration,
+                     * this is a dummy period with no RX activity.
+                     */
                     HADM_SET_RTP_PCT(0, res_buff_p);
-                    HADM_SET_RTP_TONE_QUALITY(0x3, res_buff_p, true, 0);
+                    HADM_SET_RTP_TONE_QUALITY(0x3, res_buff_p, false, 0);
                 }
                 break;
             }
