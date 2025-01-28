@@ -109,8 +109,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef TX_API_6_4_H
-#define TX_API_6_4_H
+#ifndef TX_API_H
+#define TX_API_H
 
 
 /* Determine if a C++ compiler is being used.  If so, ensure that standard
@@ -178,7 +178,7 @@ extern   "C" {
 #define TX_THREAD_EXIT                  ((UINT)   1)
 #define TX_NO_SUSPENSIONS               ((UINT)   0)
 #define TX_NO_MESSAGES                  ((UINT)   0)
-//#define TX_EMPTY                        ((ULONG)  0)
+#define TX_EMPTY                        ((ULONG)  0)
 #define TX_CLEAR_ID                     ((ULONG)  0)
 #if defined(TX_ENABLE_RANDOM_NUMBER_STACK_FILLING) && defined(TX_ENABLE_STACK_CHECKING)
 #define TX_STACK_FILL                   (thread_ptr -> tx_thread_stack_fill_value)
@@ -461,7 +461,6 @@ typedef struct TX_TIMER_STRUCT
 #endif
 
 } TX_TIMER;
-typedef TX_TIMER *      TX_TIMER_PTR;
 
 
 /* ThreadX thread control block structure follows.  Additional fields

@@ -24,8 +24,8 @@
 /*                                                                        */
 /*  PORT SPECIFIC C INFORMATION                            RELEASE        */
 /*                                                                        */
-/*    tx_port.h                                         Cortex-M3/IAR     */
-/*                                                           6.1.12       */
+/*    tx_port.h                                         Cortex-M33/IAR    */
+/*                                                           6.2.1        */
 /*                                                                        */
 /*  AUTHOR                                                                */
 /*                                                                        */
@@ -42,48 +42,55 @@
 /*    own special types that can be mapped to actual data types by this   */
 /*    file to guarantee consistency in the interface and functionality.   */
 /*                                                                        */
-/*    This file replaces the previous Cortex-M3/M4/M7 files. It unifies   */
-/*    the ARMv7-M architecture and compilers into one common file.        */
+/*    This file replaces the previous Cortex-M33 files. It unifies        */
+/*    the Cortex-M33 compilers into one common file.                      */
 /*                                                                        */
 /*  RELEASE HISTORY                                                       */
 /*                                                                        */
 /*    DATE              NAME                      DESCRIPTION             */
 /*                                                                        */
-/*  06-02-2021      Scott Larson            Initial Version 6.1.7         */
-/*  01-31-2022      Scott Larson            Modified comments, updated    */
-/*                                            typedef to fix misra        */
-/*                                            violation,                  */
+/*  09-30-2020      Scott Larson            Initial Version 6.1           */
+/*  03-02-2021      Scott Larson            Modified comment(s), added    */
+/*                                            ULONG64_DEFINED,            */
+/*                                            resulting in version 6.1.5  */
+/*  06-02-2021      Scott Larson            Modified comment(s), removed  */
+/*                                            unneeded header file, funcs */
+/*                                            set_control and get_control */
+/*                                            changed to inline,          */
+/*                                            added symbol to enable      */
+/*                                            stack error handler,        */
+/*                                            resulting in version 6.1.7  */
+/*  10-15-2021      Scott Larson            Modified comment(s), improved */
+/*                                            stack check error handling, */
+/*                                            resulting in version 6.1.9  */
+/*  01-31-2022      Scott Larson            Modified comment(s), unified  */
+/*                                            this file across compilers, */
 /*                                            fixed predefined macro,     */
 /*                                            resulting in version 6.1.10 */
 /*  04-25-2022      Scott Larson            Modified comments and added   */
 /*                                            volatile to registers,      */
 /*                                            resulting in version 6.1.11 */
-/*  07-29-2022      Scott Larson            Modified comments and         */
+/*  07-29-2022      Scott Larson            Modified comments and changed */
+/*                                            secure stack initialization */
+/*                                            macro to port-specific,     */
 /*                                            described BASEPRI usage,    */
 /*                                            resulting in version 6.1.12 */
+/*  03-08-2023      Scott Larson            Removed unneeded #include,    */
+/*                                            resulting in version 6.2.1  */
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef TX_PORT_6_4_CM3_H
-#define TX_PORT_6_4_CM3_H
-
-/* Define default parameters for the Cortex-M3 build for smaller footprint.  */
-
-#define TX_TIMER_PROCESS_IN_ISR
-#define TX_DISABLE_PREEMPTION_THRESHOLD
-#define TX_DISABLE_NOTIFY_CALLBACKS
-#define TX_DISABLE_ERROR_CHECKING
+#ifndef TX_PORT_H
+#define TX_PORT_H
 
 /* Determine if the optional ThreadX user define file should be used.  */
-
 #ifdef TX_INCLUDE_USER_DEFINE_FILE
 
 /* Yes, include the user defines in tx_user.h. The defines in this file may
    alternately be defined on the command line.  */
 
 #include "tx_user.h"
-#endif
-
+#endif /* TX_INCLUDE_USER_DEFINE_FILE */
 
 /* Define compiler library include files.  */
 
@@ -91,27 +98,16 @@
 #include <string.h>
 
 #ifdef __ICCARM__
-#include <intrinsics.h>                     /* IAR Intrinsics */
-#define __asm__ __asm                       /* Define to make all inline asm look similar */
+#include <intrinsics.h>                         /* IAR Intrinsics */
+#define __asm__                 __asm           /* Define to make all inline asm from each compiler look similar */
+#define _tx_control_get         __get_CONTROL
+#define _tx_control_set         __set_CONTROL
+#define _tx_ipsr_get            __get_IPSR
 #ifdef  TX_ENABLE_IAR_LIBRARY_SUPPORT
 #include <yvals.h>
-#endif
+#endif /* TX_ENABLE_IAR_LIBRARY_SUPPORT */
 #endif /* __ICCARM__ */
 
-#ifdef __ghs__
-#include <arm_ghs.h>
-#include "tx_ghs.h"
-#endif  /* __ghs__ */
-
-
-#if !defined(__GNUC__) && !defined(__CC_ARM)
-#define __get_control_value __get_CONTROL
-#define __set_control_value __set_CONTROL
-#endif
-
-#ifndef __GNUC__
-#define __get_ipsr_value __get_IPSR
-#endif
 
 /* Define ThreadX basic types for this port.  */
 
@@ -126,6 +122,46 @@ typedef unsigned long long                      ULONG64;
 typedef short                                   SHORT;
 typedef unsigned short                          USHORT;
 #define ULONG64_DEFINED
+
+/* Function prototypes for this port. */
+struct  TX_THREAD_STRUCT;
+UINT    _txe_thread_secure_stack_allocate(struct TX_THREAD_STRUCT *thread_ptr, ULONG stack_size);
+UINT    _txe_thread_secure_stack_free(struct TX_THREAD_STRUCT *thread_ptr);
+UINT    _tx_thread_secure_stack_allocate(struct TX_THREAD_STRUCT *tx_thread, ULONG stack_size);
+UINT    _tx_thread_secure_stack_free(struct TX_THREAD_STRUCT *tx_thread);
+
+/* Define the system API mappings based on the error checking
+   selected by the user.  Note: this section is only applicable to
+   application source code, hence the conditional that turns off this
+   stuff when the include file is processed by the ThreadX source. */
+
+#ifndef TX_SOURCE_CODE
+
+
+/* Determine if error checking is desired.  If so, map API functions
+   to the appropriate error checking front-ends.  Otherwise, map API
+   functions to the core functions that actually perform the work.
+   Note: error checking is enabled by default.  */
+
+#ifdef TX_DISABLE_ERROR_CHECKING
+
+/* Services without error checking.  */
+
+#define tx_thread_secure_stack_allocate   _tx_thread_secure_stack_allocate
+#define tx_thread_secure_stack_free       _tx_thread_secure_stack_free
+
+#else
+
+/* Services with error checking.  */
+
+#define tx_thread_secure_stack_allocate   _txe_thread_secure_stack_allocate
+#define tx_thread_secure_stack_free       _txe_thread_secure_stack_free
+
+#endif  /* TX_DISABLE_ERROR_CHECKING */
+#endif  /* TX_SOURCE_CODE */
+
+/* This port has a usage fault handler in _tx_initialize_low_level for stack exceptions.  */
+#define TX_PORT_THREAD_STACK_ERROR_HANDLING
 
 /* Define the priority levels for ThreadX.  Legal values range
    from 32 to 1024 and MUST be evenly divisible by 32.  */
@@ -178,7 +214,7 @@ Any interrupt with a higher priority than priority_mask will not be masked, thus
 
 #ifndef TX_MISRA_ENABLE
 #ifndef TX_TRACE_TIME_SOURCE
-#define TX_TRACE_TIME_SOURCE                    *((volatile ULONG *) 0xE0001004UL)
+#define TX_TRACE_TIME_SOURCE                    *((volatile ULONG *) 0xE0001004)
 #endif
 #else
 ULONG   _tx_misra_time_stamp_get(VOID);
@@ -189,20 +225,6 @@ ULONG   _tx_misra_time_stamp_get(VOID);
 #define TX_TRACE_TIME_MASK                      0xFFFFFFFFUL
 #endif
 
-#ifdef __ghs__
-/* Define constants for Green Hills EventAnalyzer.  */
-
-/* Define the number of ticks per second. This informs the EventAnalyzer what the timestamps
-   represent.  By default, this is set to 1,000,000 i.e., one tick every microsecond. */
-
-#define TX_EL_TICKS_PER_SECOND                  1000000
-
-/* Define the method of how to get the upper and lower 32-bits of the time stamp. By default, simply
-   simulate the time-stamp source with a counter.  */
-
-#define read_tbu()                              _tx_el_time_base_upper
-#define read_tbl()                              ++_tx_el_time_base_lower
-#endif  /* __ghs__ */
 
 /* Define the port specific options for the _tx_build_options variable. This variable indicates
    how the ThreadX library was built.  */
@@ -240,19 +262,31 @@ ULONG   _tx_misra_time_stamp_get(VOID);
 
 #define TX_THREAD_EXTENSION_0
 #define TX_THREAD_EXTENSION_1
+
 #ifdef  TX_ENABLE_IAR_LIBRARY_SUPPORT
-#define TX_THREAD_EXTENSION_2           VOID    *tx_thread_iar_tls_pointer;
-#elif defined(__ghs__)
-#define TX_THREAD_EXTENSION_2           VOID *  tx_thread_eh_globals;                           \
-                                        int     Errno;             /* errno.  */                \
-                                        char *  strtok_saved_pos;  /* strtok() position.  */
+/* IAR library support */
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+/* ThreadX in non-secure zone with calls to secure zone. */
+#define TX_THREAD_EXTENSION_2           VOID    *tx_thread_secure_stack_context;    \
+                                        VOID    *tx_thread_iar_tls_pointer;
 #else
+/* ThreadX in only one zone. */
+#define TX_THREAD_EXTENSION_2           VOID    *tx_thread_iar_tls_pointer;
+#endif
+
+#else
+/* No IAR library support */
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+/* ThreadX in non-secure zone with calls to secure zone. */
+#define TX_THREAD_EXTENSION_2           VOID    *tx_thread_secure_stack_context;
+#else
+/* ThreadX in only one zone. */
 #define TX_THREAD_EXTENSION_2
 #endif
 
+#endif  /* TX_ENABLE_IAR_LIBRARY_SUPPORT */
 
 #define TX_THREAD_EXTENSION_3
-
 
 
 /* Define the port extensions of the remaining ThreadX objects.  */
@@ -276,28 +310,37 @@ ULONG   _tx_misra_time_stamp_get(VOID);
 
 /* Define the macros for processing extensions in tx_thread_create, tx_thread_delete,
    tx_thread_shell_entry, and tx_thread_terminate.  */
-
-
 #ifdef  TX_ENABLE_IAR_LIBRARY_SUPPORT
-#if (__VER__ < 8000000)
-#define TX_THREAD_CREATE_EXTENSION(thread_ptr)                      thread_ptr -> tx_thread_iar_tls_pointer =  __iar_dlib_perthread_allocate();
-#define TX_THREAD_DELETE_EXTENSION(thread_ptr)                      __iar_dlib_perthread_deallocate(thread_ptr -> tx_thread_iar_tls_pointer); \
-                                                                    thread_ptr -> tx_thread_iar_tls_pointer =  TX_NULL;
-#define TX_PORT_SPECIFIC_PRE_SCHEDULER_INITIALIZATION               __iar_dlib_perthread_access(0);
-#else
 void    *_tx_iar_create_per_thread_tls_area(void);
 void    _tx_iar_destroy_per_thread_tls_area(void *tls_ptr);
 void    __iar_Initlocks(void);
+#define TX_THREAD_CREATE_EXTENSION(thread_ptr)                      thread_ptr -> tx_thread_iar_tls_pointer = _tx_iar_create_per_thread_tls_area();
 
-#define TX_THREAD_CREATE_EXTENSION(thread_ptr)                      thread_ptr -> tx_thread_iar_tls_pointer =  _tx_iar_create_per_thread_tls_area();
-#define TX_THREAD_DELETE_EXTENSION(thread_ptr)                      do {_tx_iar_destroy_per_thread_tls_area(thread_ptr -> tx_thread_iar_tls_pointer); \
-                                                                        thread_ptr -> tx_thread_iar_tls_pointer =  TX_NULL; } while(0);
-#define TX_PORT_SPECIFIC_PRE_SCHEDULER_INITIALIZATION               do {__iar_Initlocks();} while(0);
-#endif
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+#define TX_THREAD_DELETE_EXTENSION(thread_ptr)                      do {_tx_iar_destroy_per_thread_tls_area(thread_ptr -> tx_thread_iar_tls_pointer);   \
+                                                                        thread_ptr -> tx_thread_iar_tls_pointer = TX_NULL; } while(0);                  \
+                                                                    if(thread_ptr -> tx_thread_secure_stack_context){_tx_thread_secure_stack_free(thread_ptr);}
 #else
+#define TX_THREAD_DELETE_EXTENSION(thread_ptr)                      do {_tx_iar_destroy_per_thread_tls_area(thread_ptr -> tx_thread_iar_tls_pointer);   \
+                                                                        thread_ptr -> tx_thread_iar_tls_pointer = TX_NULL; } while(0);
+#endif
+#define TX_PORT_SPECIFIC_PRE_SCHEDULER_INITIALIZATION               do {__iar_Initlocks();} while(0);
+
+#else   /* No IAR library support. */
 #define TX_THREAD_CREATE_EXTENSION(thread_ptr)
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+#define TX_THREAD_DELETE_EXTENSION(thread_ptr)                      if(thread_ptr -> tx_thread_secure_stack_context){_tx_thread_secure_stack_free(thread_ptr);}
+#else
 #define TX_THREAD_DELETE_EXTENSION(thread_ptr)
 #endif
+#endif  /* TX_ENABLE_IAR_LIBRARY_SUPPORT */
+
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+/* Define the size of the secure stack for the timer thread and use the extension to allocate the secure stack. */
+#define TX_TIMER_THREAD_SECURE_STACK_SIZE       256
+#define TX_TIMER_INITIALIZE_EXTENSION(status)   _tx_thread_secure_stack_allocate(&_tx_timer_thread, TX_TIMER_THREAD_SECURE_STACK_SIZE);
+#endif
+
 
 #if defined(__ARMVFP__) || defined(__ARM_PCS_VFP) || defined(__ARM_FP) || defined(__TARGET_FPU_VFP) || defined(__VFP__)
 
@@ -310,10 +353,9 @@ void   _tx_misra_vfp_touch(void);
 
 #else   /* TX_MISRA_ENABLE not defined */
 
-/* Define some helper functions (these are intrinsics in some compilers). */
 #ifdef __GNUC__ /* GCC and ARM Compiler 6 */
 
-__attribute__( ( always_inline ) ) static inline ULONG __get_control_value(void)
+__attribute__( ( always_inline ) ) static inline ULONG _tx_control_get(void)
 {
 ULONG  control_value;
 
@@ -321,37 +363,17 @@ ULONG  control_value;
     return(control_value);
 }
 
-__attribute__( ( always_inline ) ) static inline void __set_control_value(ULONG control_value)
+__attribute__( ( always_inline ) ) static inline void _tx_control_set(ULONG control_value)
 {
     __asm__ volatile (" MSR  CONTROL,%0": : "r" (control_value): "memory" );
 }
 
+#endif  /* __GNUC__ */
+
+/* Touch VFP register in order to flush. Works for AC6/GCC/IAR compilers. */
 #define TX_VFP_TOUCH()  __asm__ volatile ("VMOV.F32 s0, s0");
-
-#elif defined(__CC_ARM) /* ARM Compiler 5 */
-
-__attribute__( ( always_inline ) ) ULONG __get_control_value(void)
-{
-ULONG  control_value;
-
-    __asm volatile ("MRS control_value,CONTROL");
-    return(control_value);
-}
-
-__attribute__( ( always_inline ) ) void __set_control_value(ULONG control_value)
-{
-    __asm__ volatile ("MSR CONTROL,control_value");
-}
-/* Can't access VFP registers with inline asm, so define this in tx_thread_schedule.  */
-void _tx_vfp_access(void);
-#define TX_VFP_TOUCH()  _tx_vfp_access();
-
-#elif defined(__ICCARM__)  /* IAR */
-#define TX_VFP_TOUCH()  __asm__ volatile ("VMOV.F32 s0, s0");
-#endif  /* Helper functions for different compilers */
 
 #endif  /* TX_MISRA_ENABLE */
-
 
 /* A completed thread falls into _thread_shell_entry and we can simply deactivate the FPU via CONTROL.FPCA
    in order to ensure no lazy stacking will occur. */
@@ -360,54 +382,53 @@ void _tx_vfp_access(void);
 
 #define TX_THREAD_COMPLETED_EXTENSION(thread_ptr)   {                                                       \
                                                     ULONG  _tx_vfp_state;                                   \
-                                                        _tx_vfp_state =  __get_control_value();             \
-                                                        _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);    \
-                                                        __set_control_value(_tx_vfp_state);                 \
+                                                        _tx_vfp_state = _tx_control_get();                  \
+                                                        _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);     \
+                                                        _tx_control_set(_tx_vfp_state);                     \
                                                     }
 #else
 
 #define TX_THREAD_COMPLETED_EXTENSION(thread_ptr)   {                                                       \
                                                     ULONG  _tx_vfp_state;                                   \
-                                                        _tx_vfp_state =  _tx_misra_control_get();           \
-                                                        _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);    \
+                                                        _tx_vfp_state = _tx_misra_control_get();            \
+                                                        _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);     \
                                                         _tx_misra_control_set(_tx_vfp_state);               \
                                                     }
-
 #endif
 
 /* A thread can be terminated by another thread, so we first check if it's self-terminating and not in an ISR.
    If so, deactivate the FPU via CONTROL.FPCA. Otherwise we are in an interrupt or another thread is terminating
-   this one, so if the FPCCR.LSPACT bit is set, we need to save the CONTROL.FPCA state, touch the FPU to flush 
+   this one, so if the FPCCR.LSPACT bit is set, we need to save the CONTROL.FPCA state, touch the FPU to flush
    the lazy FPU save, then restore the CONTROL.FPCA state. */
 
 #ifndef TX_MISRA_ENABLE
 
 #define TX_THREAD_TERMINATED_EXTENSION(thread_ptr)  {                                                                                       \
                                                     ULONG  _tx_system_state;                                                                \
-                                                        _tx_system_state =  TX_THREAD_GET_SYSTEM_STATE();                                   \
+                                                        _tx_system_state = TX_THREAD_GET_SYSTEM_STATE();                                    \
                                                         if ((_tx_system_state == ((ULONG) 0)) && ((thread_ptr) == _tx_thread_current_ptr))  \
                                                         {                                                                                   \
                                                         ULONG  _tx_vfp_state;                                                               \
-                                                            _tx_vfp_state =  __get_control_value();                                         \
-                                                            _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);                                \
-                                                            __set_control_value(_tx_vfp_state);                                             \
+                                                            _tx_vfp_state = _tx_control_get();                                              \
+                                                            _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);                                 \
+                                                            _tx_control_set(_tx_vfp_state);                                                 \
                                                         }                                                                                   \
                                                         else                                                                                \
                                                         {                                                                                   \
                                                         ULONG  _tx_fpccr;                                                                   \
-                                                            _tx_fpccr =  *((volatile ULONG *) 0xE000EF34UL);                                \
-                                                            _tx_fpccr =  _tx_fpccr & ((ULONG) 0x01);                                        \
+                                                            _tx_fpccr = *((volatile ULONG *) 0xE000EF34);                                   \
+                                                            _tx_fpccr = _tx_fpccr & ((ULONG) 0x01);                                         \
                                                             if (_tx_fpccr == ((ULONG) 0x01))                                                \
                                                             {                                                                               \
                                                             ULONG _tx_vfp_state;                                                            \
-                                                                _tx_vfp_state = __get_control_value();                                      \
-                                                                _tx_vfp_state =  _tx_vfp_state & ((ULONG) 0x4);                             \
+                                                                _tx_vfp_state = _tx_control_get();                                          \
+                                                                _tx_vfp_state = _tx_vfp_state & ((ULONG) 0x4);                              \
                                                                 TX_VFP_TOUCH();                                                             \
                                                                 if (_tx_vfp_state == ((ULONG) 0))                                           \
                                                                 {                                                                           \
-                                                                    _tx_vfp_state =  __get_control_value();                                 \
-                                                                    _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);                        \
-                                                                    __set_control_value(_tx_vfp_state);                                     \
+                                                                    _tx_vfp_state = _tx_control_get();                                      \
+                                                                    _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);                         \
+                                                                    _tx_control_set(_tx_vfp_state);                                         \
                                                                 }                                                                           \
                                                             }                                                                               \
                                                         }                                                                                   \
@@ -416,29 +437,29 @@ void _tx_vfp_access(void);
 
 #define TX_THREAD_TERMINATED_EXTENSION(thread_ptr)  {                                                                                       \
                                                     ULONG  _tx_system_state;                                                                \
-                                                        _tx_system_state =  TX_THREAD_GET_SYSTEM_STATE();                                   \
+                                                        _tx_system_state = TX_THREAD_GET_SYSTEM_STATE();                                    \
                                                         if ((_tx_system_state == ((ULONG) 0)) && ((thread_ptr) == _tx_thread_current_ptr))  \
                                                         {                                                                                   \
                                                         ULONG  _tx_vfp_state;                                                               \
-                                                            _tx_vfp_state =  _tx_misra_control_get();                                       \
-                                                            _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);                                \
+                                                            _tx_vfp_state = _tx_misra_control_get();                                        \
+                                                            _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);                                 \
                                                             _tx_misra_control_set(_tx_vfp_state);                                           \
                                                         }                                                                                   \
                                                         else                                                                                \
                                                         {                                                                                   \
                                                         ULONG  _tx_fpccr;                                                                   \
-                                                            _tx_fpccr =  _tx_misra_fpccr_get();                                             \
-                                                            _tx_fpccr =  _tx_fpccr & ((ULONG) 0x01);                                        \
+                                                            _tx_fpccr = _tx_misra_fpccr_get();                                              \
+                                                            _tx_fpccr = _tx_fpccr & ((ULONG) 0x01);                                         \
                                                             if (_tx_fpccr == ((ULONG) 0x01))                                                \
                                                             {                                                                               \
                                                             ULONG _tx_vfp_state;                                                            \
                                                                 _tx_vfp_state = _tx_misra_control_get();                                    \
-                                                                _tx_vfp_state =  _tx_vfp_state & ((ULONG) 0x4);                             \
+                                                                _tx_vfp_state = _tx_vfp_state & ((ULONG) 0x4);                              \
                                                                 _tx_misra_vfp_touch();                                                      \
                                                                 if (_tx_vfp_state == ((ULONG) 0))                                           \
                                                                 {                                                                           \
-                                                                    _tx_vfp_state =  _tx_misra_control_get();                               \
-                                                                    _tx_vfp_state =  _tx_vfp_state & ~((ULONG) 0x4);                        \
+                                                                    _tx_vfp_state = _tx_misra_control_get();                                \
+                                                                    _tx_vfp_state = _tx_vfp_state & ~((ULONG) 0x4);                         \
                                                                     _tx_misra_control_set(_tx_vfp_state);                                   \
                                                                 }                                                                           \
                                                             }                                                                               \
@@ -481,27 +502,16 @@ void _tx_vfp_access(void);
 #ifndef TX_THREAD_GET_SYSTEM_STATE
 #ifndef TX_MISRA_ENABLE
 
-#ifdef __CC_ARM /* ARM Compiler 5 */
-
-register unsigned int _ipsr __asm("ipsr");
-#define TX_THREAD_GET_SYSTEM_STATE()        (_tx_thread_system_state | _ipsr)
-
-#elif defined(__GNUC__) /* GCC and ARM Compiler 6 */
-
-__attribute__( ( always_inline ) ) static inline unsigned int __get_ipsr_value(void)
+#if defined(__GNUC__) /* GCC and AC6 */
+__attribute__( ( always_inline ) ) static inline UINT _tx_ipsr_get(void)
 {
-unsigned int  ipsr_value;
+UINT ipsr_value;
     __asm__ volatile (" MRS  %0,IPSR ": "=r" (ipsr_value) );
     return(ipsr_value);
 }
+#endif  /* GCC and AC6 IPSR_get function. */
 
-#define TX_THREAD_GET_SYSTEM_STATE()        (_tx_thread_system_state | __get_ipsr_value())
-
-#elif defined(__ICCARM__)   /* IAR */
-
-#define TX_THREAD_GET_SYSTEM_STATE()        (_tx_thread_system_state | __get_IPSR())
-
-#endif  /* TX_THREAD_GET_SYSTEM_STATE for different compilers */
+#define TX_THREAD_GET_SYSTEM_STATE()        (_tx_thread_system_state | _tx_ipsr_get())
 
 #else   /* TX_MISRA_ENABLE is defined, use MISRA function. */
 ULONG   _tx_misra_ipsr_get(VOID);
@@ -519,6 +529,12 @@ ULONG   _tx_misra_ipsr_get(VOID);
 #define TX_THREAD_SYSTEM_RETURN_CHECK(c)    (c) = ((ULONG) _tx_thread_preempt_disable);
 #endif
 
+#if !defined(TX_SINGLE_MODE_SECURE) && !defined(TX_SINGLE_MODE_NON_SECURE)
+/* Initialize secure stacks for threads calling secure functions. */
+extern void    _tx_thread_secure_stack_initialize(void);
+#define TX_PORT_SPECIFIC_PRE_INITIALIZATION             _tx_thread_secure_stack_initialize();
+#endif
+
 /* Define the macro to ensure _tx_thread_preempt_disable is set early in initialization in order to
    prevent early scheduling on Cortex-M parts.  */
 
@@ -532,24 +548,20 @@ ULONG   _tx_misra_ipsr_get(VOID);
 /* Define the TX_LOWEST_SET_BIT_CALCULATE macro for each compiler. */
 #ifdef __ICCARM__       /* IAR Compiler */
 #define TX_LOWEST_SET_BIT_CALCULATE(m, b)       (b) = (UINT) __CLZ(__RBIT((m)));
-#elif defined(__CC_ARM) /* AC5 Compiler */
-#define TX_LOWEST_SET_BIT_CALCULATE(m, b)       (b) = (UINT) __clz(__rbit((m)));
 #elif defined(__GNUC__) /* GCC and AC6 Compiler */
 #define TX_LOWEST_SET_BIT_CALCULATE(m, b)       __asm__ volatile (" RBIT %0,%1 ": "=r" (m) : "r" (m) ); \
-                                                __asm__ volatile (" CLZ  %0,%1 ": "=r" (b) : "r" (m) ); 
+                                                __asm__ volatile (" CLZ  %0,%1 ": "=r" (b) : "r" (m) );
+#else
+#error "Compiler not supported."
 #endif
 
 
 
-/* Define the interrupt disable/restore macros for each compiler. */
+/* Define the interrupt disable/restore macros. */
 
-#if defined(__GNUC__) || defined(__ICCARM__)
-
-/*** GCC/AC6 and IAR ***/
-
-__attribute__( ( always_inline ) ) static inline unsigned int __get_interrupt_posture(void)
+__attribute__( ( always_inline ) ) static inline UINT __get_interrupt_posture(void)
 {
-unsigned int posture;
+UINT posture;
 #ifdef TX_PORT_USE_BASEPRI
     __asm__ volatile ("MRS  %0, BASEPRI ": "=r" (posture));
 #else
@@ -559,7 +571,7 @@ unsigned int posture;
 }
 
 #ifdef TX_PORT_USE_BASEPRI
-__attribute__( ( always_inline ) ) static inline void __set_basepri_value(unsigned int basepri_value)
+__attribute__( ( always_inline ) ) static inline void __set_basepri_value(UINT basepri_value)
 {
     __asm__ volatile ("MSR  BASEPRI,%0 ": : "r" (basepri_value));
 }
@@ -570,19 +582,18 @@ __attribute__( ( always_inline ) ) static inline void __enable_interrupts(void)
 }
 #endif
 
-__attribute__( ( always_inline ) ) static inline void __restore_interrupt(unsigned int int_posture)
+__attribute__( ( always_inline ) ) static inline void __restore_interrupt(UINT int_posture)
 {
 #ifdef TX_PORT_USE_BASEPRI
     __set_basepri_value(int_posture);
-    //__asm__ volatile ("MSR  BASEPRI,%0": : "r" (int_posture): "memory");
 #else
     __asm__ volatile ("MSR  PRIMASK,%0": : "r" (int_posture): "memory");
 #endif
 }
 
-__attribute__( ( always_inline ) ) static inline unsigned int __disable_interrupts(void)
+__attribute__( ( always_inline ) ) static inline UINT __disable_interrupts(void)
 {
-unsigned int int_posture;
+UINT int_posture;
 
     int_posture = __get_interrupt_posture();
 
@@ -596,11 +607,11 @@ unsigned int int_posture;
 
 __attribute__( ( always_inline ) ) static inline void _tx_thread_system_return_inline(void)
 {
-unsigned int interrupt_save;
+UINT interrupt_save;
 
     /* Set PendSV to invoke ThreadX scheduler.  */
-    *((volatile ULONG *) 0xE000ED04UL) = ((ULONG) 0x10000000UL);
-    if (__get_ipsr_value() == 0U)
+    *((volatile ULONG *) 0xE000ED04) = ((ULONG) 0x10000000);
+    if (_tx_ipsr_get() == 0)
     {
         interrupt_save = __get_interrupt_posture();
 #ifdef TX_PORT_USE_BASEPRI
@@ -616,87 +627,8 @@ unsigned int interrupt_save;
 #define TX_DISABLE                              interrupt_save =  __disable_interrupts();
 #define TX_RESTORE                              __restore_interrupt(interrupt_save);
 
-/*** End GCC/AC6 and IAR ***/
-
-#elif defined(__CC_ARM)
-
-/*** AC5 ***/
-
-static __inline unsigned int __get_interrupt_posture(void)
-{
-unsigned int posture;
-#ifdef TX_PORT_USE_BASEPRI
-    __asm__ volatile ("MRS  #posture, BASEPRI");
-#else
-    __asm__ volatile ("MRS  #posture, PRIMASK");
-#endif
-    return(posture);
-}
-
-#ifdef TX_PORT_USE_BASEPRI
-static __inline void __set_basepri_value(unsigned int basepri_value)
-{
-    __asm__ volatile ("MSR  BASEPRI, #basepri_value");
-}
-#endif
-
-static __inline unsigned int __disable_interrupts(void)
-{
-unsigned int int_posture;
-
-    int_posture = __get_interrupt_posture();
-
-#ifdef TX_PORT_USE_BASEPRI
-    __set_basepri_value(TX_PORT_BASEPRI);
-#else
-    __asm__ volatile ("CPSID i");
-#endif
-    return(int_posture);
-}
-
-static __inline void __restore_interrupt(unsigned int int_posture)
-{
-#ifdef TX_PORT_USE_BASEPRI
-    __set_basepri_value(int_posture);
-#else
-    __asm__ volatile ("MSR  PRIMASK, #int_posture");
-#endif
-}
-
-static void _tx_thread_system_return_inline(void)
-{
-unsigned int interrupt_save;
-
-    /* Set PendSV to invoke ThreadX scheduler.  */
-    *((volatile ULONG *) 0xE000ED04) = ((ULONG) 0x10000000);
-    if (_ipsr == 0)
-    {
-#ifdef TX_PORT_USE_BASEPRI
-        interrupt_save = __get_interrupt_posture();
-        __set_basepri_value(0);
-        __set_basepri_value(interrupt_save);
-#else
-        interrupt_save = __disable_irq();
-        __enable_irq();
-        if (interrupt_save != 0)
-            __disable_irq();
-#endif
-    }
-}
-
-
-#define TX_INTERRUPT_SAVE_AREA                  UINT interrupt_save;
-#define TX_DISABLE                              interrupt_save = __disable_interrupts();
-#define TX_RESTORE                              __restore_interrupt(interrupt_save);
-
-/*** End AC5 ***/
-
-#endif  /* Interrupt disable/restore macros for each compiler. */
-
 /* Redefine _tx_thread_system_return for improved performance.  */
-
 #define _tx_thread_system_return                _tx_thread_system_return_inline
-
 
 #else   /* TX_DISABLE_INLINE is defined */
 
@@ -709,19 +641,11 @@ VOID                                            _tx_thread_interrupt_restore(UIN
 #define TX_RESTORE                              _tx_thread_interrupt_restore(interrupt_save);
 #endif  /* TX_DISABLE_INLINE */
 
-
-/* Define FPU extension for the Cortex-M. Each is assumed to be called in the context of the executing
-   thread. These are no longer needed, but are preserved for backward compatibility only.  */
-
-void    tx_thread_fpu_enable(void);
-void    tx_thread_fpu_disable(void);
-
-
 /* Define the version ID of ThreadX.  This may be utilized by the application.  */
 
 #ifdef TX_THREAD_INIT
 CHAR                            _tx_version_id[] =
-                                    "Copyright (c) 2024 Microsoft Corporation.  *  ThreadX Cortex-M3/IAR Version 6.4.1 *";
+                                    "Copyright (c) 2024 Microsoft Corporation. * ThreadX Cortex-M33/IAR Version 6.4.1 *";
 #else
 #ifdef TX_MISRA_ENABLE
 extern  CHAR                    _tx_version_id[100];
@@ -729,6 +653,5 @@ extern  CHAR                    _tx_version_id[100];
 extern  CHAR                    _tx_version_id[];
 #endif
 #endif
-
 
 #endif

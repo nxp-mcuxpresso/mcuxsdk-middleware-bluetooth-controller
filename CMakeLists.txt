@@ -7,9 +7,7 @@ mcux_set_list(KW45_FAMILY_WITHOUT_K32W1 "KW45B41Z52xxxA KW45B41Z53xxxA  KW45B41Z
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_source(
         SOURCES lib/threadx_inc/tx_api.h
-                lib/threadx_inc/tx_port.h
-                lib/threadx_inc/tx_port_6_4_cm3.h
-                lib/threadx_inc/tx_port_6_4_cm33.h
+                lib/threadx_inc/tx_user.h
                 lib/threadx_inc/tx_event_flags.h
     )
     mcux_add_source(
@@ -20,19 +18,38 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
         TOOLCHAINS iar
         SOURCES src/KW4x/iar/nbu_ble_wrap.s
     )
-
-    mcux_add_library(
-        LIBS lib/threadx/cm3_libthreadx.a
-        TOOLCHAINS iar armgcc
+    mcux_add_source(
+        SOURCES lib/threadx_inc/cortex_m3/tx_port.h
+        TOOLCHAINS iar
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
     )
-    mcux_add_library(
-        LIBS lib/threadx/cm33_libthreadx.a
-        TOOLCHAINS iar armgcc
+    mcux_add_source(
+        SOURCES lib/threadx_inc/cortex_m33/tx_port.h
+        TOOLCHAINS iar
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
     mcux_add_include(
         INCLUDES lib/threadx_inc
+    )
+    mcux_add_include(
+        INCLUDES lib/threadx_inc/cortex_m3
+        TOOLCHAINS iar
+        DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
+    )
+    mcux_add_include(
+        INCLUDES lib/threadx_inc/cortex_m33
+        TOOLCHAINS iar
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+    )
+    mcux_add_library(
+        LIBS lib/cm3_libthreadx.a
+        TOOLCHAINS iar armgcc
+        DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
+    )
+    mcux_add_library(
+        LIBS lib/cm33_libthreadx.a
+        TOOLCHAINS iar armgcc
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
 endif()
 
@@ -73,15 +90,15 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
                 src/KW4x/board.h
                 src/KW4x/board.c
     )
-	mcux_add_library(
+    mcux_add_library(
         LIBS lib/kw47_nbu_all_hosted_libcommon.a
         TOOLCHAINS iar
-		DEVICE_IDS ${MCXW72_FAMILY}
+        DEVICE_IDS ${MCXW72_FAMILY}
     )
-	mcux_add_library(
+    mcux_add_library(
         LIBS lib/kw47_nbu_all_hosted_libbtu2_5x.a
         TOOLCHAINS iar
-		DEVICE_IDS ${MCXW72_FAMILY}
+        DEVICE_IDS ${MCXW72_FAMILY}
     )
     mcux_add_include(
         INCLUDES src/KW4x
@@ -99,7 +116,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/mcxw72_nbu_ble_all_hosted.bin
         DEVICE_IDS ${MCXW72_FAMILY}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/kw45b41_nbu_ble_hadm_hosted.sb3
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
@@ -107,7 +124,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/kw45b41_nbu_ble_hadm_hosted.xip
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/kw45b41_nbu_ble_hosted.sb3
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
@@ -115,7 +132,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/kw45b41_nbu_ble_hosted.xip
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/kw45b41_nbu_ble_xp_hosted.sb3
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
@@ -123,7 +140,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/kw45b41_nbu_ble_xp_hosted.xip
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/k32w1_nbu_ble_hadm_hosted.sb3
         DEVICE_IDS K32W1480xxxA
     )
@@ -131,7 +148,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/k32w1_nbu_ble_hadm_hosted.xip
         DEVICE_IDS K32W1480xxxA
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/k32w1_nbu_ble_hosted.sb3
         DEVICE_IDS K32W1480xxxA
     )
@@ -139,7 +156,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/k32w1_nbu_ble_hosted.xip
         DEVICE_IDS K32W1480xxxA
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/k32w1_nbu_ble_xp_hosted.sb3
         DEVICE_IDS K32W1480xxxA
     )
@@ -147,7 +164,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/k32w1_nbu_ble_xp_hosted.xip
         DEVICE_IDS K32W1480xxxA
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/mcxw71_nbu_ble_hadm_hosted.sb3
         DEVICE_IDS ${MCXW71_FAMILY}
     )
@@ -155,7 +172,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/mcxw71_nbu_ble_hadm_hosted.xip
         DEVICE_IDS ${MCXW71_FAMILY}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/mcxw71_nbu_ble_hosted.sb3
         DEVICE_IDS ${MCXW71_FAMILY}
     )
@@ -163,7 +180,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         SOURCES bin/mcxw71_nbu_ble_hosted.xip
         DEVICE_IDS ${MCXW71_FAMILY}
     )
-	mcux_add_source(
+    mcux_add_source(
         SOURCES bin/mcxw71_nbu_ble_xp_hosted.sb3
         DEVICE_IDS ${MCXW71_FAMILY}
     )
@@ -248,17 +265,6 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_interface)
     )
     mcux_add_include(
         INCLUDES interface
-    )
-endif()
-
-if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_thread_interface)
-    mcux_add_source(
-        SOURCES lib/threadx_inc/tx_api.h
-                lib/threadx_inc/tx_event_flags.h
-                lib/threadx_inc/tx_port.h
-    )
-    mcux_add_include(
-        INCLUDES lib/threadx_inc/
     )
 endif()
 
