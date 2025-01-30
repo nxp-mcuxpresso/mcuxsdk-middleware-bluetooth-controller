@@ -758,6 +758,9 @@ void NBU_Init()
         PLATFORM_LowPowerInit();
 #endif
 #endif
+    /* Enable Systick */
+    SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+
 }
 
 #if defined(SDK_OS_FREE_RTOS)
@@ -902,7 +905,8 @@ int main(void)
 #else
 #define TICK_RATE_HZ 1000U
     SysTick->LOAD |= (BOARD_GetSystemCoreClockFreq() / TICK_RATE_HZ) - 1U;
-    /* Not enabling the Systicks now, will be done in _tx_thread_schedule */
+    SysTick->VAL  = 0;
+    /* Not enabling the Systicks now, will be done in tx_application_define_hook() */
     SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
 #endif
 
