@@ -271,18 +271,18 @@ bleResult_t Controller_SetMaxTxPower(int8_t power_dBm, uint8_t ldo_ant_trim)
         status = (bleResult_t)LL_API_SetMaxTxPower(power_dBm);
         if (gBleSuccess_c == status)
         {
-            OSA_InterruptDisable();
-            
+            OSA_DisableIRQGlobal();
+
             g_ldo_ant_trim = ldo_ant_trim;
 
             // Set LDO ANT Trim 
             uint32_t temp_trim;
             temp_trim = XCVR_ANALOG->LDO_1;
             temp_trim &= ~(XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK);
-            temp_trim |= XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(g_ldo_ant_trim); 
-            XCVR_ANALOG->LDO_1 = temp_trim; 
-            
-            OSA_InterruptEnable();
+            temp_trim |= XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(g_ldo_ant_trim);
+            XCVR_ANALOG->LDO_1 = temp_trim;
+
+            OSA_EnableIRQGlobal();
         }
     }
     else

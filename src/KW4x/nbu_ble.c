@@ -180,8 +180,8 @@ const nbuIntf_t nbuInterface = {
 #else
     .nbuPhySwitchIntf = NULL,
 #endif
-    .nbuEnterCritical = OSA_InterruptDisable,
-    .nbuExitCritical = OSA_InterruptEnable
+    .nbuEnterCritical = OSA_DisableIRQGlobal,
+    .nbuExitCritical = OSA_EnableIRQGlobal,
 };
 
 #if defined(SDK_OS_FREE_RTOS)
@@ -371,9 +371,9 @@ void Hcit_PktReceived(hciPacketType_t type, void* packet, uint16_t size)
     if (nbu_tasks_init_done == TRUE)
     {
 #ifdef __COVERAGESCANNER__
-      OSA_InterruptDisable();
+      OSA_DisableIRQGlobal();
       handle_coverage_hci_command(type, packet);
-      OSA_InterruptEnable();
+      OSA_EnableIRQGlobal();
 #endif /*__COVERAGESCANNER__*/
       NbuHci_SendPktToController(type, packet, size);
     }
@@ -511,9 +511,9 @@ static void  NBU_HADM_CopyConfig(void)
       no++;
 
       /* do the copy */
-      OSA_InterruptDisable();
+      OSA_DisableIRQGlobal();
       PLATFORM_SendHciMessage((uint8_t*)&sHciConfig, 1+2+2+sHciConfig.data_length);
-      OSA_InterruptEnable();
+      OSA_EnableIRQGlobal();
     }
 
 #if CS_HANDOFF_ENABLED==2
@@ -536,9 +536,9 @@ static void  NBU_HADM_CopyConfig(void)
       no++;
 
       /* do the copy */
-      OSA_InterruptDisable();
+      OSA_DisableIRQGlobal();
       PLATFORM_SendHciMessage((uint8_t*)&sHciConfig, 1+2+2+sHciConfig.data_length);
-      OSA_InterruptEnable();
+      OSA_EnableIRQGlobal();
     }
 #endif
 }
@@ -582,9 +582,9 @@ void generate_synchro_swo(void) {
 
   current_timer_value = *(uint64_t *)TSTMR0;
   if ((current_timer_value - initial_timer_value) > timeInterval) {
-    OSA_InterruptDisable();
+    OSA_DisableIRQGlobal();
     DBG_SWO_PrintDoubleWord(0xDEADBEEF, 0);
-    OSA_InterruptEnable();
+    OSA_EnableIRQGlobal();
     initial_timer_value = current_timer_value;
   }
 }

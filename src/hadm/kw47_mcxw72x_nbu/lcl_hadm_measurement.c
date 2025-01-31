@@ -271,10 +271,10 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
 /* This API is supposed to be called in the context of idle task */
 void lcl_hadm_handle_temperature_change(int32_t temperature)
 {
-    OSA_InterruptDisable();
+    OSA_DisableIRQGlobal();
     hadm_device.current_temperature = (int16_t)temperature;
     lcl_hadm_utils_calc_rtt_temperature_delay(temperature, &hadm_device);
-    OSA_InterruptEnable();
+    OSA_EnableIRQGlobal();
 }
 
 BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable)

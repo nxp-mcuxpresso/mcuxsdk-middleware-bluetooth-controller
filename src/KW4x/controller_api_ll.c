@@ -186,10 +186,10 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 LL_API_WaitForClkUpdtFromLowPwr();
 
                 // use atomic section to have LL timing and TSTMR0 at the same time
-                OSA_InterruptDisable();
+                OSA_DisableIRQGlobal();
                 LL_API_GetBleTimingNoNativeClockCheck(&hslot, &qus);
                 tstmr = *(uint64_t *)TSTMR0;
-                OSA_InterruptEnable();
+                OSA_EnableIRQGlobal();
 
                 if( (hslot&1U) != 0 )
                 {
