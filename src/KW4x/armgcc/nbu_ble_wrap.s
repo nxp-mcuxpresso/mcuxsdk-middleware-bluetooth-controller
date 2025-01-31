@@ -102,7 +102,7 @@ SysTick_Handler:
 // ThreadX low level init
 _tx_initialize_low_level:
   LDR r0, =_tx_thread_system_stack_ptr    // Build address of system stack pointer
-  LDR r1, =__vector_table                 // Pickup address of vector table
+  LDR r1, =__VECTOR_TABLE                 // Pickup address of vector table
   LDR r1, [r1]                            // Pickup reset stack pointer
   STR r1, [r0]                            // Save system stack pointer
 
