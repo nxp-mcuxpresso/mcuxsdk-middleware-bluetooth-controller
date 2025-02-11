@@ -1126,6 +1126,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             assert(FALSE);
             return HADM_HAL_MEMORY_FULL;
         }
+        hadm_meas_p->result_p->connIdx = hadm_meas_p->config_p->connIdx;
+        hadm_meas_p->result_p->subeventIdx = hadm_meas_p->config_p->subeventIdx; /* echo subeventIdx */
     }
     DEBUG_PIN1_SET
 
