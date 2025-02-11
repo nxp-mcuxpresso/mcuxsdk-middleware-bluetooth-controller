@@ -894,9 +894,9 @@ int main(void)
 #endif
 
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
-    /* By default the NBU runs to 32MHz, set the constraint in the init to
+    /* By default the NBU runs to 48MHz, set the constraint in the init to
      * prevent the app core to set a slower speed for the NBU on its side */
-    PLATFORM_SetFrequencyConstraintFromController(2);
+    PLATFORM_SetFrequencyConstraintFromController(3);
 #endif
 
     // inform LL about the clock update

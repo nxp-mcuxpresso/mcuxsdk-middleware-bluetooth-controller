@@ -894,6 +894,11 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             }
             if (rsm_irq & LCL_HAL_XCVR_RSM_IRQ_IP)
             {
+                /* delay the adjustment for KW45 */
+                for(uint32_t i=0; i<10; i++)
+                {
+                  asm("NOP");
+                }
                 /* Time grid has been adjusted on previous T_FCS, restore it */
                 lcl_hal_xcvr_apply_time_grid_shift(-time_adjustment);
                 hadm_meas.time_elapsed = 0;
