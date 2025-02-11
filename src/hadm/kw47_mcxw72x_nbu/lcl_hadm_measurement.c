@@ -72,12 +72,6 @@
 
 /* === Globals ============================================================= */
 
-/* Define this to enable some hack that will cause mode0 to be transmitted on unexpected channel from time to time on each device */
-//#define UT_CORRUPT_MODE0
-#ifdef UT_CORRUPT_MODE0
-int hadm_ut_config_cnt;
-#endif
-
 //#define RTT_DEBUG
 #ifdef RTT_DEBUG
 int32_t rtt_tpm_dbg_buffer[HADM_MAX_NB_STEPS];
@@ -438,12 +432,9 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     hadm_meas_t *hadm_meas_p = lcl_hadm_alloc_meas_instance();
     assert(NULL != hadm_meas_p);
     xcvr_lcl_rsm_config_t *rsm_config_p = &hadm_meas_p->rsm_config;
+    int16_t mode0_timeout_usec;
 
     DEBUG_PIN0_SET
-
-#ifdef UT_CORRUPT_MODE0
-    hadm_ut_config_cnt++;
-#endif
 
     if (!hadm_device.is_rsm_cal_done)
     {
@@ -582,12 +573,16 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         hadm_meas_p->iq_avg_win = 0;
     }
     
-    /* Determine and program rx timeout (for reflector devices) = mode 0 duration */
-    /* if window widening is larger than a mode0 step, disable rx timeout */
+    /* Determine and program rx timeout (for reflector devices) = mode 0 duration in order to keep RX channel in sync with initiator */
+    /* From HW spec: RSM timeout interval = mode0_timeout + T_FCS + T_RD + TX_DATA_FLUSH_DLY + 1 */
+    mode0_timeout_usec = hadm_meas_p->step_duration[0] - (hadm_config->T_FCS_Time + T_RD + ((hadm_config->rttPhy == HADM_RTT_PHY_2MBPS) ? TX_DATA_FLUSH_DLY_2MBPS:TX_DATA_FLUSH_DLY_1MBPS) + 1);
+    assert(mode0_timeout_usec > HADM_T_SY(hadm_config->rttPhy) + HADM_MODE0_TIMEOUT_MARGIN_US);
+    /* If window widening is larger than the mode0 RX window minus packet duration, do not activate rx timeout */
     if ((hadm_meas_p->config_p->mode == HADM_SUBEVT_MISSION_MODE) &&
-        (hadm_config->rxWindowUs < (hadm_meas_p->step_duration[0] - hadm_config->T_FCS_Time - HADM_T_SY(hadm_config->rttPhy) - HADM_MODE0_TIMEOUT_MARGIN_US)))
+        (hadm_config->rxWindowUs < (mode0_timeout_usec - HADM_T_SY(hadm_config->rttPhy) - HADM_MODE0_TIMEOUT_MARGIN_US)))
     {
-        rsm_config_p->mode0_timeout_usec = hadm_meas_p->step_duration[0] - hadm_config->T_FCS_Time;
+        /* Program the mode0 timeout (the actual duration of RX period) */
+        rsm_config_p->mode0_timeout_usec = (uint16_t)mode0_timeout_usec;
     }
     else
     {
@@ -932,13 +927,6 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         {
             cs_sync_ant_id = lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_p);
         }
-        
-#ifdef UT_CORRUPT_MODE0
-        /* HACK for Unit Test: force missed mode0 (unexpected channel) from time to time */
-        if (((hadm_ut_config_cnt%3==2) && (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)) ||
-            ((hadm_ut_config_cnt%5==1) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR)))
-            step_config_p->channel = 10;
-#endif
 
         /* Build common config header to PKT RAM circular buffer */
         LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role);
@@ -1105,7 +1093,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     uint8_t nb_steps = 0;
     uint8_t step_mode0_no = 0;
     uint8_t rtt_pkt_no = 0;
-    xcvr_lcl_rtt_data_t rtt_data;
     BLE_HADM_role_t role = hadm_meas_p->config_p->role;
 
     uint32_t common_stat;
@@ -1210,7 +1197,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                  /* (Hz*100) / MHz  => 0.01 ppm unit */
                 int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
                 *res_buff_p++ = BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
-                *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld); /* Packet_AA_Quality */
+                *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(vld); /* Packet_AA_Quality */
                 *res_buff_p++ = HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */
                 *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
                 if (role == HADM_ROLE_INITIATOR)
@@ -1234,6 +1221,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             case HADM_STEP_MODE1:
             case HADM_STEP_MODE3:
             {
+                xcvr_lcl_rtt_data_t rtt_data;
                 int32_t frac_delay = 0;
                 int32_t rtt_ts = 0;
                 uint8_t nadm_metric = 0xFF; /* NADM not available by default */
@@ -1390,6 +1378,9 @@ void RSM_INT_IRQHandler(void)
         if (abort_reason & XCVR_MISC_RSM_CSR_RSM_TIMEOUT0_ABORT_MASK)
         {
             hal_status = HADM_HAL_ABORTED_SYNC;
+            /* Collect failed mode0 */
+            (void)lcl_hadm_get_step_results(hadm_meas_p->config_p->mode0Nb, hadm_meas_p);
+            assert(hadm_meas_p->data_in_flight_w_idx == hadm_meas_p->data_in_flight_r_idx);
         }
         else /* should not occur */
         {
