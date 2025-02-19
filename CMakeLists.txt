@@ -25,7 +25,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     )
     mcux_add_source(
         SOURCES lib/threadx_inc/cortex_m33/tx_port.h
-        TOOLCHAINS iar
+        TOOLCHAINS iar armgcc
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
     mcux_add_include(
@@ -38,7 +38,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     )
     mcux_add_include(
         INCLUDES lib/threadx_inc/cortex_m33
-        TOOLCHAINS iar
+        TOOLCHAINS iar armgcc
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
     mcux_add_library(
@@ -92,12 +92,12 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
     )
     mcux_add_library(
         LIBS lib/kw47_nbu_all_hosted_libcommon.a
-        TOOLCHAINS iar
+        TOOLCHAINS iar armgcc mcux
         DEVICE_IDS ${MCXW72_FAMILY}
     )
     mcux_add_library(
         LIBS lib/kw47_nbu_all_hosted_libbtu2_5x.a
-        TOOLCHAINS iar
+        TOOLCHAINS iar armgcc mcux
         DEVICE_IDS ${MCXW72_FAMILY}
     )
     mcux_add_include(
