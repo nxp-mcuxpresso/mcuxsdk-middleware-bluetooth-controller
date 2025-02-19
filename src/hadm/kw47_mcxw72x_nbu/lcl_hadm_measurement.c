@@ -1378,11 +1378,21 @@ void RSM_INT_IRQHandler(void)
         if (abort_reason & XCVR_MISC_RSM_CSR_RSM_TIMEOUT0_ABORT_MASK)
         {
             hal_status = HADM_HAL_ABORTED_SYNC;
-            /* Collect failed mode0 */
-            (void)lcl_hadm_get_step_results(hadm_meas_p->config_p->mode0Nb, hadm_meas_p);
-            assert(hadm_meas_p->data_in_flight_w_idx == hadm_meas_p->data_in_flight_r_idx);
         }
-        else /* should not occur */
+        else if ((abort_reason & XCVR_MISC_RSM_CSR_RSM_UNDR_ERR_MASK) &&
+                 (hadm_meas->info.sync_step_id == 0xFF))
+        {
+            /* KW47 HW bug workaround on reflector: when mode0 retry is enabled, there's a small
+             * probability that the RSM does not send an abort IRQ in case the last mode0 is
+             * received (AA match) just after transitioning to 1st non_mode0 step.
+             * In this case, the condition is detected by an RSM underrun on 2nd non-mode0 step.
+             * This situation should be avoided by the LL ensuring that mode0 timeout
+             * is only enabled when devices are properly synchronized (small window widening).
+             * Note: when this occurs there's a dummy transmission for the 1st non-mode0 step.
+             */
+            hal_status = HADM_HAL_ABORTED_SYNC;
+        }
+        else  /* should not occur */
         {
             assert(FALSE);
             hal_status = HADM_HAL_ABORTED;
