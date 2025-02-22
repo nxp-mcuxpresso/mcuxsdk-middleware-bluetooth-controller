@@ -228,7 +228,6 @@ typedef struct TBleHadmConfiguration_tag
     /* Derived configuration parameters */
     int8    cSelectedTxPower;       /* Derived from Tx_Power_Delta in CS_REQ procedure or from HCI */
     uint8   ucT_SW_time;            /* Derived from ACI in CS_REQ procedure or ucToneAntCfgSel from HCI */
-
 } TBleHadmConfiguration_t;
 
 
@@ -292,7 +291,8 @@ typedef struct TBleHadmConnection_tag
     TBleHadmConfiguration_t *pActiveConfig;     /* NULL when no active/running procedure */
     uint16  ulRepIdx;                           /* Index of procedure for repeat count down */
     uint8   ucSubeventIdx;                      /* Index of current subevent within the procedure */
-    int16  iProcCountTerminateDiff;                      /* Peer ProcCount minus Local ProcCount stored during termination procedure */
+    int16  iProcCountTerminateDiff;             /* Peer ProcCount minus Local ProcCount stored during termination procedure */
+    uint16  uiStartCSProcCount;                 /* StartCSProcCount, the starting CSProcCount value used for the first instance of the CS procedure series */
 
     TBleHadmEvent subevent;                     /* Current subevent data */
 #if defined(BT60_HADM)
