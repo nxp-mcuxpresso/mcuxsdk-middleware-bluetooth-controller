@@ -897,6 +897,9 @@ int main(void)
      * prevent the app core to set a slower speed for the NBU on its side */
     PLATFORM_SetFrequencyConstraintFromController(2);
 #endif
+    
+    // inform LL about the clock update
+    LL_API_ClockUpdated();
 
 #if defined(SDK_OS_FREE_RTOS)
 #define TICK_RATE_HZ 100U
