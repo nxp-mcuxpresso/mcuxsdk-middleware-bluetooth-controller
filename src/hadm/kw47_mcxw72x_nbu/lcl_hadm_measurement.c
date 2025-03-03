@@ -1096,9 +1096,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     BLE_HADM_role_t role = hadm_meas_p->config_p->role;
 
     uint32_t common_stat;
-    uint32_t nadm_error_rssi;
+    uint32_t nadm_error_rssi = 0U;
     uint32_t rtt_data_raw;
-    uint32_t tpm;  /* TPM timestamp unit is 1/32MHz */
+    uint32_t tpm = 0U;  /* TPM timestamp unit is 1/32MHz */
     int ap;
     int32_t iq[HADM_MAX_NB_ANTENNA_PATHS+1U];
        
