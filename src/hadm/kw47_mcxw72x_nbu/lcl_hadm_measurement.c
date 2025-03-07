@@ -54,16 +54,10 @@
  */
 #define HADM_HAL_PREPARE_US (MAX(HADM_HAL_START_US + HADM_HAL_CONFIG_APPLY_US, T_SLOT_US))
 
-/*! Time time be programmed to RSM_TRIGGER_DELAY
+/*! Time to be programmed to RSM_TRIGGER_DELAY
  *  Does not need to be exact, should cover BLE_HADM_EventStart() execution
  */
 #define HADM_HAL_RSM_TRIGGER_DELAY (HADM_HAL_START_US + 50U /* margin */)
-
-/*! First RSM Rx window is a bit late.
- * In order to compensate that, we delay RSM on initiator side so that both RSM
- * can still be triggered at the same time from SW perspective.
- */
-#define HADM_HAL_RSM_INITIATOR_TRIGGER_DELAY (5U)
 
 /* Contengency time to make sure mode 0 AA is caught */
 #define HADM_MODE0_TIMEOUT_MARGIN_US (5U)
@@ -167,7 +161,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
 
     /*
      * FAST_RX2TX_START_FC and FAST_TX2RX_START_FC are actually TSM indexes (us) where TSM rewinds to start an FCS phase.
-     * As a consequence, they represent the elapsed time between RSM start and the begining of FCS phase for initiator and reflector respectively.
+     * As a consequence, they represent the elapsed time between RSM start and the beginning of FCS phase for initiator and reflector respectively.
      * Note: FCS phase in the RSM does not include ramp down which occurs at the very end of a step in the TSM sequence.
      * Typical value is 25us (for both roles).
      * Adjusted by 1us as per sniffer measurement.
@@ -176,8 +170,8 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) - HADM_T_RD + 1U;
 
     hadm_hal_properties.txWarmupUs += ((xcvr_lcl_tsm_generic_config.WU_LATENCY & XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_MASK) >> XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_SHIFT);
-    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY + HADM_HAL_RSM_INITIATOR_TRIGGER_DELAY;
-    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY + HADM_HAL_RSM_INITIATOR_TRIGGER_DELAY;
+    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY;
+    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY;
 
     for (i = 0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
     {
@@ -549,7 +543,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->rsm_dma_dly_fm_ext = (HADM_T_FM - hadm_meas_p->iq_capture_win) >> 1; /* center capture window inside T_FM */
     rsm_config_p->rsm_dma_dur_fm_ext = hadm_meas_p->iq_capture_win;
     rsm_config_p->averaging_win = (hadm_meas_p->iq_avg_win == 0) ? XCVR_RSM_AVG_WIN_DISABLED : (XCVR_RSM_AVG_WIN_LEN_T) (hadm_meas_p->iq_avg_win - 1);
-    rsm_config_p->trig_delay = HADM_HAL_RSM_TRIGGER_DELAY + ((hadm_config->role == HADM_ROLE_INITIATOR) ? HADM_HAL_RSM_INITIATOR_TRIGGER_DELAY : 0U); /* RSM trig_delay must cover start API execution time */
+    rsm_config_p->trig_delay = HADM_HAL_RSM_TRIGGER_DELAY; /* RSM trig_delay must cover start API execution time */
     rsm_config_p->t_fc = hadm_config->T_FCS_Time;
     rsm_config_p->t_ip1 = hadm_config->T_IP1_Time;
     rsm_config_p->t_ip2 = hadm_config->T_IP2_Time;
