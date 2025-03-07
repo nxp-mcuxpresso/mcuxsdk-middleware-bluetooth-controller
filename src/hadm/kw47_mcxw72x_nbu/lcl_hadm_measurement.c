@@ -1094,6 +1094,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     uint8_t step_mode0_no = 0;
     uint8_t rtt_pkt_no = 0;
     BLE_HADM_role_t role = hadm_meas_p->config_p->role;
+    bool_t synch_done = FALSE;
 
     uint32_t common_stat;
     uint32_t nadm_error_rssi = 0U;
@@ -1192,7 +1193,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
         {
             case HADM_STEP_MODE0:
             {
-                static bool_t synch_done = FALSE;
                 bool vld = hadm_meas_p->sync_info[step_mode0_no].valid;
                  /* (Hz*100) / MHz  => 0.01 ppm unit */
                 int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
