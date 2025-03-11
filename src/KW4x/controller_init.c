@@ -34,6 +34,10 @@
 #include "ble_mws.h"
 #endif
 
+#if defined(gPlatformEnableDcdcOnNbu_d) && (gPlatformEnableDcdcOnNbu_d == 1)
+#include "fwk_platform_dcdc.h"
+#endif
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -288,6 +292,11 @@ bleResult_t Controller_SetMaxTxPower(int8_t power_dBm, uint8_t ldo_ant_trim)
     {
         status = gBleInvalidParameter_c;
     }
+#if defined(gPlatformEnableDcdcOnNbu_d) && (gPlatformEnableDcdcOnNbu_d == 1)
+    /* Configure SPC high power mode depending the targeted tx power and if the application core is allowing it */
+    PLATFORM_ConfigureSpcHighPowerMode(power_dBm);
+#endif
+
     return status;
 }
 
