@@ -183,7 +183,6 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     const BLE_HADM_SubeventConfig_t *hadm_config_p = hadm_meas_p->config_p;
     int32_t ts_nominal_delay;
     int32_t ts_hw_delay;
-    int32_t ts_delay;
 
     assert(hadm_config_p->rttPhy < HADM_RTT_PHY_MAX);
 
@@ -234,15 +233,15 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
 
     if (hadm_config_p->role == HADM_ROLE_REFLECTOR)
     {
-        ts_delay = ts_nominal_delay - ts_hw_delay;
+        hadm_meas_p->ts_hw_delay_hns = -ts_hw_delay;
     }
     else
     {
-        ts_delay = ts_nominal_delay + ts_hw_delay;
+        hadm_meas_p->ts_hw_delay_hns = ts_hw_delay;
     }
 
-    assert(ts_delay > 0);
-    hadm_meas_p->ts_delay_hns = (uint32_t)ts_delay;
+    hadm_meas_p->ts_nominal_delay_hns = ts_nominal_delay;
+    assert(hadm_meas_p->ts_nominal_delay_hns + hadm_meas_p->ts_hw_delay_hns > 0);
 }
 
 void lcl_hadm_enable_lcl_interrupts(void)

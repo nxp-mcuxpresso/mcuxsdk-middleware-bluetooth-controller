@@ -1228,6 +1228,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)&rtt_data_raw, &rtt_data, (XCVR_RSM_SQTE_RATE_T)rate); /* OJE TODO: optimize...*/
                 if (rtt_data.rtt_vld && rtt_data.rtt_found)
                 {
+                    int32_t ffo_correction = 0;
                     DEBUG_PIN1_SET
                     /* Compute integer and fractional adjustment in ns */
                     frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx, rtt_data.p_delta, rtt_data.int_adj);
@@ -1240,10 +1241,18 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     {
                         frac_delay = -frac_delay; /* On reflector side, substract frac delay */
                     }
-                    DEBUG_PIN1_CLR              
+                    DEBUG_PIN1_CLR
 
-                    rtt_ts = HADM_RTT_TS_TO_NS(tpm) * 2U; /* in half ns */
-                    rtt_ts = rtt_ts - hadm_meas_p->ts_delay_hns + frac_delay*2U; /* in half ns to keep ts_delay_hns precision */
+                    /* in half ns to keep ts_delay_hns precision */
+                    rtt_ts = (HADM_RTT_TS_TO_NS(tpm) + frac_delay)*2U;
+                    rtt_ts = rtt_ts - hadm_meas_p->ts_hw_delay_hns;
+                    if (role == HADM_ROLE_INITIATOR)
+                    {
+                        /* "Device A shall implement frequency-based timing compensation" */
+                        /* ppm is expressed in 0.01 ppm */
+                        ffo_correction = (int32_t)(((int64_t)rtt_ts * hadm_proc_p->ppm)/100000000);
+                    }
+                    rtt_ts = rtt_ts - hadm_meas_p->ts_nominal_delay_hns + ffo_correction;
                     if ((step_config_p->mode == HADM_STEP_MODE3) && ((step_config_p->pm_ext & 0x1) != 0))
                     {
                         /* Remove an extra T_PM + T_SW in mode 3 case if required */

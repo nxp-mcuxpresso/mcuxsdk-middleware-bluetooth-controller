@@ -177,8 +177,9 @@ typedef struct
     uint16_t               iq_buff_size;        /*!< IQ buffer size for all IQs from mode 2 and 3's. Unit: number of IQ samples, hence in 4 bytes words */
     uint16_t               iq_buff_size_mode0;  /*!< IQ buffer size for mode 0's. Unit: number of samples */
     uint16_t               step_duration[4];    /*!< Step duration for modes 0,1,2,3 in us */
-    uint32_t               ts_delay_hns;        /*!< RTT latency (half ns) to remove from ToX-ToX */
-    uint32_t               ts_extra_delay_hns;  /*!< Extra RTT latency (half ns) to remove from ToX-ToX */
+    uint32_t               ts_hw_delay_hns;     /*!< RTT HW latency (half ns) to remove from ToX-ToX */
+    uint32_t               ts_nominal_delay_hns; /*!< RTT nominal offset (half ns) to remove from ToX-ToX */
+    uint32_t               ts_extra_delay_hns;  /*!< Extra per step RTT latency (half ns) to remove from ToX-ToX */
     xcvr_lcl_rsm_config_t  rsm_config;          /*!< RSM XCVR configuration for this CS subevent */
     hadm_info_t            info;                /*!< pointer to HADM measurement info struct */
     hadm_sync_info_t       sync_info[HADM_MAX_NB_STEPS_MODE0]; /*!< structure to store synchronization information */
