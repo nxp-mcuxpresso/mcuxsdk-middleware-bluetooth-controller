@@ -31,6 +31,7 @@
 
 void lcl_hadm_AES_EncryptEcb_128(const uint32_t *key, const uint32_t *plaintext, uint32_t *ciphertext)
 {
+    OSA_DisableIRQGlobal();
     /* Clear internal register states. */
     LTC0->CW = (uint32_t)(LTC_CW_CM_MASK | LTC_CW_CDS_MASK | LTC_CW_CICV_MASK | LTC_CW_CCR_MASK | LTC_CW_CKR_MASK | LTC_CW_COF_MASK | LTC_CW_CIF_MASK);
 
@@ -69,7 +70,7 @@ void lcl_hadm_AES_EncryptEcb_128(const uint32_t *key, const uint32_t *plaintext,
     *ciphertext++ = LTC0->OFIFO;
     *ciphertext++ = LTC0->OFIFO;
     *ciphertext++ = LTC0->OFIFO;
-
+    OSA_EnableIRQGlobal();
 }
 
 /* EOF */
