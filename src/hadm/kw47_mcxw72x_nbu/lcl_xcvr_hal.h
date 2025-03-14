@@ -340,7 +340,10 @@ typedef enum
         XCVR_MISC->IPS_FO_ADDR[HADM_FO_ENTRY] = XCVR_MISC_IPS_FO_ADDR_ADDR(reg_addr) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0); \
     }
 
-#define LCL_HAL_T_PM_MEAS (650U) /* T_PM_MEAS shall be 650us */
+/* The spec. is for DUT to TX for 652usec and the tester to measure for 650usec
+ * so this constant reflects the target TX time (since DUT never performs measurement of this tone)
+ */
+#define LCL_HAL_T_PM_MEAS (652U) /* T_PM_MEAS shall be 650us */
     
 /* === Globals ============================================================= */
 

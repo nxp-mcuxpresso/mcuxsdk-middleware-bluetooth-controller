@@ -922,6 +922,11 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
             cs_sync_ant_id = lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_p);
         }
 
+        /* RSM timing requires TONE_EXT to be set for correct Stable Phase test TX timing */
+        if (hadm_meas_p->rsm_config.op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE)
+        {
+          step_config_p->pm_ext = 0x3U;
+        }
         /* Build common config header to PKT RAM circular buffer */
         LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role);
 
