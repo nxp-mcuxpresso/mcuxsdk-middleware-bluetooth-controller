@@ -7,7 +7,7 @@
 ;  @build:   b200716
 ; -------------------------------------------------------------------------
 ;
-; Copyright 2020-2025 NXP
+; Copyright 2020-2024 NXP
 ;
 ; SPDX-License-Identifier: BSD-3-Clause
 ;
@@ -26,6 +26,7 @@
   PUBLIC     BTU_FIQ_IRQHandler
   PUBLIC     BTU_INT_IRQHandler
   PUBLIC     CTI_IRQ0_IRQHandler
+  PUBLIC     T1_INT_IRQHandler
   PUBLIC     T2_INT_IRQHandler
   PUBLIC     T3_INT_IRQHandler
   PUBLIC     T4_INT_IRQHandler
@@ -61,6 +62,7 @@ BLE_INT2_IRQHandler
 BTU_FIQ_IRQHandler
 BTU_INT_IRQHandler
 CTI_IRQ0_IRQHandler
+T1_INT_IRQHandler
 T2_INT_IRQHandler
 T3_INT_IRQHandler
 T4_INT_IRQHandler

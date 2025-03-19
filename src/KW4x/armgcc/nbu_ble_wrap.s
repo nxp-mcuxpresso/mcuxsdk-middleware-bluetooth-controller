@@ -34,6 +34,7 @@
   .global     BTU_FIQ_IRQHandler
   .global     BTU_INT_IRQHandler
   .global     CTI_IRQ0_IRQHandler
+  .global     T1_INT_IRQHandler
   .global     T2_INT_IRQHandler
   .global     T3_INT_IRQHandler
   .global     T4_INT_IRQHandler
@@ -74,6 +75,7 @@ BLE_INT2_IRQHandler:
 BTU_FIQ_IRQHandler:
 BTU_INT_IRQHandler:
 CTI_IRQ0_IRQHandler:
+T1_INT_IRQHandler:
 T2_INT_IRQHandler:
 T3_INT_IRQHandler:
 T4_INT_IRQHandler:
