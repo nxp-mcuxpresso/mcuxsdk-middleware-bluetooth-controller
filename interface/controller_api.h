@@ -47,10 +47,6 @@ extern "C" {
 #define gLlInvalidPduHandlingType_c     0U
 #endif
 
-#define FEM_CONFIG_SIZE                 16U           /* parameter number of xcvr_pa_fem_config_t + 1 */
-
-#define COEX_CONFIG_SIZE                24U           /* parameter number of COEX */
-
 typedef enum txChannelType_tag {
     gAdvTxChannel_c,
     gConnTxChannel_c
@@ -135,29 +131,6 @@ osa_status_t Controller_SetTxPowerLevelDbm(int8_t level_dbm, txChannelType_t cha
  * \return KOSA_StatusSuccess or KOSA_StatusError.
  ********************************************************************************** */
 osa_status_t Controller_SetMaxTxPower(int8_t power_dBm, uint8_t ldo_ant_trim);
-
-
-/*! *********************************************************************************
- * \brief  Set the XCVR to support FEM control.
- * \param[in]  config_ptr      pointer to FEM configuration
- * \param[in]  config_len      length of FEM configuration, for checking
- *
- * \return KOSA_StatusSuccess or KOSA_StatusError.
- *
- * \remarks Must be called after NBU initiation since it relies on common RF parameters.
- ********************************************************************************** */
-osa_status_t Controller_ConfigureFEM(const uint8_t *config_ptr, uint8_t config_len);
-
-/*! *********************************************************************************
- * \brief  Set the XCVR to support COEX control.
- * \param[in]  config_ptr      pointer to COEX configuration
- * \param[in]  config_len      length of COEX configuration, for checking
- *
- * \return KOSA_StatusSuccess or KOSA_StatusError.
- *
- * \remarks Must be called after NBU initiation since it relies on common RF parameters.
- ********************************************************************************** */
-osa_status_t Controller_ConfigureCOEX(const uint8_t *config_ptr, uint8_t config_len);
 
 /*! *********************************************************************************
  * \brief  Set the XCVR_PLL_DIG's PLL_OFFSET_CTRL to change the BLE carrier frequency offset.
