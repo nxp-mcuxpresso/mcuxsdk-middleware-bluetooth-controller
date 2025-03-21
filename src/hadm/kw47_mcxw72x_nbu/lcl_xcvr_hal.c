@@ -115,9 +115,10 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
     int16_t cfo16;
     int32_t cfo32;
 
-    step_idx = (rsm_read_ptr[0U] & 0xFF);
+    step_idx = (rsm_read_ptr[0U] & COM_RES_HDR_STEP_ID_STEP_ID_MASK);
     assert(step_idx < HADM_MAX_NB_STEPS_MODE0);
 
+    /* Decode COMMON_MODE_RESULT_HEADER */
     aa_det = (bool_t)((rsm_read_ptr[0U] & 0x80000000) >> 31U);
 
     if (aa_det)
@@ -125,7 +126,13 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
         sync_info_p += step_idx;
 
         sync_info_p->agc_idx = (rsm_read_ptr[0U] & 0xF000) >> 12U;
+
+        /* Decode COMMON_MODE_013_RESULT_BODY */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
         sync_info_p->rssi = (rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT;
+#else
+        sync_info_p->rssi = (rsm_read_ptr[3U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> 8U;
+#endif
         temp = rsm_read_ptr[2U];
         sync_info_p->valid = ((temp & (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK)) == (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK));
 

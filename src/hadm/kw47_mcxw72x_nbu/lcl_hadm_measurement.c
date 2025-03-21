@@ -550,7 +550,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     hadm_meas_p->pkt_ram.result_read_ptr = hadm_meas_p->pkt_ram.step_result.base_ptr;
     hadm_meas_p->pkt_ram.step_config.curr_page = 0;
     hadm_meas_p->pkt_ram.step_config.curr_step_idx = 0;
-    hadm_meas_p->pkt_ram.step_config.max_step_size = LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE + rtt_type_2_payload_size[hadm_meas_p->config_p->rttTypes] * 2U; /* taking mode1/3 into account */
+    hadm_meas_p->pkt_ram.step_config.max_step_size = LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(hadm_meas_p->n_ap) + rtt_type_2_payload_size[hadm_meas_p->config_p->rttTypes] * 2U; /* taking mode1/3 into account */
     hadm_meas_p->pkt_ram.step_result.curr_page = 0;
     hadm_meas_p->pkt_ram.step_result.curr_step_idx = 0;
     hadm_meas_p->pkt_ram.step_result.max_step_size = LCL_HAL_PKT_RAM_STEP_RESULT_MODE3_SIZE(hadm_meas_p->n_ap); /* taking mode3 into account */
@@ -1005,6 +1005,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         /* Build common config header to PKT RAM circular buffer */
         LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role);
 
+        /* COMMON MODE 13 */
         if (step_config_p->mode != HADM_STEP_MODE2)
         {
             uint32_t nb_words_written;
@@ -1042,6 +1043,14 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
             assert(hadm_meas_p->data_in_flight_w_idx != hadm_meas_p->data_in_flight_r_idx);
             DEBUG_PIN1_CLR
         }
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 470)
+        /* COMMON MODE 23 */
+        if ((step_config_p->mode == HADM_STEP_MODE2) || (step_config_p->mode == HADM_STEP_MODE3))
+        {
+            /* Mode2-specific fields */
+            *hadm_meas_p->pkt_ram.config_write_ptr++ = 0; /* phase_add_ap1-4 */
+        }
+#endif // NXP_RADIO_GEN == 470
         if (update_rsm_ptr)
         {
             LCL_HAL_UPDATE_PKT_RAM_CONFIG_STEP_PTR(circ_buff_p->curr_page, hadm_meas_p->pkt_ram.config_write_ptr);
@@ -1328,7 +1337,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             common_stat = *hadm_meas_p->pkt_ram.result_read_ptr++;
             assert(circ_buff_p->curr_step_idx == (common_stat & COM_RES_HDR_STEP_ID_STEP_ID_MASK)); /* HW and SW step_id should be aligned! */
 
-            if ((common_stat & 0x30000000U) != 0)
+            if (LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(common_stat) != 0)
             {
                 hadm_info_p->num_time_adj++; /* record time_adj for debug */
             }

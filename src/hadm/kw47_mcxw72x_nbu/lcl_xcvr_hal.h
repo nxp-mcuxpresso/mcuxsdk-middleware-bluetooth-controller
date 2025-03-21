@@ -210,11 +210,17 @@ typedef enum
 /* Configure 64 bit PN sequences to HARTT & RSM */
 #define LCL_HAL_ENABLE_64_BITS_PN   (XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_RTT_SEQ_LEN_MASK)
 
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE       (3U) /* in 32bits words */
+/* Sizes in 32bits words */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE       (3U)
 #define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE0_SIZE        (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U) /* 5 words */
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE        (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE) /* 3 words */ 
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE       (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U) /* 5 words + payload size x 2 */
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_SIZE_MAX          (LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE + 8U) /* 13 words */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE) /* 3 words */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U) /* 5 words + payload size x 2 */
+#else
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + n_ap) /* 3 words + phase_add_ap */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + n_ap + 2U) /* 5 words + phase_add_ap + payload size x 2 */
+#endif // NXP_RADIO_GEN
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_SIZE_MAX(n_ap)    (LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) + 8U) /* includes maximum payload size (4*2) */
     
 #define LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE       (1U) /* in 32bits words */
 #define LCL_HAL_PKT_RAM_STEP_RESULT_MODE01_SIZE       (LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE + 4U) /* 5 words */    
@@ -250,7 +256,7 @@ typedef enum
         *w_ptr16++ = (cfo); /* STEP_CFO */\
         *w_ptr16++ = (hpm_cal_val>>1); /* HPM_CAL_FACTOR */\
         pkt_ram_w_ptr += 2;\
-        *pkt_ram_w_ptr++ = 0; /* CTUNE_MANUAL + PHASE_ADD OJE TODO: remove */\
+        *pkt_ram_w_ptr++ = 0; /* CTUNE_MANUAL + PHASE_ADD */\
     }
 
 #define LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(pkt_ram_w_ptr, cfo) \
@@ -288,6 +294,13 @@ typedef enum
         page = (temp & XCVR_MISC_RSM_PTR_RSM_RD_PAGE_MASK) >> XCVR_MISC_RSM_PTR_RSM_RD_PAGE_SHIFT;\
         pkt_ram_result_ptr_offset = (uint32_t)((temp & XCVR_MISC_RSM_PTR_RSM_WR_PTR_MASK) >> XCVR_MISC_RSM_PTR_RSM_WR_PTR_SHIFT);\
     }
+
+/* Macro applicable to uint32  header */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)X_32 & 0x30000000U) >> 28U)
+#else
+#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)X_32 & 0x300U) >> 8U)
+#endif
 
 #define HADM_PPM_DIVIDER (100)
 
