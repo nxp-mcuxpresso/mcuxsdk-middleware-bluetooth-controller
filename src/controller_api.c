@@ -301,6 +301,7 @@ osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle,
     return api_status;
 }
 
+#if !defined(FPGA_TARGET) || (FPGA_TARGET!=0)
 osa_status_t Controller_Set_PLL_OFFSET_CTRL(int32_t cfo_in_hz)
 {
     osa_status_t api_return = KOSA_StatusSuccess;
@@ -339,6 +340,7 @@ osa_status_t Controller_Set_PLL_OFFSET_CTRL(int32_t cfo_in_hz)
     PLATFORM_RemoteActiveRel();
     return api_return;
 }
+#endif
 
 /*! *********************************************************************************
  * \brief  Set Rx Pdu handling timing

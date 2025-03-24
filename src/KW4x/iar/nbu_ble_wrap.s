@@ -18,7 +18,9 @@
   SECTION .text:CODE:REORDER:NOROOT(2)
 
   PUBLIC     SVC_Handler
+  #if !defined (LATENCY_TESTS)
   PUBLIC     SysTick_Handler
+  #endif
   PUBLIC     BLE_INT0_IRQHandler
   PUBLIC     BLE_INT0_IRQHandler
   PUBLIC     BLE_INT1_IRQHandler
@@ -72,9 +74,11 @@ CTI_IRQ1_IRQHandler
 SVC_Handler
   B     PendSV_Handler
 
+#if !defined (LATENCY_TESTS)
 SysTick_Handler
   LDR     R1, =_tx_timer_interrupt
   BX      R1
+#endif
 
 ; ThreadX low level init
 _tx_initialize_low_level
@@ -99,7 +103,7 @@ _tx_initialize_low_level
   STR r1, [r0, #0xD24]
 ;
 ;    /* Return to caller.  */
-;    
-  BX  lr 
-        
+;
+  BX  lr
+
         END

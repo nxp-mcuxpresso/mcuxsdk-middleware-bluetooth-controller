@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 NXP
+ * Copyright 2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,12 +11,12 @@
  ***********************************************************************************/
 
 /* Enable SFC for FRO32K calibration used during NBU start up */
-#define gUseSfcRf_d             1
+#define gUseSfcRf_d             0
 
 /* Enable MWS (Mobile Wireless System) coexistence at protocol level */
 #define gMWS_Enabled_d          0
 
-/* Enable NbuDbg module (need to generate the project with --debug-mode)
+/*  Enables NbuDbg module (need to generate the project with --debug-mode)
  *  This will enable debug IO toggling by the LL , logging and dtest*/
 #define gDbg_Enabled_d          0
 
@@ -34,18 +34,21 @@
 #define DBG_SWO_CORE_NBU_CORE  2 // Nbu Core
 #define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 
-#endif
+#else
 
-/* Enable dump of debug info into NBU RAM log if fwk_fault_handlers.c is added to the project (internal use only)
- * To add fwk_fault_handlers.c into NBU project, add the following Kconfig to project prj.conf file
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private=y
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg=y
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg.fault_handlers=y */
-//#define gDBG_LogInLinkLayerDebugStructEnabled_d 1
+/* Define to 1 if you want to configure the DWT/ITM/TPIU-SWO via SW i.s.o.the probe */
+#define DBG_SWO_INIT_VIA_SW 0
+
+/* CoreSight Funnel SWO route Muxing configuration    */
+/* Setting shall be done on Main Application Core PPB */
+#define DBG_SWO_CORE_MAIN_CORE 1 // Main Core
+#define DBG_SWO_CORE_NBU_CORE  2 // Nbu Core
+#define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
+#endif
 
 /* Force disabling lowpower on CM3 - Even if set to 0, CM33 requires to enable Radio domain lowpower
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
-#define gNbuDisableLowpower_d   0
+#define gNbuDisableLowpower_d   1
 
 /* Uncomment to avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
 #ifndef NDEBUG
@@ -56,6 +59,9 @@
 /* Disable clock management on NBU (supposed to be handled on host CPU) */
 #define FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL (1)
 
+/* gNbu_Hadm_d is in project cmakeLists.txt , to be undefined first */
+#undef gNbu_Hadm_d
+#define gNbu_Hadm_d 0
 
 #define gEnableCoverage                        0
 #if (defined(gEnableCoverage) && (gEnableCoverage == 1))

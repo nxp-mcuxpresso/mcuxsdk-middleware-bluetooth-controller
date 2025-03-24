@@ -191,7 +191,11 @@ void BLE_HADM_SubeventStop(const BLE_HADM_SubeventConfig_t *config)
 
 BLE_HADM_STATUS_t BLE_HADM_Init(void)
 {
+#if defined(gNbu_Hadm_d) && (gNbu_Hadm_d == 1)
     return lcl_hadm_init();
+#else
+    return HADM_HAL_SUCCESS;
+#endif
 }
 
 

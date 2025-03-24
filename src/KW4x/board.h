@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 NXP
+ * Copyright 2020-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,12 +8,12 @@
 #define _BOARD_H_
 
 #include <stdint.h>
+#include "fsl_device_registers.h"
+
 
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-/*! @brief The board name */
-#define BOARD_NAME "K32WB41EVK_NBU"
 
 #if defined(__cplusplus)
 extern "C" {

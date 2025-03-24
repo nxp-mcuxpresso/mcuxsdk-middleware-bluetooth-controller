@@ -27,8 +27,9 @@
 #endif
 
 
-#if !defined(CPU_KW47B42Z83AFTA_cm33_core1) && !defined(CPU_KW47B42ZB7AFTA_cm33_core1) && !defined(CPU_MCXW727CMFTA_cm33_core1)
-#error this code is supposed to be compiled on KW47 core1
+#if !defined(CPU_KW47B42Z83AFTA_cm33_core1) && !defined(CPU_KW47B42ZB7AFTA_cm33_core1) && !defined(CPU_MCXW727CMFTA_cm33_core1) \
+    && !defined(CPU_KW43B43ZC7MFPA_NBU) && !defined(CPU_KW43B43ZC7MFTA_NBU)
+#error this code is supposed to be compiled on KW47/KW43 core1
 #endif
 
 /* === Macros ============================================================== */

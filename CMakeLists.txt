@@ -1,8 +1,12 @@
-# Copyright 2024 NXP
+# Copyright 2025 NXP
 # SPDX-License-Identifier: BSD-3-Clause
+
 mcux_set_list(KW45_NBU_FAMILY "KW45B41Z52xxxA_NBU KW45B41Z53xxxA_NBU  KW45B41Z82xxxA_NBU  KW45B41Z83xxxA_NBU  K32W1480xxxA_NBU")
 mcux_set_list(MCXW71_NBU_FAMILY "MCXW716CxxxA_NBU MCXW716AxxxA_NBU")
 mcux_set_list(KW45_FAMILY_WITHOUT_K32W1 "KW45B41Z52xxxA KW45B41Z53xxxA  KW45B41Z82xxxA  KW45B41Z83xxxA")
+mcux_set_list(KW47_FAMILY "KW47B42Z83xxxA KW47B42Z96xxxA KW47B42Z97xxxA KW47B42ZB2xxxA KW47B42ZB3xxxA KW47B42ZB6xxxA KW47B42ZB7xxxA KW47Z42082xxxA KW47Z42092xxxA KW47Z420B2xxxA KW47Z420B3xxxA")
+mcux_set_list(MCXW72_FAMILY "MCXW727CxxxA")
+mcux_set_list(KW43_FAMILY "KW43B43ZC7xxxA_NBU")
 
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_source(
@@ -26,7 +30,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_source(
         SOURCES lib/threadx_inc/cortex_m33/tx_port.h
         TOOLCHAINS iar armgcc
-        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
     )
     mcux_add_include(
         INCLUDES lib/threadx_inc
@@ -39,7 +43,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_include(
         INCLUDES lib/threadx_inc/cortex_m33
         TOOLCHAINS iar armgcc
-        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
     )
     mcux_add_library(
         LIBS lib/cm3_libthreadx.a
@@ -49,7 +53,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     mcux_add_library(
         LIBS lib/cm33_libthreadx.a
         TOOLCHAINS iar armgcc
-        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
     )
 endif()
 
@@ -100,6 +104,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
         TOOLCHAINS iar armgcc mcux
         DEVICE_IDS ${MCXW72_FAMILY}
     )
+
     mcux_add_include(
         INCLUDES src/KW4x
                  interface
@@ -234,7 +239,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hadm)
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
         CORE_IDS "cm33_core1"
     )
-    
+
     mcux_add_source(
         SOURCES src/hadm/kw45_k32w1_nbu/lcl_hadm_measurement.c
                 src/hadm/kw45_k32w1_nbu/lcl_hadm_measurement.h
@@ -244,7 +249,17 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hadm)
                 src/hadm/kw45_k32w1_nbu/lcl_xcvr_hal.c
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
     )
-    
+
+    mcux_add_source(
+        SOURCES src/hadm/kw47_mcxw72x_nbu/lcl_hadm_measurement.c
+                src/hadm/kw47_mcxw72x_nbu/lcl_hadm_measurement.h
+                src/hadm/kw47_mcxw72x_nbu/lcl_hadm_utils.c
+                src/hadm/kw47_mcxw72x_nbu/lcl_hadm_utils.h
+                src/hadm/kw47_mcxw72x_nbu/lcl_xcvr_hal.h
+                src/hadm/kw47_mcxw72x_nbu/lcl_xcvr_hal.c
+        DEVICE_IDS ${KW43_FAMILY}
+    )
+
     mcux_add_include(
         INCLUDES interface
                  src/hadm
@@ -256,6 +271,12 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hadm)
                  src/hadm
                  src/hadm/kw45_k32w1_nbu
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
+    )
+    mcux_add_include(
+        INCLUDES interface
+                 src/hadm
+                 src/hadm/kw45_k32w1_nbu
+        DEVICE_IDS ${KW43_FAMILY}
     )
 endif()
 
@@ -317,6 +338,16 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.nbu_all_hosted_lib)
         LIBS lib/kw47_nbu_all_hosted_libcommon.a
         TOOLCHAINS kds armgcc mcux iar
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+    )
+    mcux_add_library(
+        LIBS ../marvell_ll/src/build/kw4x/lib/kw43_nbu_all_hosted_libbtu2_5x.a
+        TOOLCHAINS iar
+        DEVICE_IDS ${KW43_FAMILY}
+    )
+    mcux_add_library(
+        LIBS ../marvell_ll/src/build/kw4x/lib/kw43_nbu_all_hosted_libcommon.a
+        TOOLCHAINS iar
+        DEVICE_IDS ${KW43_FAMILY}
     )
 endif()
 

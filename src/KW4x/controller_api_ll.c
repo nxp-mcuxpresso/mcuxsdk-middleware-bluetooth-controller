@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2024 NXP
- *
+ * Copyright 2020-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -47,8 +46,8 @@
 #define _GET8(p)  (*((uint8_t*)(p)))
 #define _GET16(p) (((uint16_t)_GET8 ((p))) | ((uint16_t)_GET8 ((uint8_t*)(p)+1U) << 8U))
 #define _GET32(p) (((uint32_t)_GET16((p))) | ((uint32_t)_GET16((uint8_t*)(p)+2U) << 16U))
-      
-typedef enum 
+
+typedef enum
 {
     API_Controller_SetTxPowerLevel,
     API_Controller_SetTxPowerLevelDbm,
@@ -95,7 +94,7 @@ static const uint8_t api_param_lenth[] =
     2U,   /* Controller_SetRxMode */
     1U,   /* Controller_ConfigureSCA */
     1U,   /* Controller_ConfigureIDSSecurityEvent */
-    8U,   /* Controller_ReadMemory */ 
+    8U,   /* Controller_ReadMemory */
 };
 
 enum { assert_api_param_lenth = 1/(API_Last==sizeof(api_param_lenth)?1:0) };
@@ -113,7 +112,7 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
 
     req_id = (PLATFORM_NbuApiId)((uint16_t)data[0U]+((uint16_t)data[1U]<<8U));
     data_len -= 2U;
-    
+
     if ( req_id >= API_Last || api_param_lenth[req_id] != data_len )
     {
         /* invalid parameters length */
@@ -126,22 +125,22 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
             case API_Controller_SetTxPowerLevel:
                 api_status = LL_API_SetTxPowerLevel((uint8_t)data[2], (uint8_t)data[3]);
                 break;
-            
+
             case API_Controller_SetTxPowerLevelDbm:
                 api_status = LL_API_SetTxPowerLevelDbm((uint8_t)data[2], (uint8_t)data[3]);
                 break;
-                
+
             case API_Controller_SetMaxTxPower:
                 api_status = Controller_SetMaxTxPower((int8_t)data[2], (uint8_t)data[3]);
                 break;
-                
+
             case API_Controller_SetRandomSeed:
             {
                 uint32 seed = ((uint32)data[5] << 24U) | ((uint32)data[4] << 16U) | ((uint32)data[3] << 8U) | (uint32)data[2];
                 api_status = LL_API_SetRandomSeed(seed);
                 break;
             }
-            
+
             case API_Controller_ConfigureAdvCodingScheme:
             {
                 api_status = LL_API_ConfigureCodingScheme(data[2], data[3], TRUE);
@@ -178,10 +177,12 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
             }
             case API_Controller_GetTimestampEx:
             {
+              /* LL_API_GetBleTimingNoNativeClockCheck() not implemented in FPGA lib */
+#if !defined(FPGA_TARGET) || (FPGA_TARGET==0)    
                 uint32_t hslot;
                 uint16_t qus;
                 uint64_t tstmr;
-                
+
                 // workaround for native clock value after wakeup
                 LL_API_WaitForClkUpdtFromLowPwr();
 
@@ -201,6 +202,7 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 _PUT32(api_return+12U, (uint32_t)tstmr);
                 _PUT32(api_return+16U, (uint32_t)(tstmr>>32U));
                 nb_returns += 16U;
+#endif                
                 break;
             }
             case API_Controller_GetEncryptionParam:

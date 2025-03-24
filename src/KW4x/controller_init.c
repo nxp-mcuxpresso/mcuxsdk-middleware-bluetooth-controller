@@ -4,7 +4,7 @@
  ********************************************************************************** */
 /*! *********************************************************************************
 *
-* Copyright 2020-2024 NXP
+* Copyright 2020-2025 NXP
 *
 * \file
 *
@@ -16,7 +16,6 @@
 #endif
 
 #include "board.h"
-//#include "soc.h"
 #include "ble_general.h"
 #include "controller_init.h"
 #include "ll_types.h"
@@ -41,7 +40,7 @@
 #ifndef gControllerXcvrInitRetryCount_c
 #define gControllerXcvrInitRetryCount_c (10U)
 #endif
-   
+
 #ifndef gNbuMaxTxPowerDbm_c
 /* default max tx power setting to avoid API call at power on */
 #define gNbuMaxTxPowerDbm_c                    10U
@@ -66,13 +65,10 @@ static DEBUG_STRUCT_INFO* debug_info = (DEBUG_STRUCT_INFO*)(0xB0000000);
 *************************************************************************************
 ************************************************************************************/
 
-
-
 #if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
 static void Controller_SaveXcvrDcocDacTrimToFlash(xcvr_DcocDacTrim_t *xcvrDacTrim);
 static uint32_t Controller_RestoreXcvrDcocDacTrimFromFlash(xcvr_DcocDacTrim_t *xcvrDacTrim);
 #endif
-
 
 /************************************************************************************
 *************************************************************************************
@@ -124,12 +120,12 @@ void Controller_RestoreLdoAntTrim(void)
 {
     if( g_ldo_ant_trim <= (XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK >> XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_SHIFT) )
     {
-        // Set LDO ANT Trim 
+        // Set LDO ANT Trim
         uint32_t temp_trim;
         temp_trim = XCVR_ANALOG->LDO_1;
         temp_trim &= ~(XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK);
-        temp_trim |= XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(g_ldo_ant_trim); 
-        XCVR_ANALOG->LDO_1 = temp_trim; 
+        temp_trim |= XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(g_ldo_ant_trim);
+        XCVR_ANALOG->LDO_1 = temp_trim;
     }
 }
 
@@ -148,7 +144,8 @@ void Controller_RestoreLdoAntTrim(void)
 
 uint32_t Controller_RadioInit(void)
 {
-    xcvrStatus_t status;
+    xcvrStatus_t status = gXcvrSuccess_c;
+
 #if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
     uint32_t count = 0;
 #endif
@@ -233,9 +230,6 @@ osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 
     NbuHosted_Config(nbuInterface);
 
-    /* TODO: Can not do it here yet, there are still some XBAR access from main_nbu_ll() init.
-          will do it first time Idle task is called */
-    //PLATFORM_RemoteActiveRel();
 #if defined(gMWS_Enabled_d) && (gMWS_Enabled_d)
     MWS_Register(gMWS_BLE_c, MWS_BLE_Callback);
     // When 15.4 Phy becomes active LL then BLE block should be clocked ... 
@@ -244,14 +238,17 @@ osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 #endif
 
 #if defined(gNbu_Hadm_d) && gNbu_Hadm_d == 1
-    // Set HADM events priority lower than connection events.
-    // By default after power on reset, HADM events priority is higher than connection events
-    // LL_API_SetHadmPriorityOverConnection(0);
+    // Sample code to set HADM events priority lower than connection events.
+    // LL_API_SchedSetPriority(LL_SCHED_PRIO_CONN);
+    // HADM events priority is higher than connection events (default after power on reset)
+    // LL_API_SchedSetPriority(LL_SCHED_PRIO_DEFAULT);
 #endif
-    
+
 #if defined(gNbuMaxTxPowerDbm_c)
     // set the max tx power to avoid LL API call at power on
-    Controller_SetMaxTxPower(gNbuMaxTxPowerDbm_c, gNbuMaxTxPowerLdoTrim_c); 
+#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+    Controller_SetMaxTxPower(gNbuMaxTxPowerDbm_c, gNbuMaxTxPowerLdoTrim_c);
+#endif
 #endif
 
     // function below never returns

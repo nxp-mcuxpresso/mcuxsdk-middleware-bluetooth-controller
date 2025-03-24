@@ -1,16 +1,10 @@
 /*
- * Copyright 2020-2024 NXP
+ * Copyright 2020-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*${header:start}*/
-#include "app.h"
-#include "pin_mux.h"
-#include "board.h"
-#include "fsl_component_serial_manager.h"
-#include "fsl_component_mem_manager.h"
-#include "fwk_platform_ble.h"
 
 /*${header:end}*/
 

@@ -1,7 +1,5 @@
 /*
- * Copyright 2020-2024 NXP
- * All rights reserved.
- *
+ * Copyright 2020-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,7 +11,17 @@
 #include "fwk_platform_ics.h"
 #include "fwk_platform_lowpower.h"
 #include "fwk_debug.h"
+
+/* Keep it for backward compatibility for project that does not define this compile macro */
+#ifndef gUseSfcRf_d
+/* Enable SFC for FRO32K calibration used during NBU start up */
+#define gUseSfcRf_d 1
+#endif
+
+#if defined(gUseSfcRf_d) && (gUseSfcRf_d == 1)
 #include "fwk_rf_sfc.h"
+#endif
+
 #include "board.h"
 #include "nxp2p4_xcvr.h"
 #include "fwk_platform_sensors.h"
@@ -107,7 +115,9 @@ static void NbuHdi_SendChannelSwitchCmd(unsigned short channel);
 #if defined(HDI_MODE) && (HDI_MODE == 1)
 static void NBU_SetPhy(unsigned char rate);
 #endif
+#ifndef LATENCY_TESTS
 static bool_t nbu_tasks_init_done = FALSE;
+#endif
 static bool_t isHighZ = FALSE; /*For peak power reduction feature.*/
 /*osa start_task*/
 void start_task(void *argument);
@@ -138,11 +148,13 @@ int   csfclose(void *fp);
 /*******************************************************************************
  * Private memory declarations
  ******************************************************************************/
+#ifndef LATENCY_TESTS
 static hci_pkt_info_t hciPacketInfo[PACKET_INFO_QUEUE_SIZE];
 volatile static uint8_t pendingPktInfo  = 0;
 static uint8_t readPktInfoIdx           = 0;
 static uint8_t writePktInfoIdx          = 0;
 static uint8_t nbrPacketInfoSkipped     = 0; /* for debug */
+#endif
 
 /* Definition missing from NBU libs
    ThreadX requires this two variables to be set to know the location */
@@ -364,6 +376,7 @@ static void NBU_SetPhy(unsigned char rate)
 }
 #endif
 
+#ifndef LATENCY_TESTS
 void Hcit_PktReceived(hciPacketType_t type, void* packet, uint16_t size)
 {
     PWR_DBG_LOG("Rcv PKT type=%d pkt=%x sz=%d", type, packet, size);
@@ -410,6 +423,7 @@ void Hcit_PktReceived(hciPacketType_t type, void* packet, uint16_t size)
       pendingPktInfo++;
     }
 }
+#endif
 
 static void NbuHci_SendPktToHost(unsigned long packetType, void *pPacket, unsigned short packetSize)
 {
@@ -425,8 +439,10 @@ static void NbuHci_SendPktToHost(unsigned long packetType, void *pPacket, unsign
     printf("\n");
 #endif
 #else
+
     PWR_DBG_LOG("Send PKT type=%d pkt=%x sz=%d", (int)packetType, pPacket, (uint16_t)packetSize);
     Hcit_SendPacket((hciPacketType_t)packetType, pPacket, (uint16_t)packetSize);
+
 #endif
 }
 
@@ -544,6 +560,7 @@ static void  NBU_HADM_CopyConfig(void)
 }
 #endif // #if CS_HANDOFF_ENABLED==1 || CS_HANDOFF_ENABLED==2
 
+#ifndef LATENCY_TESTS
 static void NBU_CheckTemperatureChange(void)
 {
 #if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
@@ -565,6 +582,9 @@ static void NBU_CheckTemperatureChange(void)
     }
 #endif // gNbu_Hadm_d
 }
+#endif
+
+extern void Core1StartLatencyTest(void);
 
 #if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
 /* Implement a syncronization pattern sends trought SWO regularly */
@@ -593,6 +613,9 @@ void generate_synchro_swo(void) {
 /* Hook from LL Idle Task */
 void NBU_Idle(void)
 {
+#ifdef LATENCY_TESTS
+    Core1StartLatencyTest();
+#else
 
 #if defined(CS_HANDOFF_ENABLED) && (CS_HANDOFF_ENABLED!=0)
     if( p_hadm_config != NULL )
@@ -612,7 +635,7 @@ void NBU_Idle(void)
     // Enable logging timestamps - required LL to be enabled - move it to somewhere else
     BOARD_DBGLOGCOUNTERRUNNING();
 
-#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+#if defined(gUseSfcRf_d) && (gUseSfcRf_d == 1)
     /* Check if a measure is available and process the result
      * Called under masked interrupts so no more SFA interrupts are received */
     SFC_Process();
@@ -644,7 +667,8 @@ void NBU_Idle(void)
         BOARD_DBGLPIOSET(0u, 0u);
 
 #if !defined (SDK_OS_FREE_RTOS)
-#if !defined(gNbuJtagCapability)    || (gNbuJtagCapability==0)
+#if (!defined(gNbuJtagCapability)    || (gNbuJtagCapability==0)) && \
+    (!defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d == 0))
         /* Try to go to low power (Deep Sleep), if that's not possible, it will
          * go to WFI only.
          * To keep full debug capability, set gNbuJtagCapability to 1 to avoid
@@ -673,7 +697,7 @@ void NBU_Idle(void)
         while(1);
     }
 #endif
-
+#endif
 }
 
 /*API allows to read the CI coding indicator just after it is available (after header decoding done).
@@ -716,6 +740,7 @@ void NBU_Init()
     /* Low level init for the BLE controller */
     PLATFORM_InitBle();
 #endif
+
     /* Init HCI Transport module */
     bleResult_t status = Hcit_Init((hciTransportInterface_t)Hcit_PktReceived);
     assert(status == gHciSuccess_c);
@@ -731,7 +756,7 @@ void NBU_Init()
     init_15_4_Phy();
 #endif
 
-#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+#if defined(gUseSfcRf_d) && (gUseSfcRf_d == 1)
     /* SFC module requires FwkSrv service to be initialized */
     SFC_Init();
 #endif /* FPGA_TARGET */
@@ -880,8 +905,33 @@ void init_debug_swo(void) {
 }
 #endif
 
+#ifdef LATENCY_TESTS
+static void latency_test_init(void)
+{
+   *(volatile unsigned int*)(0xE002ED98) = 0;
+
+    /* SCS->MPU.RegionBaseAddr = region_start_address | REGION_Valid | REGION_Enabled; */
+    *(volatile unsigned int*)(0xE000ED9C) = 0xa0000000 | 0x3;
+
+    /* SCS->MPU.RegionLimitAddr = region_limit_address | REGION_Enabled; */
+    *(volatile unsigned int*)(0xE000EDA0) = 0xb1000001;
+    /* MPU Memory Attribute Indirection Register : Normal memory, Inner non-cacheable */
+    *(volatile unsigned int*)(0xE000EDC0) = 0x44;
+
+    /* SCS->MPU.Ctrl
+    * Default memory map as a background region for privileged software accesses.
+    * MPU is enabled during HardFault and NMI handlers.
+    * MPU is enabled. */
+    *(volatile unsigned int*)(0xE000ED94) |= 7;
+}
+#endif
+
 int main(void)
 {
+#ifdef LATENCY_TESTS
+    latency_test_init();
+#endif
+
     /* Configure FRO192M clock */
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     PLATFORM_InitFro192M();
@@ -897,7 +947,7 @@ int main(void)
      * prevent the app core to set a slower speed for the NBU on its side */
     PLATFORM_SetFrequencyConstraintFromController(2);
 #endif
-    
+
     // inform LL about the clock update
     LL_API_ClockUpdated();
 
@@ -923,8 +973,11 @@ int main(void)
     /* Init OSA: should be called before any other OSA API*/
     OSA_Init();
 
-    //static  volatile int i = 1;
-    //while (i) {}
+#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
+    /* wait until all ready to go */
+    volatile int foo =1;
+    while (foo) {};
+#endif
 
     Controller_RadioInit();
 

@@ -18,7 +18,7 @@
 #include "lcl_xcvr_hal.h"
 #include "controller_api_ll.h"
 
-#if (NXP_RADIO_GEN != 470)
+#if (NXP_RADIO_GEN < 470)
 #error LCL XCVR HAL is not compatible with radio version
 #endif
 
@@ -39,7 +39,7 @@ typedef struct soc_xcvr_settings_tag
     /* used by XCVR RSM driver */
     rsm_reg_backup_t xcvr_regs_backup;
     xcvr_lcl_tsm_config_t tsm_regs_backup;
-    
+
     /* FIXME: remove duplicates */
 } lcl_xcvr_hal_xcvr_settings_t;
 
@@ -70,7 +70,7 @@ void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram)
                                  XCVR_MISC_RSM_CONFIG_BUFF_RSM_INT_NBSTEP(pkt_ram->nb_steps_before_irq); /* step IRQ */
     XCVR_MISC->RSM_CONFIG_PTR = XCVR_MISC_RSM_CONFIG_PTR_RSM_CONFIG_START_PTR(ptr_word) | 
                                 XCVR_MISC_RSM_CONFIG_PTR_RSM_CONFIG_WR_PTR((uint32_t)pkt_ram->config_write_ptr >> 2U);
-    
+
     /* Result circular buffer */
     ptr_word = (uint32_t)pkt_ram->step_result.base_ptr >> 2U;
     XCVR_MISC->RSM_RESULT_BUFF = XCVR_MISC_RSM_RESULT_BUFF_RSM_RESULT_BASE_ADDR(ptr_word) | 
@@ -103,16 +103,16 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
     uint32 temp;
     int16_t cfo16;
     int32_t cfo32;
-    
+
     step_idx = (rsm_read_ptr[0U] & 0xFF);
     assert(step_idx < HADM_MAX_NB_STEPS_MODE0);
-    
+
     aa_det = (bool_t)((rsm_read_ptr[0U] & 0x80000000) >> 31U);
-    
+
     if (aa_det)
     {
         sync_info_p += step_idx;
-        
+
         sync_info_p->agc_idx = (rsm_read_ptr[0U] & 0xF000) >> 12U;
         sync_info_p->rssi = (rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT;
         temp = rsm_read_ptr[2U];
@@ -135,7 +135,7 @@ void lcl_hal_xcvr_program_time_adjustement(int32_t ppm)
 {
     uint8_t tim_adj; /* +/- 1 us */
     uint32_t temp, time_to_adj;
-    
+
     if (ppm > 0)
       tim_adj = 1U;
     else if (ppm < 0)
@@ -150,10 +150,10 @@ void lcl_hal_xcvr_program_time_adjustement(int32_t ppm)
     tim_adj = 2;
     time_to_adj = 10U;
 #endif
-    
+
     temp = XCVR_MISC->RSM_CTRL7;
     temp &= ~(XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MODE_MASK | XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_DELTA_MASK | XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MASK);
-    
+
     if (tim_adj != 0)
     {
         temp |= XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MODE(1U) |/* enable 1us RSM time grid adjustment */
@@ -175,9 +175,9 @@ static uint32_t lcl_hal_xcvr_dtest_set_page(uint32_t page)
 static inline void lcl_hal_xcvr_setup_agc(void)
 {
     uint32 temp;
-    
+
     xcvr_settings.xcvr_rx_dig_agc_ovrd = XCVR_RX_DIG->AGC_OVRD;
-    
+
     /* Enable AGC WBD mode */
     xcvr_settings.xcvr_rx_dig_agc_ctrl = XCVR_RX_DIG->AGC_CTRL;
     temp = xcvr_settings.xcvr_rx_dig_agc_ctrl;
@@ -384,7 +384,11 @@ void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t
   {
     uint32 temp;
     /* Initialize DSB */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 475)
     MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(1U);
+#else
+    MRCC->MRCC_DATA_STREAM_2P4_CLKSEL = MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC(1U);
+#endif
     /* Put DSB into reset to ensure clean state */
     DSB0->CSR |= DSB_CSR_SFTRST_MASK;
     /* Release DSB from reset */
