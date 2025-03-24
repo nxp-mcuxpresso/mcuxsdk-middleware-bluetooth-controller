@@ -57,7 +57,9 @@ typedef struct
   uint32 nbu_sha1;
 }DEBUG_STRUCT_INFO;
 
-static DEBUG_STRUCT_INFO* debug_info = (DEBUG_STRUCT_INFO*)(0xB0000000);
+/* m_sqram_debug_start defined in linker script */
+extern uint32_t m_sqram_debug_start[];
+static DEBUG_STRUCT_INFO* debug_info = (DEBUG_STRUCT_INFO*)(m_sqram_debug_start);
 
 /************************************************************************************
 *************************************************************************************
