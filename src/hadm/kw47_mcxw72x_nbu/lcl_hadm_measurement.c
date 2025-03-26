@@ -116,6 +116,7 @@ const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 
 
 /* === Prototypes ========================================================== */
 
+static void lcl_hadm_consume_drbg(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort_subevent);
 static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
 static void lcl_hadm_measurement_teardown(const BLE_HADM_SubeventConfig_t *hadm_config);
@@ -859,6 +860,7 @@ static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort
         LCL_HAL_DISABLE_DMA;
     }
     lcl_hadm_measurement_teardown(hadm_meas_p->config_p);
+    lcl_hadm_consume_drbg(hadm_meas_p);
 #endif /* SIMULATOR */
 }
 
@@ -966,6 +968,38 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
     DEBUG_PIN1_CLR
           
     return HADM_HAL_SUCCESS;
+}
+
+/*
+ * Brute force to consume DRBG context to re-sync after a missed subevent.
+ * All DRBG transactions are consumed when preparing the procedure, except those below which are consumed as the subevent runs.
+ * - CS_SYNC AA
+ * - CS_SYNC payloads
+ * Note that, for CS_SYNC AA, there is no need to resync since they are processed by chunks of 128 bits, so taBitsUsed is always 128
+ * which will triger generation of new bits on next invocation.
+ */
+static void lcl_hadm_consume_drbg(hadm_meas_t *hadm_meas_p)
+{
+    uint32_t step_idx;
+
+    DEBUG_PIN1_SET
+
+    for (step_idx = hadm_meas_p->pkt_ram.step_config.curr_step_idx; step_idx < hadm_meas_p->config_p->stepsNb; step_idx++)
+    {
+        BLE_HADM_Chan_Mode_PmExt_AntPerm_t * step_config_p = &hadm_meas_p->config_p->chModePmAntMap[step_idx];
+        if ((step_config_p->mode == HADM_STEP_MODE1) || (step_config_p->mode == HADM_STEP_MODE3))
+        {
+            /* Build AAs and payloads to PKT RAM circular buffer */
+            (void) BLE_HADM_DRBG_Generate_CS_SYNC_step(hadm_meas_p->config_p->connIdx,
+                                                        hadm_meas_p->config_p->subeventIdx,
+                                                        step_idx,
+                                                        hadm_meas_p->config_p->rttTypes,
+                                                        NULL);
+        }
+    }
+    hadm_meas_p->pkt_ram.step_config.curr_step_idx = hadm_meas_p->config_p->stepsNb;
+
+    DEBUG_PIN1_CLR
 }
 
 /*!
