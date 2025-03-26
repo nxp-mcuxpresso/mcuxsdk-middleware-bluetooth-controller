@@ -973,11 +973,8 @@ int main(void)
     /* Init OSA: should be called before any other OSA API*/
     OSA_Init();
 
-#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
-    /* wait until all ready to go */
-    volatile int foo =1;
-    while (foo) {};
-#endif
+    // static volatile int foo = 1;
+    // while (foo) {};
 
     Controller_RadioInit();
 
