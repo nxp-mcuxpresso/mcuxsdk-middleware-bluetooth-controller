@@ -115,9 +115,6 @@ static void NbuHdi_SendChannelSwitchCmd(unsigned short channel);
 #if defined(HDI_MODE) && (HDI_MODE == 1)
 static void NBU_SetPhy(unsigned char rate);
 #endif
-#ifndef LATENCY_TESTS
-static bool_t nbu_tasks_init_done = FALSE;
-#endif
 static bool_t isHighZ = FALSE; /*For peak power reduction feature.*/
 /*osa start_task*/
 void start_task(void *argument);
@@ -148,13 +145,6 @@ int   csfclose(void *fp);
 /*******************************************************************************
  * Private memory declarations
  ******************************************************************************/
-#ifndef LATENCY_TESTS
-static hci_pkt_info_t hciPacketInfo[PACKET_INFO_QUEUE_SIZE];
-volatile static uint8_t pendingPktInfo  = 0;
-static uint8_t readPktInfoIdx           = 0;
-static uint8_t writePktInfoIdx          = 0;
-static uint8_t nbrPacketInfoSkipped     = 0; /* for debug */
-#endif
 
 /* Definition missing from NBU libs
    ThreadX requires this two variables to be set to know the location */
@@ -202,6 +192,10 @@ static StaticTask_t xTimerTaskTCB;
 
 static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
 static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+#else
+static void idle_task(void* param);
+static OSA_TASK_HANDLE_DEFINE(idle_task_handle);
+static OSA_TASK_DEFINE(idle_task, OSA_TASK_PRIORITY_MIN, 1, 600, false);
 #endif /*defined(SDK_OS_FREE_RTOS)*/
 
 #ifdef __COVERAGESCANNER__
@@ -380,48 +374,14 @@ static void NBU_SetPhy(unsigned char rate)
 void Hcit_PktReceived(hciPacketType_t type, void* packet, uint16_t size)
 {
     PWR_DBG_LOG("Rcv PKT type=%d pkt=%x sz=%d", type, packet, size);
-    /* delay processing of HCI commands into idle task as not all NBU tasks are initialized */
-    if (nbu_tasks_init_done == TRUE)
-    {
-#ifdef __COVERAGESCANNER__
-      OSA_DisableIRQGlobal();
-      handle_coverage_hci_command(type, packet);
-      OSA_EnableIRQGlobal();
-#endif /*__COVERAGESCANNER__*/
-      NbuHci_SendPktToController(type, packet, size);
-    }
-    else
-    {
-      /* We are in interrupt context, we can't directly send the packet to the LL
-         or we will have issue with ThreadX
-         So, we store the packet and wait for Idle to send it */
-      uint8_t *pPacketBuffer = MEM_BufferAlloc((uint32_t)size);
-      if (pPacketBuffer != NULL)
-      {
-          FLib_MemCpy(pPacketBuffer, (uint8_t*)packet, size);
-      }
-      else
-      {
-         //ERROR: Out of memory
-         nbrPacketInfoSkipped++;
-      }
 
-      if (pendingPktInfo >= PACKET_INFO_QUEUE_SIZE)
-      {
-         //ERROR: Message will be lost
-         nbrPacketInfoSkipped++;
-      }
-      if (nbrPacketInfoSkipped > 0)
-      {
-          assert(0);
-          return;
-      }
-      hciPacketInfo[writePktInfoIdx].packetType = type;
-      hciPacketInfo[writePktInfoIdx].pPacket = pPacketBuffer;
-      hciPacketInfo[writePktInfoIdx].packetSize = size;
-      writePktInfoIdx = (writePktInfoIdx+1)&(PACKET_INFO_QUEUE_SIZE-1);  //modulo PACKET_INFO_QUEUE_SIZE
-      pendingPktInfo++;
-    }
+#ifdef __COVERAGESCANNER__
+    OSA_DisableIRQGlobal();
+    handle_coverage_hci_command(type, packet);
+    OSA_EnableIRQGlobal();
+#endif /*__COVERAGESCANNER__*/
+
+    NbuHci_SendPktToController(type, packet, size);
 }
 #endif
 
@@ -643,45 +603,23 @@ void NBU_Idle(void)
 
     OSA_DisableIRQGlobal();
 
-    if(pendingPktInfo > 0)
-    {
-        PWR_DBG_LOG("pendingPktInfo=%x", pendingPktInfo);
-        pendingPktInfo--;
-#ifdef __COVERAGESCANNER__
-        handle_coverage_hci_command(hciPacketInfo[readPktInfoIdx].packetType, hciPacketInfo[readPktInfoIdx].pPacket);
-#endif /*__COVERAGESCANNER__*/
-        OSA_EnableIRQGlobal();
-
-        BOARD_DBGLPIOSET(1u, 0u);
-
-        /* we are not under exception context, we can send the packet now */
-        NbuHci_SendPktToController(hciPacketInfo[readPktInfoIdx].packetType, hciPacketInfo[readPktInfoIdx].pPacket, hciPacketInfo[readPktInfoIdx].packetSize);
-        MEM_BufferFree(hciPacketInfo[readPktInfoIdx].pPacket);
-
-        readPktInfoIdx = (readPktInfoIdx+1)&(PACKET_INFO_QUEUE_SIZE-1);  //modulo PACKET_INFO_QUEUE_SIZE
-
-        BOARD_DBGLPIOSET(1u, 1u);
-    }
-    else
-    {
-        BOARD_DBGLPIOSET(0u, 0u);
+    BOARD_DBGLPIOSET(0u, 0u);
 
 #if !defined (SDK_OS_FREE_RTOS)
 #if (!defined(gNbuJtagCapability)    || (gNbuJtagCapability==0)) && \
-    (!defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d == 0))
-        /* Try to go to low power (Deep Sleep), if that's not possible, it will
-         * go to WFI only.
-         * To keep full debug capability, set gNbuJtagCapability to 1 to avoid
-         * Deep Sleep or WFI. */
-        PLATFORM_EnterLowPower();
+(!defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d == 0))
+    /* Try to go to low power (Deep Sleep), if that's not possible, it will
+     * go to WFI only.
+     * To keep full debug capability, set gNbuJtagCapability to 1 to avoid
+     * Deep Sleep or WFI. */
+    PLATFORM_EnterLowPower();
 #endif
 #endif
 
-        BOARD_DBGLPIOSET(0u, 1u);
+    BOARD_DBGLPIOSET(0u, 1u);
 
-        OSA_EnableIRQGlobal();
-    }
-    nbu_tasks_init_done = TRUE;
+    OSA_EnableIRQGlobal();
+
 #ifdef SIMULATOR
     {
         bool_t test_status = FALSE;
@@ -775,16 +713,14 @@ void NBU_Init()
 #endif
 
 #if !defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d==0)
-        /* Initialize required ressources before requesting low power entry
-         * If gNbuDisableLowpower_d is set to 1, this function won't be called so
-         * PLATFORM_EnterLowPower will only go to WFI
-         * CAUTION: do not move before Controller_RadioInit */
+    /* Initialize required ressources before requesting low power entry
+     * If gNbuDisableLowpower_d is set to 1, this function won't be called so
+     * PLATFORM_EnterLowPower will only go to WFI
+     * CAUTION: do not move before Controller_RadioInit */
 #ifndef SIMULATOR
-        PLATFORM_LowPowerInit();
+    PLATFORM_LowPowerInit();
 #endif
 #endif
-    /* Enable Systick */
-    SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 
 }
 
@@ -877,13 +813,28 @@ void vApplicationDaemonTaskStartupHook(void)
     NBU_Init();
 }
 #else
-/* This function is called from ThreadX's tx_application_define function
- * If needed, we can create ThreadX objects (tasks, queues...) from there
- * This is also used to configure the Systicks (weren't before) */
-void tx_application_define_hook(void)
+
+static void idle_task(void* param)
 {
+    LL_API_PostKernelInit();
+    LL_API_IdleInit();
     NBU_Init();
+
+    while(true)
+    {
+        NBU_Idle();
+        LL_API_Idle();
+    }
 }
+
+void tx_application_define(void *first_unused_memory)
+{
+    OSA_TaskCreate(idle_task_handle, OSA_TASK(idle_task), NULL);
+
+    /* Enable Systick */
+    SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+}
+
 #endif
 
 #if defined(DBG_SWO_INIT_VIA_SW) && (DBG_SWO_INIT_VIA_SW != 0)
@@ -998,11 +949,13 @@ int main(void)
 
     Controller_SetNbuVersion(nbu_version.repo_digest);
 
-    /* Start LL scheduler */
-    Controller_Init(&nbuInterface);  /* never returns */
+    /* pre-kernel initialization for the BLE controller */
+    Controller_Init(&nbuInterface);
+
+    /* start threadx */
+    OSA_Start();
 
     /* Won't run here*/
     assert(0);
     return 0;
 }
-

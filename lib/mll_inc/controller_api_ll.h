@@ -262,7 +262,37 @@ extern void GetNbuIrqStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
 void LL_API_UpdateLastNativeClkBeforeSleep(void);
 void LL_API_WaitForClkUpdtFromLowPwr(void);
 
-extern void main_nbu_ll(void);
+/*!
+ * \brief First initialization stage of the BLE Controller.
+ *  Must be called before RTOS scheduler is started and before calling LL_API_PostKernelInit().
+ *  On ThreadX, this is typically called before tx_kernel_enter().
+ *
+ */
+extern void LL_API_PreKernelInit(void);
+
+/*!
+ * \brief Final initialization stage of the BLE Controller.
+ * Must be called after the RTOS scheduler is started, or at least when the RTOS
+ * primitives are available for OS object creation and allocation.
+ * On ThreadX, this is typically called in tx_application_define().
+ *
+ */
+extern void LL_API_PostKernelInit(void);
+
+/*!
+ * \brief Initialization BLE Controller resources used during idle.
+ * This is typically called from the application idle task before entering
+ * the idle task loop. Must be called only once.
+ *
+ */
+extern void LL_API_IdleInit(void);
+
+/*!
+ * \brief BLE Controller idle loop.
+ * Typically called from the lowest priority task like the application idle task.
+ *
+ */
+extern void LL_API_Idle(void);
 
 /* SWO Debug API in framework */
 extern void DBG_SWO_PrintDoubleWordStim0(uint32 dw);

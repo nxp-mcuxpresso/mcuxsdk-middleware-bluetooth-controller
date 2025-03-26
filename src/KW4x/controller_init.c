@@ -82,8 +82,8 @@ static uint32_t Controller_RestoreXcvrDcocDacTrimFromFlash(xcvr_DcocDacTrim_t *x
 *************************************************************************************
 ************************************************************************************/
 
-/* LDO ANT TRIM value to be applied at each XCVR Init or mode change. 
-   This is updated by app core. Valid value 0 - 15. 
+/* LDO ANT TRIM value to be applied at each XCVR Init or mode change.
+   This is updated by app core. Valid value 0 - 15.
    Set to invalid value by default */
 uint8_t g_ldo_ant_trim = (XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK >>
                           XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_SHIFT) + 1U;
@@ -238,7 +238,7 @@ osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 
 #if defined(gMWS_Enabled_d) && (gMWS_Enabled_d)
     MWS_Register(gMWS_BLE_c, MWS_BLE_Callback);
-    // When 15.4 Phy becomes active LL then BLE block should be clocked ... 
+    // When 15.4 Phy becomes active LL then BLE block should be clocked ...
     // otherways it will loose time sync and also crush when GetInactivity read BLE registers
     RADIO_CTRL->RF_CLK_CTRL |= RADIO_CTRL_RF_CLK_CTRL_BTLL_CLK_EN_OVRD(1);
 #endif
@@ -257,8 +257,9 @@ osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 #endif
 #endif
 
-    // function below never returns
-    main_nbu_ll();
+    /* low level initialization of the controller
+     * must happen before kernel init */
+    LL_API_PreKernelInit();
 
     return KOSA_StatusSuccess;
 }
