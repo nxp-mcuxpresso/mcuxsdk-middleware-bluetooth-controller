@@ -15,7 +15,7 @@
 #ifndef _BLE_HADM_HAL_H_
 #define _BLE_HADM_HAL_H_
 
-#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)) || defined (KW47_FIX) || defined (KW43_FIX)
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) || defined (KW47_FIX)
 #define HADM_HAL_VERSION 2 /* For KW47 architecture */
 #else
 #define HADM_HAL_VERSION 1 /* For KW45 architecture */

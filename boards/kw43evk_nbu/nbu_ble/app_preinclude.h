@@ -59,10 +59,6 @@
 /* Disable clock management on NBU (supposed to be handled on host CPU) */
 #define FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL (1)
 
-/* gNbu_Hadm_d is in project cmakeLists.txt , to be undefined first */
-#undef gNbu_Hadm_d
-#define gNbu_Hadm_d 0
-
 #define gEnableCoverage                        0
 #if (defined(gEnableCoverage) && (gEnableCoverage == 1))
 /*Coverage does not need MemBuffer*/

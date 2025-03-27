@@ -178,7 +178,6 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
             case API_Controller_GetTimestampEx:
             {
               /* LL_API_GetBleTimingNoNativeClockCheck() not implemented in FPGA lib */
-#if !defined(FPGA_TARGET) || (FPGA_TARGET==0)    
                 uint32_t hslot;
                 uint16_t qus;
                 uint64_t tstmr;
@@ -189,7 +188,12 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 // use atomic section to have LL timing and TSTMR0 at the same time
                 OSA_DisableIRQGlobal();
                 LL_API_GetBleTimingNoNativeClockCheck(&hslot, &qus);
+#if defined(TSTMR0)             
                 tstmr = *(uint64_t *)TSTMR0;
+#else
+#warning TSTMR0 is not available, need to get some value else where
+                tstmr = 0;
+#endif
                 OSA_EnableIRQGlobal();
 
                 if( (hslot&1U) != 0 )
@@ -201,8 +205,7 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 _PUT32(api_return+8U,  qus >> 2U);
                 _PUT32(api_return+12U, (uint32_t)tstmr);
                 _PUT32(api_return+16U, (uint32_t)(tstmr>>32U));
-                nb_returns += 16U;
-#endif                
+                nb_returns += 16U;     
                 break;
             }
             case API_Controller_GetEncryptionParam:
