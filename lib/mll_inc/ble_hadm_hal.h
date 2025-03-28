@@ -15,7 +15,7 @@
 #ifndef _BLE_HADM_HAL_H_
 #define _BLE_HADM_HAL_H_
 
-#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) || defined (KW47_FIX)
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)) || defined (KW47_FIX) || defined (KW43_FIX)
 #define HADM_HAL_VERSION 2 /* For KW47 architecture */
 #else
 #define HADM_HAL_VERSION 1 /* For KW45 architecture */
@@ -587,9 +587,14 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
  * Payload type (random or soundind sequence) and size is determined by the rtt_type
  * returns number of 32bits words written @cs_sync_step_data
  * Note this format is compatible with PKT RAM format
+ *
+ * If cs_sync_step_data is NULL pointer, the API will advance DRBG context.
+ * In this mode, it behaves as for a regular call to the API, but does not provide any data.
+ * This mode is used when the HAL has missed a subevent, but still needs to keep DRBG context in sync.
  */
 uint8 BLE_HADM_DRBG_Generate_CS_SYNC_step(uint8 hadmConnIdx, uint8 subeventIdx, uint8 stepCnt, BLE_HADM_rttType_t rtt_type, uint32 *cs_sync_step_data);
 #endif
+
 /*!
  * API Used by LL to release HAL results buffer
  */
