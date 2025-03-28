@@ -116,7 +116,8 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
     if ( req_id >= API_Last || api_param_lenth[req_id] != data_len )
     {
         /* invalid parameters length */
-        nb_returns = 0U;
+        api_status = gBleInvalidParameter_c;
+        nb_returns = 4U;
     }
     else
     {
