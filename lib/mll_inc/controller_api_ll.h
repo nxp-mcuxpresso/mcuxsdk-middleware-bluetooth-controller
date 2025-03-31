@@ -256,6 +256,7 @@ extern void   PLATFORM_SetFrequencyConstraintFromController(uint8 freq_constrain
 void LL_API_ClockUpdated(void);
 
 extern void GetCriticalSectionStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
+extern void GetNbuIrqStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
 
 // workaround for too late native clock update after wakeup
 void LL_API_UpdateLastNativeClkBeforeSleep(void);
