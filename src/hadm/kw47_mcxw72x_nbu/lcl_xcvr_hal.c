@@ -92,7 +92,7 @@ void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p)
     XCVR_RX_DIG->TQI_THR = XCVR_RX_DIG_TQI_THR_T1(HADM_HAL_TQI_THRESHOLD_MEDIUM) | XCVR_RX_DIG_TQI_THR_T2(HADM_HAL_TQI_THRESHOLD_BAD);
     /* TQI controls */
     XCVR_RX_DIG->TQI_CTRL = XCVR_RX_DIG_TQI_CTRL_TQI_EN_MASK | 
-                            XCVR_RX_DIG_TQI_CTRL_IQ_AVG_DPTH(hadm_meas_p->iq_avg_win - 3U) |  /* configure IQ averager to get 8 windows */
+                            XCVR_RX_DIG_TQI_CTRL_IQ_AVG_DPTH(hadm_meas_p->iq_avg_win - 1U) |  /* configure IQ averager to get 8 windows */
                             XCVR_RX_DIG_TQI_CTRL_MAG_AVG_DPTH(3U);  /* Magnitude averager uses 8 windows*/
 }
 
