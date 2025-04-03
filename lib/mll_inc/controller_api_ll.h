@@ -267,4 +267,29 @@ extern void main_nbu_ll(void);
 /* SWO Debug API in framework */
 extern void DBG_SWO_PrintDoubleWordStim0(uint32 dw);
 
+// Centralize Enter/Exit critical section using Host OSA
+// Interrupt context save/restore managed by Host OSA APIs
+extern const nbuIntf_t* nbuInterf;
+
+#if !defined(EP_MEAS_CRITICAL_SECTION)
+#define os_if_save_EnterCriticalSection(source)         os_if_save_EnterCriticalSectionV2()
+__STATIC_FORCEINLINE uint32 os_if_save_EnterCriticalSectionV2(void)
+{
+    nbuInterf->nbuEnterCritical();
+    return 0;
+}
+#else /*EP_MEAS_CRITICAL_SECTION*/
+#define os_if_save_EnterCriticalSection(source)         os_if_save_EnterCriticalSectionV2(source)
+__STATIC_FORCEINLINE uint32 os_if_save_EnterCriticalSectionV2(uint32 source)
+{
+    nbuInterf->nbuEnterCritical(source);
+    return 0;
+}
+#endif /*EP_MEAS_CRITICAL_SECTION*/
+
+__STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
+{
+    nbuInterf->nbuExitCritical();
+}
+
 #endif // CONTROLLER_API_H_
