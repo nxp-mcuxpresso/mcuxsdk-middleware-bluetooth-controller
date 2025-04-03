@@ -314,5 +314,10 @@
 
 #define TX_DISABLE_ERROR_CHECKING
 
+/* Define the symbol TX_SINGLE_MODE_SECURE here to run ThreadX in secure mode,
+   and ensure TX_SINGLE_MODE_SECURE is defined for all c and assembly files.
+   ThreadX and the user application will execute in secure mode.*/
+#define TX_SINGLE_MODE_SECURE
+
 #endif
 
