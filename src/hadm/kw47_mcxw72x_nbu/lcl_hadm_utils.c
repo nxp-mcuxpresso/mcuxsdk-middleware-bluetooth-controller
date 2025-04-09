@@ -376,23 +376,43 @@ void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_
     mode_dur[3U] = 0;
 }
 
+#define INIT_ACI_SINGLE_ANT (1U<<6U | 1U<<5U | 1U<<4U | 1U<<0U) /* ACI of 6,5,4,0 all have single antenna for INIT role */
+#define REFL_ACI_SINGLE_ANT (1U<<3U | 1U<<2U | 1U<<1U | 1U<<0U) /* ACI of 3,2,1,0 all have single antenna for REFL role */
+bool is_single_antenna_config(hadm_meas_t *hadm_meas_p)
+{
+  bool single_ant = false;
+  uint8_t aci_bit = 1<<(uint8_t)(hadm_meas_p->config_p->toneAntennaConfigIdx);
+  /* ACI bits have role specific cases where a single antenna is needed */
+  if (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)
+  {
+    single_ant = ((INIT_ACI_SINGLE_ANT & aci_bit) == aci_bit);
+  }
+  else
+  {
+    single_ant = ((REFL_ACI_SINGLE_ANT & aci_bit) == aci_bit);
+  }
+  
+  return single_ant;
+}
+
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p)
 {
     bool ena_antsw_pa_ramping = false; /* OJE TODO, for now disable PA ramping */
+    uint8_t default_antenna_idx = 0U; /* index of default antenna for 1:1 (A1) */
     xcvrLclStatus_t status;
-    
+
     /* Perform antenna permutation index to antenna index mapping */
-    /* " Most antenna configurations described below are 1:X or X:1 orientations where X is in the set of 1 to 4. 
-     * In these configurations, antenna path A1 is assigned to the 1:1 antenna combination, A2 is assigned to the 1:2 or 2:1 combination, 
-     * A3 is assigned to the 1:3 or 3:1 combination and A4 is assigned to the 1:4 or 4:1 combination. 
-     * The exception is the 2:2 configuration where A1 is assigned to 1:1, A2 is assigned to 1:2, A3 is assigned to 2:1 and A4 is assigned to 2:2. " */
-    if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_0)
+    /* " Most antenna configurations described below are 1:X or X:1 orientations where X is in the set of 1 to 4.
+     * In these configurations, antenna path AP1 is assigned to the 1:1 antenna combination, AP2 is assigned to the 1:2 or 2:1 combination,
+     * AP3 is assigned to the 1:3 or 3:1 combination and AP4 is assigned to the 1:4 or 4:1 combination.
+     * The exception is the 2:2 configuration where AP1 is assigned to 1:1, AP2 is assigned to 1:2, AP3 is assigned to 2:1 and AP4 is assigned to 2:2. " */
+    if (is_single_antenna_config(hadm_meas_p))
     {
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
-        ant_gpio[0] = hadm_device.ant2gpio[0];
-        ant_gpio[1] = hadm_device.ant2gpio[0];
-        ant_gpio[2] = hadm_device.ant2gpio[0];
-        ant_gpio[3] = hadm_device.ant2gpio[0];
+        ant_gpio[0] = hadm_device.ant2gpio[default_antenna_idx];
+        ant_gpio[1] = hadm_device.ant2gpio[default_antenna_idx];
+        ant_gpio[2] = hadm_device.ant2gpio[default_antenna_idx];
+        ant_gpio[3] = hadm_device.ant2gpio[default_antenna_idx];
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, ant_gpio, ena_antsw_pa_ramping);
     }
     else
