@@ -388,3 +388,5 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hybrid_gfsk)
         INCLUDES interface
     )
 endif()
+
+include(./CMakeLists_snps.txt)

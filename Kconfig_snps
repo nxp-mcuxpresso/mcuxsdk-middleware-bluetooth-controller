@@ -1,0 +1,38 @@
+# Copyright 2025 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
+    bool "snps_ll"
+
+    if MCUX_COMPONENT_middleware.wireless.snps_ll
+        choice MCUX_COMPONENT_middleware.wireless.snps_ll_selection
+            prompt "selection"
+            default MCUX_COMPONENT_middleware.wireless.snps_ll_freertos if MCUX_COMPONENT_middleware.freertos-kernel
+            default MCUX_COMPONENT_middleware.wireless.snps_ll_bm
+
+            if MCUX_COMPONENT_middleware.freertos-kernel
+                config MCUX_COMPONENT_middleware.wireless.snps_ll_freertos
+                    bool "freertos"
+                config MCUX_COMPONENT_middleware.wireless.snps_ll_freertos_uart
+                    bool "freertos_uart"
+            endif
+            
+            config MCUX_COMPONENT_middleware.wireless.snps_ll_bm
+            bool "bm"
+
+            config MCUX_COMPONENT_middleware.wireless.snps_ll_bm_uart
+            bool "bm_uart"
+
+            # Add optional internal configs
+            osource "middleware/wireless/snps_ll_private/Kconfig"
+        endchoice
+
+        if MCUX_COMPONENT_middleware.wireless.ble_host
+            config MCUX_COMPONENT_middleware.wireless.snps_ll_nxp_hoststack_adapter
+            bool "nxp_hoststack_adapter" 
+            default y 
+        endif
+        
+        config MCUX_COMPONENT_middleware.wireless.snps_ll_controller_api
+        bool "controller_api" 
+    endif
