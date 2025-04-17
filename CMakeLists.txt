@@ -349,12 +349,12 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.nbu_all_hosted_lib)
     )
     mcux_add_library(
         LIBS ../marvell_ll/src/build/kw4x/lib/kw43_nbu_all_hosted_libbtu2_5x.a
-        TOOLCHAINS iar
+        TOOLCHAINS armgcc iar
         DEVICE_IDS ${KW43_FAMILY}
     )
     mcux_add_library(
         LIBS ../marvell_ll/src/build/kw4x/lib/kw43_nbu_all_hosted_libcommon.a
-        TOOLCHAINS iar
+        TOOLCHAINS armgcc iar
         DEVICE_IDS ${KW43_FAMILY}
     )
 endif()
