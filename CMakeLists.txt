@@ -15,14 +15,6 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
                 lib/threadx_inc/tx_event_flags.h
     )
     mcux_add_source(
-        TOOLCHAINS armgcc
-        SOURCES src/KW4x/armgcc/nbu_ble_wrap.s
-    )
-    mcux_add_source(
-        TOOLCHAINS iar
-        SOURCES src/KW4x/iar/nbu_ble_wrap.s
-    )
-    mcux_add_source(
         SOURCES lib/threadx_inc/cortex_m3/tx_port.h
         TOOLCHAINS iar
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
@@ -79,6 +71,14 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu)
                  lib/mll_inc
                  src/hybrid_gfsk
     )
+    mcux_add_source(
+        TOOLCHAINS armgcc
+        SOURCES src/KW4x/armgcc/nbu_ble_wrap.s
+    )
+    mcux_add_source(
+        TOOLCHAINS iar
+        SOURCES src/KW4x/iar/nbu_ble_wrap.s
+    )
 endif()
 
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
@@ -93,6 +93,14 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
                 src/KW4x/app.h
                 src/KW4x/board.h
                 src/KW4x/board.c
+    )
+    mcux_add_source(
+        TOOLCHAINS armgcc
+        SOURCES src/KW4x/armgcc/nbu_ble_wrap.s
+    )
+    mcux_add_source(
+        TOOLCHAINS iar
+        SOURCES src/KW4x/iar/nbu_ble_wrap.s
     )
     mcux_add_library(
         LIBS lib/kw47_nbu_all_hosted_libcommon.a
