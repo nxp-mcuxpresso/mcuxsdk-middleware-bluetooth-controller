@@ -697,6 +697,10 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         XCVR_LCL_EnaLpmClkSwitch(1);
         XCVR_LCL_EnaDividerSync(true);
     }
+    if (hadm_config_p->phaseCont == HADM_PHASE_COHERENCY)
+    {
+        (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
+    }
     assert(gXcvrLclStatusSuccess == status);
       
     LCL_HAL_ENABLE_TONE_OBS
