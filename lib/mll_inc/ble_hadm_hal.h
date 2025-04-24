@@ -222,6 +222,7 @@ typedef enum
     HADM_PHASE_CONT_DISABLED = 0U,  /*!< No phase continuity ensures */
     HADM_PHASE_CONT_OVERRIDES,      /*!< Phase continuity ensured by keeping certain radio blocks ON btw subevents */
     HADM_PHASE_CONT_LOOPBACK,       /*!< Phase continuity ensured by correcting PCT after detecting phase ambiguities using loopback */
+    HADM_PHASE_COHERENCY,           /*!< Phase coherency ensured by enabling Proportional Integral Controller (PIC) feature */
 } BLE_HADM_phase_cont_t;
 
 /*! Distance calibration modes */
