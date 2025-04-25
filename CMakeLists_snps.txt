@@ -30,7 +30,6 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll)
             INCLUDES interface/snps_controller/sdk_integration
                      interface/snps_controller/ble_controller
                      interface/snps_controller/shrd_utils
-                     interface/snps_controller/shrd_utils/src/porting/nhs
         )  
     endfunction()
 
