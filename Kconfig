@@ -24,6 +24,7 @@ menu "ble_controller"
     config MCUX_COMPONENT_middleware.wireless.ble_controller_hadm
         bool "ble_controller_hadm"
         select MCUX_COMPONENT_driver.ltc
+        select MCUX_COMPONENT_driver.tpm
         depends on MCUX_HW_BOARD_kw45b41zevk_nbu || MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk || MCUX_HW_BOARD_mcxw71evk || MCUX_HW_BOARD_frdmmcxw72  || MCUX_HW_BOARD_kw43evknbu
     config MCUX_COMPONENT_middleware.wireless.ble_controller_MWS
         bool "ble_controller_MWS"
