@@ -244,6 +244,7 @@ typedef enum
     HADM_HAL_COLLISION          = 6U, /* HADM and connection events collision */
     HADM_HAL_TIME_PASSED        = 7U, /* HADM start time has passed */
     HADM_HAL_MEMORY_FULL        = 8U, /* HADM HAL could not allocate memory */
+    HADM_HAL_ABORTED_SYNC_TIMEOUT = 9U, /* One mode0 expected (window widening) but missed */
     HADM_HAL_INVALID            = 0xFFU
 } BLE_HADM_STATUS_t;
 
