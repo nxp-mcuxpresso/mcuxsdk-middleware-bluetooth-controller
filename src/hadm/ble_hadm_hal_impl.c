@@ -191,7 +191,12 @@ void BLE_HADM_SubeventStop(const BLE_HADM_SubeventConfig_t *config)
 
 BLE_HADM_STATUS_t BLE_HADM_Init(void)
 {
+#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     return lcl_hadm_init();
+#else
+    // temporary fix for 2M PHY corruption
+    return HADM_HAL_SUCCESS;
+#endif
 }
 
 
