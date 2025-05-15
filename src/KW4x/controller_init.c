@@ -196,7 +196,9 @@ uint32_t Controller_RadioInit(void)
 #else
 #ifndef SIMULATOR
     status = XCVR_Init(&xcvrConfig, &rbmeConfig);
-
+#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
+    XCVR_MISC->XCVR_CTRL |= XCVR_MISC_XCVR_CTRL_LL_CFG_CAPT_DIS(1);
+#endif
     /* update LDO trim after xcvr init as the default value is no always correct */
     Controller_RestoreLdoAntTrim();
 
