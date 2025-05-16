@@ -14,7 +14,7 @@
 /*! \cond DOXY_SKIP_TAG */
 #define gNbuVerMajor_c   1
 #define gNbuVerMinor_c   9
-#define gNbuVerPatch_c   22
+#define gNbuVerPatch_c   23
 #define gNbuVerBuildNo_c 0
 #define gNbuModuleId_c   0x11
 /*! \endcond */
