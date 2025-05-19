@@ -38,6 +38,10 @@
 #include "fwk_platform_dcdc.h"
 #endif
 
+#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
+#include "hdi.h"
+#endif
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -227,6 +231,12 @@ uint32_t Controller_SetNbuVersion(const uint8* repo_digest)
 
 osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 {
+#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
+    /* Select BLE radio mode */
+    (void)HDI_Init();
+    HDI_Set_Mode_Ble();
+#endif
+
     /* set BLE as active LL */
     RADIO_CTRL->LL_CTRL &= ~RADIO_CTRL_LL_CTRL_ACTIVE_LL_MASK;
 
