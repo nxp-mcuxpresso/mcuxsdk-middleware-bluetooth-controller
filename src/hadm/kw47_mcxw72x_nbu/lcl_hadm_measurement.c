@@ -945,13 +945,25 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
 
         if (step_config_p->mode != HADM_STEP_MODE2)
         {
+            uint32_t nb_words_written;
             BLE_HADM_rttType_t rtt_type = (step_config_p->mode == HADM_STEP_MODE0) ? HADM_RTT_TYPE_CS_AA_ONLY_TIMING : hadm_meas_p->config_p->rttTypes;
 
             /* Build AAs and payloads to PKT RAM circular buffer */
             DEBUG_PIN1_SET
-            uint32_t nb_words_written = BLE_HADM_DRBG_Generate_CS_SYNC_step(hadm_meas_p->config_p->connIdx, hadm_meas_p->config_p->subeventIdx,
-                                                                            circ_buff_p->curr_step_idx,
-                                                                            rtt_type, hadm_meas_p->pkt_ram.config_write_ptr);
+            if (step_config_p->mode == HADM_STEP_MODE0)
+            {
+                /* For mode0, AAs have been computed in advanced and are available in HAL config buffer */
+                nb_words_written = 2U; /* pn1 and pn2 */
+                *hadm_meas_p->pkt_ram.config_write_ptr = hadm_meas_p->config_p->pnList[step_idx].pn1;
+                *(hadm_meas_p->pkt_ram.config_write_ptr + 1U) = hadm_meas_p->config_p->pnList[step_idx].pn2;
+            }
+            else
+            {
+                /* For non-mode0, AAs and payloads have to be computed on the flight */
+                nb_words_written = BLE_HADM_DRBG_Generate_CS_SYNC_step(hadm_meas_p->config_p->connIdx, hadm_meas_p->config_p->subeventIdx,
+                                                                                circ_buff_p->curr_step_idx,
+                                                                                rtt_type, hadm_meas_p->pkt_ram.config_write_ptr);
+            }
             hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_w_idx].cs_sync_ant_id = cs_sync_ant_id;
             hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_w_idx].aa_rx = *(hadm_meas_p->pkt_ram.config_write_ptr + aa_offset);
 #ifdef HADM_UT_MODE0_TIMEOUT
