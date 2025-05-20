@@ -84,9 +84,9 @@
    
 #define HADM_HAL_PKT_RAM_NB_STEPS_MARGIN          (2U)   /* margin btw number of config steps actually programmed and IRQ steps  */
 #define HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ  (8U)  /* maximum number of CS steps before step interrupt */
-#define HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL(nbMode0) (nbMode0 + 1U) /* number of CS steps loaded initially during applyConfig */
+#define HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL  (1U) /* number of CS steps loaded initially right after RSM has been started */
 #define HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED     (HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ + HADM_HAL_PKT_RAM_NB_STEPS_MARGIN)
-#define HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE (HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL(3U) + (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*2U))
+#define HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE (HADM_MAX_NB_STEPS_MODE0 + HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL + (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*2U))
 
 /* === Types ================================================================ */
 /*! Contains some register backup values captured after Mode0 phase */

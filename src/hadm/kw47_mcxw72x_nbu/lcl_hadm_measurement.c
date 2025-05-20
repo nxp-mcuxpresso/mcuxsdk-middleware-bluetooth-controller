@@ -599,7 +599,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     DEBUG_PIN1_SET 
 
     /* Build first configuration steps in PKT RAM: mode 0 steps + next one (design choice) without pushing RSM pointers */
-    lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL(hadm_config->mode0Nb), hadm_meas_p, FALSE);
+    lcl_hadm_set_steps_config(hadm_config->mode0Nb, hadm_meas_p, FALSE);
     
     /* Program RSM to start on NBU trigger + DELAY ahead of time */
     LCL_HAL_PROGRAM_RSM_TRIGGER(rsm_config_p->trig_sel, rsm_config_p->trig_delay);
@@ -723,6 +723,12 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     assert(rsm_state == LCL_HAL_XCVR_RSM_STATE_DELAY);
     (void)rsm_state;
 #endif
+
+    /* End of critical configuration section: past this point, the RSM is supposed to run */
+    DEBUG_PIN0_PULSE
+
+    /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
+    lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
 
     DEBUG_PIN1_CLR
     DEBUG_PIN0_CLR
