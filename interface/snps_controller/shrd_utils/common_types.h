@@ -127,9 +127,16 @@
 #define MEMCPY(ptr_destination, ptr_source, memory_size)	ble_memcpy(ptr_destination, ptr_source, memory_size)
 #define MEMCMP(ptr_destination, ptr_source, memory_size)	ble_memcmp(ptr_destination, ptr_source, memory_size)
 
+#define PROFILE_DISABLED				0
+#define PROFILE_DETAILED				1
+#define PROFILE_LIGHTWEIGHT				2
+#define PROFILE_BSP						3
+
 #ifndef SUPPORT_PROFILE
-#define SUPPORT_PROFILE				0
+#define SUPPORT_PROFILE					PROFILE_DISABLED
 #endif /* SUPPORT_PROFILE */
+
+#define IS_INTERNAL_PROFILED_ENABLED	((SUPPORT_PROFILE == PROFILE_DETAILED) || (SUPPORT_PROFILE == PROFILE_LIGHTWEIGHT))
 
 
 
@@ -377,7 +384,6 @@ typedef enum {
  * The default PHY periodic calibration period in second. this Macro can be set to any value , Zero means that phy periodic calibration is disabled
  */
 #define DEFAULT_PHY_CALIBRATION_PERIOD        		60	/* Time period for PHY calibration = 10s */
-
 
 
 

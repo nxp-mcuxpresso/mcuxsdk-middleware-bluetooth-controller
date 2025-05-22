@@ -37,18 +37,17 @@
 // Abstract: Configuration definition header file for DWC_ble154combo
 #define Z_DATA_SYNC_STAGES 2  //not used
 #define USE_SLPTMR_CAL 1      //not used
-#define USE_SCAN_OUT_MUX 0    //different - not used
-#define USE_RNG 1             //new - not used
+#define USE_SCAN_OUT_MUX 0    //not used
 #define USE_JTAG 1            //not used
 #define Z_RESET_SYNC_STAGES 2 //not used
 #define USE_AES 1             //not used
 #define SW_ACT_HIGH 1         //not used
-#define ANT 0                 //different - not used
+#define ANT 0                 //not used
 #define BUS_CLK 32            //not used
 #define PHY_TYPE 1            //not used
-#define BLE_MAC_ROLE 2        //different - not used
+#define BLE_MAC_ROLE 2        //not used
 #define BLE_LL_ROLE 1         //not used
-#define ACT_CLK 16            //different - used
+#define ACT_CLK 16            //used
 #define DF_NO_ANTENNAS 4      //used
 #define LST_ADDR 7            //used
 #define SEQ_RAM_ADDR_WIDTH 7  //not used

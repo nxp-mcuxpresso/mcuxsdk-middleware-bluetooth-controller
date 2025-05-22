@@ -377,15 +377,17 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
     /* Make sure LL interrupts have highest priority (only check enabled interrupts). This is a prerequisite of the system. */
     for (int irq = 0; irq <= WAKE_PAD_IRQn; irq++)
     {
-        if(NVIC_GetEnableIRQ(irq))
+        if(NVIC_GetEnableIRQ(irq) &&
+                irq != BLE_LL_IRQn &&
+                irq != BLE_SLP_TMR_IRQn)
         {
-            if(irq != BLE_LL_IRQn && NVIC_GetPriority(irq) <= ll_irq_prio)
+            if(NVIC_GetPriority(irq) <= ll_irq_prio)
             {
                 debug_hci_printf("irq %d with priority %d must have lower priority than BLE_LL_IRQn irq prio %d\n", irq, NVIC_GetPriority(irq), ll_irq_prio);
                 return kBLEC_ErrorLLIrqPriorityInit;
             }
 
-            if(irq != BLE_SLP_TMR_IRQn && NVIC_GetPriority(irq) <= ll_sleep_irq_prio)
+            if(NVIC_GetPriority(irq) <= ll_sleep_irq_prio)
             {
                 debug_hci_printf("irq %d with priority %d must have lower priority than BLE_SLP_TMR_IRQn irq prio %d\n", irq, NVIC_GetPriority(irq), ll_sleep_irq_prio);
                 return kBLEC_ErrorLLIrqPriorityInit;

@@ -25,7 +25,6 @@
 
 #include "stdint.h"
 #include "stdbool.h"
-
 /********************* Macros **********************************/
 #define POOL_BLOCK_SIZE 		16
 #define POOL_TOTAL_BLOCKS_SIZE 	10

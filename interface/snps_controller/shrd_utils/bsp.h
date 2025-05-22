@@ -101,6 +101,15 @@ typedef struct _ble_ll_bus {
 	/** Bus Write callback that will be called after the requested is written to the bus */
 	void (*write)(uint8_t *buffer);
 } ble_ll_bus;
+
+
+typedef enum _profiling_state_e {
+	PROFILE_STATE_START,
+	PROFILE_STATE_CLEAR,
+	PROFILE_STATE_END,
+} profiling_state_e;
+
+
 /**
  * @brief enum holding all debugging gpio
  *
@@ -272,6 +281,7 @@ typedef enum Debug_GPIO_e{
 	DBG_IO_ED_TMR_HNDL                                          ,
 	DBG_IO_OS_TMR_EVNT_CBK                                      ,
 	DBG_IO_PROFILE_MARKER_PHY_WAKEUP_TIME                       ,
+	DBG_IO_PROFILE_MARKER_BLOCKING_PHY_WAKEUP_TIME				,
 	DBG_IO_PROFILE_END_DRIFT_TIME                               ,
 	DBG_IO_PROC_RADIO_RCV										,
 	DBG_IO_EVNT_TIME_UPDT										,
@@ -561,7 +571,6 @@ int logUart(void* devHandle, char* logStr);
 void bsp_assert_log(uint8_t condition, const char *ptr_func_name,  const int line);
 void bsp_warning(const char *ptr_func_name,  const int line, uint8_t severity);
 void bsp_assert(uint8_t condition, const char *ptr_func_name,  const int line, uint8_t severity);
-
 /**
  * @brief set tx power limitation persistency
  *
@@ -570,5 +579,18 @@ void bsp_assert(uint8_t condition, const char *ptr_func_name,  const int line, u
  */
 void bsp_channel_tx_power_limit_set_persistency(uint8_t persistent);
 
+/**
+ * @brief Communicates the state of the execution time profiling
+ *
+ * @param[in] state: Signals the start, end or clearance of the execution time
+ */
+void bsp_exec_time_profiling(const profiling_state_e state);
+
+/**
+ * @brief Communicates the profiled value for the drift time
+ *
+ * @param[in] value: Profiled value in HW Cycles
+ */
+void bsp_drift_time_profiling(const uint32_t value);
 
 #endif /* LL_BSP_H_ */

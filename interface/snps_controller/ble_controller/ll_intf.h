@@ -4047,6 +4047,15 @@ ble_stat_t ll_intf_ctrl_rx_dtp(uint8_t rx_pckt_count, uint8_t rx_pckt_len);
 
 #endif /* SUPPORT_RX_DTP_CONTROL */
 
+#if IS_INTERNAL_PROFILED_ENABLED
+/**
+ * @brief Gets the maximum times for the execution time and drift time
+ * @param exec_time  [out]: Max Execution Time
+ * @param drift_time [out]: Max Drift Time
+ */
+void ll_intf_get_profile_statistics(uint32_t* exec_time, uint32_t* drift_time);
+#endif /* IS_INTERNAL_PROFILED_ENABLED */
+
 /*=================== get sleep timer value in us ===============*/
 /**
  * @brief  get sleep timer value in us.

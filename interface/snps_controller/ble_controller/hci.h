@@ -149,6 +149,7 @@ void hci_free_msg(
 /** @ingroup  ext_hci_cmds External HCI Commands
  * @{
  */
+
 /**
  * @brief Registers a callback function to be called whenever a command has been
  *        processed. It can be used to free resources that were allocated for the

@@ -41,6 +41,8 @@
 /*************************** BLE Configuration *************************************/
 /*Configurations of BLE will apply only when BLE is enabled*/
 /* Roles configurations */
+/* Allow compiling different flavours of the library
+ * without creating a header file per combination */
 #ifndef SUPPORT_EXPLCT_OBSERVER_ROLE
 #define SUPPORT_EXPLCT_OBSERVER_ROLE				1 /* Enable\Disable Explicit observer role. Enable:1 - Disable:0 */
 #endif
