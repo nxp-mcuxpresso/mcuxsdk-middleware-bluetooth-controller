@@ -26,12 +26,15 @@
 
 /* === Macros ============================================================== */
 
+/* Size of a preallocted HAL result buffer. For now assuming that mode3/n_ap=4 is the largest step report */
+#define HADM_HAL_BUFFER_SIZE (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*BLE_HADM_STEP3_REPORT_SIZE(HADM_MAX_NB_ANTENNA_PATHS))
+
 /* === Globals ============================================================= */
 uint32_t nvic_backup;
 
 BLE_HADM_SubeventConfig_t  configBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS];
 BLE_HADM_SubeventResultsData_t resultsDataBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS];
-static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS*HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*BLE_HADM_STEP3_REPORT_SIZE(HADM_MAX_NB_ANTENNA_PATHS)];
+static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
 
 /* Conversion LUT for 2x2: from permutation index to antenna index */
 /* "A1 is assigned to 1:1, A2 is assigned to 1:2, A3 is assigned to 2:1 and A4 is assigned to 2:2" */
@@ -57,8 +60,9 @@ void lcl_hadm_utils_init_buffers(void)
         configBuffer[i].configBufferUsed = 0;
 
         resultsDataBuffer[i].resultBufferUsed = 0;
-        resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[i*HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*BLE_HADM_STEP3_REPORT_SIZE(HADM_MAX_NB_ANTENNA_PATHS)];
-        resultsDataBuffer[i].resultBufferSize = sizeof(gpHadmHalResultBuffer) / HADM_MAX_NB_SIMULT_SUBEVENTS;
+        resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[i*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
+        resultsDataBuffer[i].resultBuffer2 = &gpHadmHalResultBuffer[(i*HADM_SNIFFER_DEVICE_NB+1)*HADM_HAL_BUFFER_SIZE];
+        resultsDataBuffer[i].resultBufferSize = HADM_HAL_BUFFER_SIZE;
     }
 }
 
@@ -111,6 +115,7 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 
             /* Do some inits */
             result_p->referencePwrLevel = HADM_INVALID_REFERENCE_POWER_LEVEL;
+            result_p->referencePwrLevel2 = HADM_INVALID_REFERENCE_POWER_LEVEL;
             result_p->frequencyCompensation = 0xC000;
             result_p->syncDelayUs = 0;
             break;
@@ -252,21 +257,30 @@ void lcl_hadm_enable_lcl_interrupts(void)
 }
 
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-void lcl_hadm_enable_interrupts_for_subevent(void)
+void lcl_hadm_enable_interrupts_for_subevent(bool trig_on_tx)
 {
     NVIC_ClearPendingIRQ(BRF_INT_IRQn);
     EnableIRQ(BRF_INT_IRQn);
     NVIC_SetPriority(BRF_INT_IRQn, 0);
     XCVR_TSM->CTRL |= XCVR_TSM_CTRL_TSM_IRQ0_EN_MASK;
-    XCVR_TSM->TIMING03 &= ~(XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
-    XCVR_TSM->TIMING03 |= XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI(26) | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO(27);
+    if (trig_on_tx)
+    {
+        XCVR_TSM->TIMING03 &= ~(XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
+        XCVR_TSM->TIMING03 |= XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI(26) | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO(27);
+    }
+    else
+    {
+        XCVR_TSM->TIMING03 &= ~(XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_LO_MASK);
+        XCVR_TSM->TIMING03 |= XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_HI(26) | XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_LO(27);
+    }
 }
 
 void lcl_hadm_restore_interrupts_for_subevent(void)
 {
     DisableIRQ(BRF_INT_IRQn);
     XCVR_TSM->CTRL &= ~XCVR_TSM_CTRL_TSM_IRQ0_EN_MASK;
-    XCVR_TSM->TIMING03 |= (XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK);
+    XCVR_TSM->TIMING03 |= (XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_TX_LO_MASK |
+                           XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_LO_MASK);
 }
 
 /* Programm FOM register values.

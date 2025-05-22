@@ -247,6 +247,20 @@ void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx)
     /* else : Invalid index, remain in automatic mode */
 }
 
+/* Set RX gain for 2nd part of steps in sniffer mode */
+void lcl_hal_xcvr_set_rxgain2(uint8_t man_agc_idx)
+{
+    if(man_agc_idx <= LCL_HAL_XCVR_AGC_INDEX_MAX)
+    {
+        /* Use AGC manual index */
+        uint32_t temp = XCVR_RX_DIG->CTRL2;
+        temp &= ~(XCVR_RX_DIG_CTRL2_SN_AGC_INIT_IDX2_MASK);
+        temp |= XCVR_RX_DIG_CTRL2_SN_AGC_INIT_IDX2(man_agc_idx);
+        XCVR_RX_DIG->CTRL2 = temp;
+    }
+    /* else : Invalid index, remain in automatic mode */
+}
+
 /*
  * RPL is the opposite of internal RX gain applied on mode0, converted to dBm (+13)
  * RPL(dBm) = rssi_nb_adj(dB) - agc_gain(dB) + 13

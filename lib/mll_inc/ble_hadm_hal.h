@@ -136,6 +136,7 @@ typedef enum
 {
     HADM_ROLE_INITIATOR = 0U,
     HADM_ROLE_REFLECTOR = 1U,
+    HADM_ROLE_SNIFFER = 2U,      /* The device will act as a sniffer (uses CS_SYNC like a reflector) */
     HADM_ROLE_INVALID
 } BLE_HADM_role_t;
 
@@ -336,14 +337,17 @@ typedef struct BLE_HADM_SubeventResultsData_tag
     uint8 nbStepsCollected;            /*!< Number of CS steps present in Result buffer */
     uint8 firstStepCollected;          /*!< Index of first CS step present in Result buffer */
     int8 referencePwrLevel;            /*! reference power level (RPL) for the event (dBm) */
+    int8 referencePwrLevel2;           /*! reference power level (RPL) for the event (dBm). 2nd device in sniffer mode */
     int16 frequencyCompensation;       /*! Frequency compensation value in units of 0.01 ppm */
     uint16 syncDelayUs;                /*! elapsed time between subevent start trigger and reception of 1st bit of sync packet. Invalid if subevent failed */
     uint16 resultBufferSize;           /*! resultBuffer size in bytes */
     uint16 debugBufferSize;            /*! debugBuffer size in bytes */
     uint16 halBufOffset;               /* Offset to next octet to read in HAL data buffer */
+    uint16 halBufOffset2;              /* Offset to next octet to read in HAL data buffer2 */
     uint16 halDbgBufOffset;            /* Offset to next octet to read in HAL debug buffer */
     /* Result buffer */
     uint8 *resultBuffer;               /*! Where to store results. See format below */
+    uint8 *resultBuffer2;              /*! Where to store results for second device in sniffer mode. See format below */
     /* Debug buffer */
     uint8 *debugBuffer;                /*! Where to store debug data - allocated by HAL layer (HW-specific) */
 } BLE_HADM_SubeventResultsData_t;
@@ -453,7 +457,7 @@ typedef struct BLE_HADM_HalCapabilities_tag
  *              +   Tone_Quality_Indicator (1 byte, TQI PCT for antenna path #k)
 */
 /*! Step report size based on step mode and number of APs */
-#define BLE_HADM_STEP0_REPORT_SIZE(role)   ((role) == 0 ? 5U : 3U)
+#define BLE_HADM_STEP0_REPORT_SIZE(role)   ((role) == 1 ? 3U : 5U)
 #define BLE_HADM_STEP1_REPORT_SIZE      (6U)
 #define BLE_HADM_STEP2_REPORT_SIZE(n_ap)   (1U + 4U * (1U + (n_ap)))
 #define BLE_HADM_STEP3_REPORT_SIZE(n_ap)   (BLE_HADM_STEP2_REPORT_SIZE(n_ap) + BLE_HADM_STEP1_REPORT_SIZE)

@@ -218,8 +218,8 @@ typedef enum
     
 #define LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE       (1U) /* in 32bits words */
 #define LCL_HAL_PKT_RAM_STEP_RESULT_MODE01_SIZE       (LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE + 4U) /* 5 words */    
-#define LCL_HAL_PKT_RAM_STEP_RESULT_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE + n_ap + 1U) /* 1 + (N_AP + 1) words */
-#define LCL_HAL_PKT_RAM_STEP_RESULT_MODE3_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_RESULT_MODE01_SIZE + n_ap + 1U) /* 5 + (N_AP + 1) words */
+#define LCL_HAL_PKT_RAM_STEP_RESULT_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_RESULT_COMMON_SIZE + (n_ap) + 1U) /* 1 + (N_AP + 1) words */
+#define LCL_HAL_PKT_RAM_STEP_RESULT_MODE3_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_RESULT_MODE01_SIZE + (n_ap) + 1U) /* 5 + (N_AP + 1) words */
 #define LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX          (LCL_HAL_PKT_RAM_STEP_RESULT_MODE3_SIZE(HADM_MAX_NB_ANTENNA_PATHS)) /* 10 words */
 #define LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX_SNIFFER  (LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX * 2U) /* 20 words */
 
@@ -355,6 +355,7 @@ extern "C" {
 #endif
 
 void lcl_hal_xcvr_set_rxgain(uint8_t man_agc_idx);
+void lcl_hal_xcvr_set_rxgain2(uint8_t man_agc_idx);
 int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx);
 void lcl_hal_xcvr_setup_rssi_continuous(bool_t continuous);
 uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx);

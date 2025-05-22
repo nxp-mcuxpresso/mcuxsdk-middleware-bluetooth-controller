@@ -25,6 +25,9 @@
 /* === Macros =============================================================== */
 #define HADM_PLL_CAL_INTERPOLATION
 
+/* Multiplier for sniffer feature (how many devices are captured) */
+#define HADM_SNIFFER_DEVICE_NB (2U)
+
 #define ABS(x) (((x) > 0) ? ((uint32_t)(x)) :((uint32_t) -(x)))
 
 /* Approximation of complex magnitude (sqrt(i^2+q^2)). i and q need to be absolute values */
@@ -166,6 +169,7 @@ typedef struct
 {
     const BLE_HADM_SubeventConfig_t *config_p;  /*!< pointer on HADM configuration */ 
     BLE_HADM_SubeventResultsData_t *result_p;   /*!< pointer on HADM results */
+    BLE_HADM_SubeventResultsData_t *result2_p;  /*!< pointer on 2nd HADM results for sniffer */
     hadm_pkt_ram_desc_t    pkt_ram;             /*!< PKT RAM descriptoprs (circular buffers) */
     hadm_meas_state_t      state;               /*!< HAL meas state */
     uint8_t                debug_flags;         /*!< debug flags, see @HADM debug flags */
@@ -183,6 +187,7 @@ typedef struct
     xcvr_lcl_rsm_config_t  rsm_config;          /*!< RSM XCVR configuration for this CS subevent */
     hadm_info_t            info;                /*!< pointer to HADM measurement info struct */
     hadm_sync_info_t       sync_info[HADM_MAX_NB_STEPS_MODE0]; /*!< structure to store synchronization information */
+    hadm_sync_info_t       sync_info2[HADM_MAX_NB_STEPS_MODE0]; /*!< structure to store synchronization information for 2nd device */
     uint8_t                data_in_flight_w_idx;  /*!< write index for in flight data */
     uint8_t                data_in_flight_r_idx;  /*!< read index for in flight data */
     hadm_data_in_flight_t  pkt_ram_data_in_flight[HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE]; /*!< Working buffer of Rx AA currently in flight in config PKT RAM buffer It is required to keep a copy for HARTT frac delay computation ... */
@@ -194,6 +199,7 @@ typedef struct
     bool                   is_proc_init_done;   /*!< Set to TRUE if procedure intialization has been done  */
     uint8_t                cfo_channel;         /*!< Channel index of the retained mode 0 */
     uint8_t                agc_idx;             /*!< AGC idx for the procedure (0xFF means AGC unlocked) */
+    uint8_t                agc_idx2;            /*!< Sniffer: Second AGC idx for the procedure (0xFF means AGC unlocked) */
     int16_t                ppm;                 /*!< ppm Unit: 0.01 ppm, computed based on mode0 CFO */
     int32_t                cfo;                 /*!< CFO [Hz] measured during alignment phase */
 } hadm_proc_t;
