@@ -130,7 +130,7 @@ static uint32_t MWS_SetBleEnable(uint32_t enabled, uint32_t mode)
 uint32_t Controller_GetInactivityDuration(void)
 {
     /* convert from half slot to slot (625us) */
-    return LL_SCHED_GetSleepTime()>>1U;
+    return LL_API_SCHED_GetSleepTime()>>1U;
 }
 
 uint32_t MWS_BLE_Callback (mwsEvents_t event)
