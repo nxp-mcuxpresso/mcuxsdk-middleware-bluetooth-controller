@@ -384,6 +384,8 @@ typedef struct BLE_HADM_SubeventConfig_tag
 #if (HADM_HAL_VERSION == 1)
     BLE_HADM_PN_list_t pnList[HADM_MAX_NB_STEPS_RTT]; /*!< PN sequence list. List index is the nth step containing a RTT packet. Length=pnSeqNb */
     BLE_HADM_PN_rand_t pnRand[HADM_MAX_NB_STEPS_RTT_RAND]; /*! PN random sequence (if used) */
+#else
+    BLE_HADM_PN_list_t pnList[HADM_MAX_NB_STEPS_MODE0]; /*!< PN sequence list for mode0 */
 #endif
 
 } BLE_HADM_SubeventConfig_t;
