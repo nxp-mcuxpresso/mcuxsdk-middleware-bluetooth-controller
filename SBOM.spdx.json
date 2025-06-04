@@ -2,7 +2,7 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2025-05-21T08:17:02Z",
+    "created": "2025-06-03T08:23:19Z",
     "creators": [
       "Organization: NXP"
     ],
@@ -74,7 +74,7 @@
     },
     {
       "spdxElementId": "SPDXRef-package-24056ce1-0b1d-44a9-a977-5769ec2efade",
-      "relationshipType": "STATIC_LINK",
+      "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-package-2d2ca599-bbb5-4e78-8e52-bd587f686cc4"
     }
   ]
