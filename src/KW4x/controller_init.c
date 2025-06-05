@@ -200,8 +200,10 @@ uint32_t Controller_RadioInit(void)
 #else
 #ifndef SIMULATOR
     status = XCVR_Init(&xcvrConfig, &rbmeConfig);
-#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    /* disable capture and enable auto load */
     XCVR_MISC->XCVR_CTRL |= XCVR_MISC_XCVR_CTRL_LL_CFG_CAPT_DIS(1);
+    RADIO_CTRL->BLE_AUTOLOAD = RADIO_CTRL_BLE_AUTOLOAD_BLE_AUTOLOAD_CNT_VAL(8U);
 #endif
     /* update LDO trim after xcvr init as the default value is no always correct */
     Controller_RestoreLdoAntTrim();
