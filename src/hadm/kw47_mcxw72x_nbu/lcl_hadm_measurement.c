@@ -48,17 +48,20 @@
 #define HADM_HAL_CONFIG_APPLY_US (100U)
 
 /*! Time needed by the HAL to execute BLE_HADM_EventStart(). Measured */
-#define HADM_HAL_START_US (215U)
+#define HADM_HAL_START_US (140U)
 
 /*! Time needed by the HAL to execute BLE_HADM_EventConfigApply() + up to BLE_HADM_EventStart() call
  *  Does not need to be exact, should cover longest execution path
  */
-#define HADM_HAL_PREPARE_US (MAX(HADM_HAL_START_US + HADM_HAL_CONFIG_APPLY_US, T_SLOT_US))
+#define HADM_HAL_PREPARE_US (HADM_HAL_CONFIG_APPLY_US)
 
 /*! Time to be programmed to RSM_TRIGGER_DELAY
  *  Does not need to be exact, should cover BLE_HADM_EventStart() execution
  */
-#define HADM_HAL_RSM_TRIGGER_DELAY (HADM_HAL_START_US + 50U /* margin */)
+#define HADM_HAL_RSM_TRIGGER_DELAY (HADM_HAL_START_US + 10U /* margin */)
+
+/* 2us between cdt_expiry and RSM FSM start */
+#define HADM_HAL_RSM_TRIGGER_OFFSET (2U)
 
 /* Contengency time to make sure mode 0 AA is caught */
 #define HADM_MODE0_TIMEOUT_MARGIN_US (5U)
@@ -167,14 +170,13 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
      * As a consequence, they represent the elapsed time between RSM start and the beginning of FCS phase for initiator and reflector respectively.
      * Note: FCS phase in the RSM does not include ramp down which occurs at the very end of a step in the TSM sequence.
      * Typical value is 25us (for both roles).
-     * Adjusted by 1us as per sniffer measurement.
      */
-    hadm_hal_properties.txWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_RX2TX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_RX2TX_START_FC_SHIFT) - HADM_T_RD + 1U;
-    hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) - HADM_T_RD + 1U;
+    hadm_hal_properties.txWarmupUs = 14U + 2U; /* 14us RSM WU state duration + 2us digital latency for 1st bit to reach the air */
+    hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) - HADM_T_RD;
 
     hadm_hal_properties.txWarmupUs += ((xcvr_lcl_tsm_generic_config.WU_LATENCY & XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_MASK) >> XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_SHIFT);
-    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY;
-    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_DELAY;
+    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET + HADM_HAL_RSM_TRIGGER_DELAY;
+    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET + HADM_HAL_RSM_TRIGGER_DELAY;
 
     for (i = 0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
     {
