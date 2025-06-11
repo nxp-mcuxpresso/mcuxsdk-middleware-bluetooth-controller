@@ -674,6 +674,19 @@ void NBU_Init()
 {
     /* Init MemManager for buffer allocation in serial manager */
     MEM_Init();
+
+#if defined(CPU_KW47B42Z83AFTA_cm33_core1) || defined(CPU_KW47B42ZB7AFTA_cm33_core1) || defined(CPU_MCXW727CMFTA_cm33_core1) \
+    || defined(CPU_KW43B43ZC7MFPA_NBU) || defined(CPU_KW43B43ZC7MFTA_NBU)
+    uint32_t ram_mux_ctrl = RF_CMC1->RAM_MUX_CTRL;
+
+    RF_CMC1->RAM_MUX_CTRL = RF_CMC1_RAM_MUX_CTRL_UNLOCK(5);
+    ram_mux_ctrl &= ~RF_CMC1_RAM_MUX_CTRL_SMU_MEM_SEL_MASK;
+    /*64k SMU, 96k DMEM */
+    ram_mux_ctrl |= 0x3F0;
+ 
+    RF_CMC1->RAM_MUX_CTRL = ram_mux_ctrl;
+#endif
+
 #ifndef SIMULATOR
     /* Low level init for the BLE controller */
     PLATFORM_InitBle();
