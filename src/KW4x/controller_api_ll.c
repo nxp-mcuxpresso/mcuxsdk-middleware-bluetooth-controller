@@ -190,7 +190,11 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 OSA_DisableIRQGlobal();
                 LL_API_GetBleTimingNoNativeClockCheck(&hslot, &qus);
 #if defined(TSTMR0)             
-                tstmr = *(uint64_t *)TSTMR0;
+                 /* A complete read operation should include both TSTMR LOW and HIGH reads. */
+                 uint32_t reg_l = TSTMR0->L;
+                 __DMB();
+                 uint32_t reg_h = TSTMR0->H;
+                 tstmr = (uint64_t)reg_l | (((uint64_t)reg_h) << 32U);
 #else
 #warning TSTMR0 is not available, need to get some value else where
                 tstmr = 0;
