@@ -26,7 +26,7 @@
 /* === Macros =============================================================== */
 /* Maximum number of CS procedure context that can be handled in parrallel by the HAL */
 /* Contexts are used to store per-procedure persistent data that need to be retained between several subevents (AGC, phase consitency ...) */
-#define HADM_MAX_NB_CONNECTIONS (6U)
+#define HADM_MAX_NB_CONNECTIONS (2U)
 
 /* Maximum number of CS subevents that can be handled in parrallel by the HAL */
 #define HADM_MAX_NB_SIMULT_SUBEVENTS (2U)
