@@ -16,7 +16,7 @@
 /* Enable MWS (Mobile Wireless System) coexistence at protocol level */
 #define gMWS_Enabled_d          0
 
-/*  Enables NbuDbg module (need to generate the project with --debug-mode)
+/* Enable NbuDbg module (need to generate the project with --debug-mode)
  *  This will enable debug IO toggling by the LL , logging and dtest*/
 #define gDbg_Enabled_d          0
 
@@ -50,10 +50,10 @@
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
 #define gNbuDisableLowpower_d   1
 
-/* Uncomment to avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
 #ifndef NDEBUG
-#undef gNbuJtagCapability 
-#define gNbuJtagCapability 1
+/* To avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
+#undef gNbuDisableLowpower_d
+#define gNbuDisableLowpower_d   1
 #endif
 
 /* Disable clock management on NBU (supposed to be handled on host CPU) */

@@ -606,12 +606,9 @@ void NBU_Idle(void)
     BOARD_DBGLPIOSET(0u, 0u);
 
 #if !defined (SDK_OS_FREE_RTOS)
-#if (!defined(gNbuJtagCapability)    || (gNbuJtagCapability==0)) && \
-(!defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d == 0))
+#if (!defined(gNbuDisableLowpower_d) || (gNbuDisableLowpower_d == 0))
     /* Try to go to low power (Deep Sleep), if that's not possible, it will
-     * go to WFI only.
-     * To keep full debug capability, set gNbuJtagCapability to 1 to avoid
-     * Deep Sleep or WFI. */
+     * go to WFI only.*/
     PLATFORM_EnterLowPower();
 #endif
 #endif
