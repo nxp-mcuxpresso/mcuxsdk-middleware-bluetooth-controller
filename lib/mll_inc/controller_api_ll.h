@@ -264,11 +264,11 @@ void LL_API_WaitForClkUpdtFromLowPwr(void);
 
 /*!
  * \brief First initialization stage of the BLE Controller.
- *  Must be called before RTOS scheduler is started and before calling LL_API_PostKernelInit().
+ *  Must be called before RTOS scheduler is started and before calling NB_API_PostKernelInit().
  *  On ThreadX, this is typically called before tx_kernel_enter().
  *
  */
-extern void LL_API_PreKernelInit(void);
+extern void NB_API_PreKernelInit(void);
 
 /*!
  * \brief Final initialization stage of the BLE Controller.
@@ -277,7 +277,7 @@ extern void LL_API_PreKernelInit(void);
  * On ThreadX, this is typically called in tx_application_define().
  *
  */
-extern void LL_API_PostKernelInit(void);
+extern void NB_API_PostKernelInit(void);
 
 /*!
  * \brief Initialization BLE Controller resources used during idle.
@@ -285,14 +285,14 @@ extern void LL_API_PostKernelInit(void);
  * the idle task loop. Must be called only once.
  *
  */
-extern void LL_API_IdleInit(void);
+extern void NB_API_IdleInit(void);
 
 /*!
  * \brief BLE Controller idle loop.
  * Typically called from the lowest priority task like the application idle task.
  *
  */
-extern void LL_API_Idle(void);
+extern void NB_API_Idle(void);
 
 /* SWO Debug API in framework */
 extern void DBG_SWO_PrintDoubleWordStim0(uint32 dw);

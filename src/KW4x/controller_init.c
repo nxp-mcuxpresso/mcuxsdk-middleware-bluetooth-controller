@@ -273,7 +273,7 @@ osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
 
     /* low level initialization of the controller
      * must happen before kernel init */
-    LL_API_PreKernelInit();
+    NB_API_PreKernelInit();
 
     return KOSA_StatusSuccess;
 }

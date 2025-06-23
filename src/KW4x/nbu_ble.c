@@ -829,14 +829,14 @@ void vApplicationDaemonTaskStartupHook(void)
 
 static void idle_task(void* param)
 {
-    LL_API_PostKernelInit();
-    LL_API_IdleInit();
+    NB_API_PostKernelInit();
+    NB_API_IdleInit();
     NBU_Init();
 
     while(true)
     {
         NBU_Idle();
-        LL_API_Idle();
+        NB_API_Idle();
     }
 }
 
