@@ -81,6 +81,19 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu)
     )
 endif()
 
+if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_interface)
+    mcux_add_source(
+        SOURCES src/KW4x/ll_types.h
+                interface/controller_init.h
+                lib/mll_inc/controller_api_ll.h
+    )
+    mcux_add_include(
+        INCLUDES src/KW4x
+                 interface
+                 lib/mll_inc
+    )
+endif()
+
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
     mcux_add_source(
         SOURCES src/KW4x/nbu_version.c
