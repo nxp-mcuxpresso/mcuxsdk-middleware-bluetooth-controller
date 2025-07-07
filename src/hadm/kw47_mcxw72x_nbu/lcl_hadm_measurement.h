@@ -60,6 +60,7 @@
 #define HADM_DBG_FLG_AVG_OFF       (1 << 1)  /*< Disable HW averaging during IQ capture */
 #define HADM_DBG_FLG_DBG_INFO      (1 << 2)  /*< Add debug info to Event Result (non standard) */
 #define HADM_DBG_FLG_CFO_COMP_DIS  (1 << 3)  /*< Disable CFO compensation when set */
+#define HADM_DBG_FLG_RSMINIT_OPTIM_DIS  (1 << 4)  /*< Disable inter_subevent RSM init optimization */
 /*! @}*/
 
 /*! @name HADM error flags
@@ -77,16 +78,25 @@
 #define FLAGS_HADM_XCVR_API_ERROR               0x0100          /*!< XCVR API reported an error */
 #define FLAGS_HADM_CFO_TOO_LARGE                0x0200          /*!< CFO measured was too large and could not get compensated */
 #define FLAGS_HADM_PHASE_AMBIGUITY_UNRESOLVED   0x0400          /*!< Phase ambiguity detected in loopback could not be resolved */
+#define FLAGS_HADM_RSM_ABORT_REASON             0xF800          /*!< Field where RSM abort reason is copied (5 bits) */
 /*! @}*/
 
 #define HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE  (256U) /* In words */
 #define HADM_HAL_PKT_RAM_RESULT_CIRC_BUFF_SIZE  (HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE) /* same size */
    
-#define HADM_HAL_PKT_RAM_NB_STEPS_MARGIN          (2U)   /* margin btw number of config steps actually programmed and IRQ steps  */
-#define HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ  (8U)  /* maximum number of CS steps before step interrupt */
-#define HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL  (1U) /* number of CS steps loaded initially right after RSM has been started */
+#define HADM_HAL_PKT_RAM_NB_STEPS_MARGIN          (1U)  /* margin for in-flight buffer */
+#define HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ  (2U)  /* maximum number of CS steps before step interrupt */
+#define HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL  (1U)  /* number of CS steps loaded initially right after RSM has been started */
 #define HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED     (HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ + HADM_HAL_PKT_RAM_NB_STEPS_MARGIN)
 #define HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE (HADM_MAX_NB_STEPS_MODE0 + HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL + (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*2U))
+
+#define HADM_IS_RSM_OPTIM_INACTIVE(HADM_CONFIG_P) \
+   (((HADM_CONFIG_P)->debugFlags & HADM_DBG_FLG_RSMINIT_OPTIM_DIS) || \
+    ((HADM_CONFIG_P)->mode != HADM_SUBEVT_TEST_MODE))
+
+/* At the end of the subevent, we may need up to 3 result buffers due to lot of latency
+ * in result processing, causing possible overlap with next subevent */
+#define HADM_MAX_NB_SIMULT_RESULT_BUFFERS (3U)
 
 /* === Types ================================================================ */
 /*! Contains some register backup values captured after Mode0 phase */
@@ -152,6 +162,7 @@ typedef struct
 {
     uint8_t nb_steps_before_irq;         /*!< Number of steps before RSM step IRQ */
     uint8_t nb_irq_steps_handled;        /*!< Number of RSM step IRQ handled in subevent */
+    uint8_t nb_irq_steps_postponed;      /*!< Number of RSM step IRQ postponed */
     uint32_t *config_write_ptr;          /*!< Write pointer to Circular buffer for CS Steps config */
     uint32_t *result_read_ptr;           /*!< Read pointer to Circular buffer for CS Steps results */
     hadm_circ_buff_desc_t step_config;   /*!< Circular buffer descriptor for CS Steps config */
@@ -172,6 +183,7 @@ typedef struct
     BLE_HADM_SubeventResultsData_t *result2_p;  /*!< pointer on 2nd HADM results for sniffer */
     hadm_pkt_ram_desc_t    pkt_ram;             /*!< PKT RAM descriptoprs (circular buffers) */
     hadm_meas_state_t      state;               /*!< HAL meas state */
+    bool                   mode0_complete;      /*!< subevent has completed mode0 phase with success */
     uint8_t                debug_flags;         /*!< debug flags, see @HADM debug flags */
     uint8_t                iq_avg_win;          /*!< averging window size (power of 2): valid values: 0 and  [2...8] */
     uint8_t                iq_capture_win;      /*!< capture window size in us, depends on T_PM config */
@@ -245,7 +257,10 @@ void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate);
 const BLE_HADM_HalProperties_t *lcl_hadm_get_properties(void);
-uint16 lcl_hadm_get_prepare_time(const BLE_HADM_SubeventConfig_t *hadm_config);
+void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                      uint16_t *prepare_time,
+                                      uint16_t *warmup_time,
+                                      uint16_t *warmdown_time);
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void);
 BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_config);
 BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_config);

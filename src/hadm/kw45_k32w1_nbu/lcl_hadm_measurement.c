@@ -398,6 +398,27 @@ uint16 lcl_hadm_get_prepare_time(const BLE_HADM_SubeventConfig_t *hadm_config)
    return prepareTimeUs;
 }
 
+void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                      uint16_t *prepare_time,
+                                      uint16_t *warmup_time,
+                                      uint16_t *warmdown_time)
+{
+    /* prepare_time */
+    *prepare_time = HADM_HAL_PREPARE_US(hadm_config_p->stepsNb, hadm_config_p->pnSeqNb);
+ 
+    /* warmup_time */
+    if (hadm_config_p->role == HADM_ROLE_INITIATOR)
+    {
+        *warmup_time = hadm_hal_properties.txWarmupUs;
+    }
+    else
+    {
+        *warmup_time = hadm_hal_properties.rxWarmupUs;
+    }
+
+    *warmdown_time = 0;
+}
+
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void)
 {
     return &hadm_hal_capabilities;

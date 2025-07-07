@@ -376,6 +376,7 @@ bool_t lcl_hal_xcvr_is_dma_capture_finished(void);
 void lcl_hal_xcvr_pll_settings_backup(void);
 void lcl_hal_xcvr_pll_settings_restore(void);
 void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram);
+void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32 nb);
 bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, uint8 rate);
 void lcl_hal_xcvr_program_time_adjustement(int32_t ppm);
 void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p);

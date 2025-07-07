@@ -205,9 +205,15 @@ const BLE_HADM_HalProperties_t *BLE_HADM_GetProperties(void)
     return lcl_hadm_get_properties();
 }
 
-uint16 BLE_HADM_GetPrepareTime(const BLE_HADM_SubeventConfig_t *hadm_config)
+void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                    uint16 *prepare_time,
+                                    uint16 *warmup_time,
+                                    uint16 *warmdown_time)
 {
-  return lcl_hadm_get_prepare_time(hadm_config);
+    lcl_hadm_get_preparation_timings(hadm_config_p,
+                                      prepare_time,
+                                      warmup_time,
+                                      warmdown_time);
 }
 
 const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(void)

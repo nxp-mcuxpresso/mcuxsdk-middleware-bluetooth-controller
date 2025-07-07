@@ -81,6 +81,15 @@ void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram)
                                 XCVR_MISC_RSM_RESULT_PTR_RSM_BUFFER_ABORT_EN_MASK; /* enable abort on underrun / overflow */
 }
 
+void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32 nb)
+{
+    uint32_t temp = (uint32_t) XCVR_MISC->RSM_CONFIG_BUFF & ~XCVR_MISC_RSM_CONFIG_BUFF_RSM_INT_NBSTEP_MASK;
+    temp |= XCVR_MISC_RSM_CONFIG_BUFF_RSM_INT_NBSTEP(nb); /* step IRQ */
+
+    /* Config circular buffer */
+    XCVR_MISC->RSM_CONFIG_BUFF = temp;
+}
+
 /* TQI configuration */
 #define HADM_HAL_TQI_THRESHOLD_BAD  (32U)   /* in Q9 (0.063 in decimal) */
 #define HADM_HAL_TQI_THRESHOLD_MEDIUM  (HADM_HAL_TQI_THRESHOLD_BAD)
@@ -324,7 +333,6 @@ void lcl_hal_xcvr_hadm_init(hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventCon
     lcl_hal_xcvr_setup_rssi(hadm_config->rttPhy);
     lcl_hal_xcvr_setup_rssi_continuous(TRUE);
     
-    XCVR_LCL_RsmCompCfo(0); /* make sure PLL_OFFSET_CTRL is cleared before first mode 0 */
 }
 
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)

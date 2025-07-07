@@ -33,8 +33,8 @@
 uint32_t nvic_backup;
 
 BLE_HADM_SubeventConfig_t  configBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS];
-BLE_HADM_SubeventResultsData_t resultsDataBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS];
-static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
+BLE_HADM_SubeventResultsData_t resultsDataBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS];
+static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
 
 /* Conversion LUT for 2x2: from permutation index to antenna index */
 /* "A1 is assigned to 1:1, A2 is assigned to 1:2, A3 is assigned to 2:1 and A4 is assigned to 2:2" */
@@ -58,7 +58,9 @@ void lcl_hadm_utils_init_buffers(void)
     for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
     {
         configBuffer[i].configBufferUsed = 0;
-
+    }
+    for (int i=0; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
+    {
         resultsDataBuffer[i].resultBufferUsed = 0;
         resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[i*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
         resultsDataBuffer[i].resultBuffer2 = &gpHadmHalResultBuffer[(i*HADM_SNIFFER_DEVICE_NB+1)*HADM_HAL_BUFFER_SIZE];
@@ -102,7 +104,7 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 {
     BLE_HADM_SubeventResultsData_t *result_p = NULL;
     
-    for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
+    for (int i=0; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
         if (resultsDataBuffer[i].resultBufferUsed == 0)
         {
@@ -127,9 +129,9 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 /* Free HAL config buffer(s) belonging to connIdx */
 void lcl_hadm_utils_free_result_buffer(uint8 connIdx)
 {
-    for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
+    for (int i=0; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
-        if ((resultsDataBuffer[i].resultBufferUsed == 1) && (resultsDataBuffer[i].connIdx == connIdx))
+      if ((resultsDataBuffer[i].resultBufferUsed == 1) && (resultsDataBuffer[i].connIdx == connIdx))
         {
             resultsDataBuffer[i].resultBufferUsed = 0;
         }

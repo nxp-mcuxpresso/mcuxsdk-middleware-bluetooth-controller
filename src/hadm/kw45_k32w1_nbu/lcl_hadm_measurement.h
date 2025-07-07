@@ -187,6 +187,10 @@ void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate);
 const BLE_HADM_HalProperties_t *lcl_hadm_get_properties(void);
+void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                      uint16_t *prepare_time,
+                                      uint16_t *warmup_time,
+                                      uint16_t *warmdown_time);
 uint16 lcl_hadm_get_prepare_time(const BLE_HADM_SubeventConfig_t *hadm_config);
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void);
 BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_config);

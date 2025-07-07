@@ -44,21 +44,17 @@
 #define HADM_HAL_DCOC_CAL_US (410U)
 #define HADM_HAL_RADIO_CAL_US (HADM_HAL_DCOC_CAL_US + HADM_HAL_HPM_CAL_US)
 
-/*! Time needed by the HAL to execute BLE_HADM_EventConfigApply(). Measured */
-#define HADM_HAL_CONFIG_APPLY_US (100U)
-
-/*! Time needed by the HAL to execute BLE_HADM_EventStart(). Measured */
-#define HADM_HAL_START_US (140U)
-
-/*! Time needed by the HAL to execute BLE_HADM_EventConfigApply() + up to BLE_HADM_EventStart() call
+/*! Time needed by the HAL to execute BLE_HADM_EventConfigApply()
  *  Does not need to be exact, should cover longest execution path
  */
-#define HADM_HAL_PREPARE_US (HADM_HAL_CONFIG_APPLY_US)
+#define HADM_HAL_PREPARE_US (50U)
 
 /*! Time to be programmed to RSM_TRIGGER_DELAY
- *  Does not need to be exact, should cover BLE_HADM_EventStart() execution
+ *  Does not need to be exact, should cover RSM SW initialization
+ *  Optimized version corresponds to CS/CS transition (no restore/save for BLE registers)
  */
-#define HADM_HAL_RSM_TRIGGER_DELAY (HADM_HAL_START_US + 10U /* margin */)
+#define HADM_HAL_RSM_TRIGGER_DELAY (135U)
+#define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U)
 
 /* 2us between cdt_expiry and RSM FSM start */
 #define HADM_HAL_RSM_TRIGGER_OFFSET (2U)
@@ -122,7 +118,6 @@ const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 
 static void lcl_hadm_consume_drbg(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort_subevent);
 static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
-static void lcl_hadm_measurement_teardown(const BLE_HADM_SubeventConfig_t *hadm_config);
 static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps, hadm_meas_t *hadm_meas_p);
 static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr);
 static hadm_meas_t *lcl_hadm_alloc_meas_instance(void);
@@ -172,11 +167,11 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
      * Typical value is 25us (for both roles).
      */
     hadm_hal_properties.txWarmupUs = 14U + 2U; /* 14us RSM WU state duration + 2us digital latency for 1st bit to reach the air */
-    hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) - HADM_T_RD;
-
     hadm_hal_properties.txWarmupUs += ((xcvr_lcl_tsm_generic_config.WU_LATENCY & XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_MASK) >> XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_SHIFT);
-    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET + HADM_HAL_RSM_TRIGGER_DELAY;
-    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET + HADM_HAL_RSM_TRIGGER_DELAY;
+    hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET;
+
+    hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) + 1U; /* +1 as this is a count from 0 */
+    hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET;
 
     for (i = 0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
     {
@@ -379,10 +374,44 @@ const BLE_HADM_HalProperties_t *lcl_hadm_get_properties(void)
     return &hadm_hal_properties;
 }
 
-uint16 lcl_hadm_get_prepare_time(const BLE_HADM_SubeventConfig_t *hadm_config)
+void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                      uint16_t *prepare_time,
+                                      uint16_t *warmup_time,
+                                      uint16_t *warmdown_time)
 {
-   (void)hadm_config;
-   return hadm_hal_properties.prepareMaxUs;
+    /* prepare_time */
+    *prepare_time = HADM_HAL_PREPARE_US;
+ 
+    /* warmup_time */
+    if (hadm_config_p->role == HADM_ROLE_INITIATOR)
+    {
+        *warmup_time = hadm_hal_properties.txWarmupUs;
+    }
+    else
+    {
+        *warmup_time = hadm_hal_properties.rxWarmupUs;
+    }
+    if ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p)) ||
+        (hadm_config_p->subeventIdx == 0))
+    {
+        *warmup_time += HADM_HAL_RSM_TRIGGER_DELAY;
+    }
+    else
+    {
+        *warmup_time += HADM_HAL_RSM_TRIGGER_DELAY_OPTIM;
+    }
+
+    /* warmdown_time */
+    if ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p)) ||
+        (hadm_config_p->typeFlags & HADM_SUBEVT_LAST))
+    {
+        *warmdown_time = 0;
+    }
+    else
+    {
+        /* Optimized warmdown */
+        *warmdown_time = 0;
+    }
 }
 
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void)
@@ -442,6 +471,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
 
     hadm_meas_p->config_p = hadm_config; /* save config ptr */
     
+    hadm_meas_p->mode0_complete = false;
     hadm_meas_p->debug_flags = hadm_config->debugFlags;
     
     /* Configure iq_avg_win according to T_PM: choose the closest smaller power of 2 to generate 4 IQ avg windows whatever
@@ -535,6 +565,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         hadm_meas_p->pkt_ram.nb_steps_before_irq = HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ;
     }
     hadm_meas_p->pkt_ram.nb_irq_steps_handled = 0;
+    hadm_meas_p->pkt_ram.nb_irq_steps_postponed = 0;
     for (i=0; i < HADM_MAX_NB_STEPS_MODE0; i++)
     {
         hadm_meas_p->sync_info[i].valid = 0;
@@ -552,7 +583,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->rsm_dma_dly_fm_ext = (HADM_T_FM - hadm_meas_p->iq_capture_win) >> 1; /* center capture window inside T_FM */
     rsm_config_p->rsm_dma_dur_fm_ext = hadm_meas_p->iq_capture_win;
     rsm_config_p->averaging_win = (hadm_meas_p->iq_avg_win == 0) ? XCVR_RSM_AVG_WIN_DISABLED : (XCVR_RSM_AVG_WIN_LEN_T) (hadm_meas_p->iq_avg_win - 1);
-    rsm_config_p->trig_delay = HADM_HAL_RSM_TRIGGER_DELAY; /* RSM trig_delay must cover start API execution time */
+    /* RSM trig_delay must cover start API execution time */
+    rsm_config_p->trig_delay = ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_meas_p->config_p)) || (hadm_meas_p->config_p->subeventIdx == 0)) ? HADM_HAL_RSM_TRIGGER_DELAY:HADM_HAL_RSM_TRIGGER_DELAY_OPTIM;
     rsm_config_p->t_fc = hadm_config->T_FCS_Time;
     rsm_config_p->t_ip1 = hadm_config->T_IP1_Time;
     rsm_config_p->t_ip2 = hadm_config->T_IP2_Time;
@@ -600,7 +632,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     DEBUG_PIN1_CLR
     DEBUG_PIN1_SET 
 
-    /* Build first configuration steps in PKT RAM: mode 0 steps + next one (design choice) without pushing RSM pointers */
+    /* Build first configuration steps in PKT RAM: mode 0 steps without pushing RSM pointers */
     lcl_hadm_set_steps_config(hadm_config->mode0Nb, hadm_meas_p, FALSE);
     
     /* Program RSM to start on NBU trigger + DELAY ahead of time */
@@ -662,8 +694,11 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     hadm_meas_p->result_p->syncDelayUs = 0;
 
     DEBUG_PIN1_PULSE
-      
-    lcl_hadm_measurement_setup(hadm_proc, hadm_meas_p, hadm_config_p);
+
+    if ((hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE) || (hadm_meas_p->result_p->subeventIdx == 0))
+    {
+        lcl_hadm_measurement_setup(hadm_proc, hadm_meas_p, hadm_config_p);
+    }
     
     DEBUG_PIN1_PULSE
     
@@ -697,19 +732,34 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 
     DEBUG_PIN1_PULSE
 
-    /* Configure RSM block. Will start on NBU HW trigger */
-    status = XCVR_LCL_RsmInit(rsm_config_p);    
-    status += XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
-    if (hadm_config_p->phaseCont != HADM_PHASE_CONT_DISABLED)
+    if (HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p) ||
+        (hadm_config_p->subeventIdx == 0))
     {
-        XCVR_LCL_EnaLpmClkSwitch(1);
-        XCVR_LCL_EnaDividerSync(true);
+        /* Configure RSM block. Will start on NBU HW trigger */
+        status = XCVR_LCL_RsmInit(rsm_config_p);    
+        status += XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
+        if (hadm_config_p->phaseCont != HADM_PHASE_CONT_DISABLED)
+        {
+            XCVR_LCL_EnaLpmClkSwitch(1);
+            XCVR_LCL_EnaDividerSync(true);
+        }
+        if (hadm_config_p->phaseCont == HADM_PHASE_COHERENCY)
+        {
+            (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
+        }
+        assert(gXcvrLclStatusSuccess == status);
     }
-    if (hadm_config_p->phaseCont == HADM_PHASE_COHERENCY)
+    else
     {
-        (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
+        uint32_t temp;
+        /* For testmode, RSM config does not need to be reapplied, simply set number of steps */
+        temp = XCVR_MISC->RSM_CTRL0 & ~XCVR_MISC_RSM_CTRL0_RSM_STEPS_MASK;
+        temp |= XCVR_MISC_RSM_CTRL0_RSM_STEPS((uint32_t)rsm_config_p->num_steps);
+        temp |= (rsm_config_p->role == XCVR_RSM_TX_MODE ? XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK :
+                                                          XCVR_MISC_RSM_CTRL0_RSM_RX_EN_MASK);
+        XCVR_MISC->RSM_CTRL0 = temp;
+
     }
-    assert(gXcvrLclStatusSuccess == status);
       
     LCL_HAL_ENABLE_TONE_OBS
 
@@ -717,6 +767,8 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 
     /* Configure PKT RAM circular buffers to be used by RSM */
     lcl_hal_pkt_ram_config_circ_buffers(&hadm_meas_p->pkt_ram);
+    /* make sure PLL_OFFSET_CTRL is cleared before first mode 0 */
+    XCVR_LCL_RsmCompCfo(0);
     
 #ifdef SIMULATOR
      status +=  SIMU_LCL_RsmGo(rsm_config_p->role, rsm_config_p);
@@ -766,6 +818,8 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
         /* End of procedure, clean context */
         hadm_procs[config->connIdx].is_proc_init_done = false;
     }
+
+    lcl_hadm_free_meas_instance(hadm_meas_p);
 
     DEBUG_PIN0_CLR
 }
@@ -817,17 +871,6 @@ static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm
 #endif /* SIMULATOR */
 }
 
-static void lcl_hadm_measurement_teardown(const BLE_HADM_SubeventConfig_t *hadm_config)
-{
-    lcl_hal_xcvr_hadm_deinit(hadm_config);
-#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-    if (hadm_config->role == HADM_ROLE_INITIATOR)
-    {
-        lcl_hadm_restore_interrupts_for_subevent();
-    }
-#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
-}
-
 static hadm_meas_t *lcl_hadm_alloc_meas_instance(void)
 {
     hadm_meas_t *meas_p = NULL;
@@ -877,7 +920,18 @@ static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort
     {
         LCL_HAL_DISABLE_DMA;
     }
-    lcl_hadm_measurement_teardown(hadm_meas_p->config_p);
+    /* Do not restore XCVR state if RSM optim is active (except for the last subevent) */
+    if (HADM_IS_RSM_OPTIM_INACTIVE(hadm_meas_p->config_p) ||
+        (hadm_meas_p->config_p->typeFlags & HADM_SUBEVT_LAST))
+    {
+        lcl_hal_xcvr_hadm_deinit(hadm_meas_p->config_p);
+    }
+#ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
+    if (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)
+    {
+        lcl_hadm_restore_interrupts_for_subevent();
+    }
+#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
     lcl_hadm_consume_drbg(hadm_meas_p);
 #endif /* SIMULATOR */
 }
@@ -1045,8 +1099,6 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_meas_p->config_p->connIdx];
     uint8_t mode0Nb = hadm_meas_p->config_p->mode0Nb;
     bool_t proc_agc_locked = (hadm_proc->agc_idx != 0xFF);
-    bool_t subevent_synced = FALSE;
-
     hadm_sync_info_t *sync_info_p = &hadm_meas_p->sync_info[0];
     BLE_HADM_STATUS_t status;
     
@@ -1057,7 +1109,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
     {        
         if (sync_info_p->valid)
         {
-            subevent_synced = TRUE;
+            hadm_meas_p->mode0_complete = true;
 
             /* If procedure has not locked its AGC yet (didn't get a subevent with at least one valid mode0) */
             /* look for smallest gain amongst valid mode 0's */
@@ -1103,7 +1155,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         hadm_proc->ppm = (int16_t)((hadm_proc->cfo * HADM_PPM_DIVIDER)/ ((int32_t)HADM_CHAN_NUM_TO_MHZ(hadm_proc->cfo_channel)));
     }
 
-    if (subevent_synced)
+    if (hadm_meas_p->mode0_complete)
     {
         /* Freeze AGC according to the index from the retained mode 0 */
         lcl_hal_xcvr_set_rxgain(hadm_proc->agc_idx);
@@ -1178,6 +1230,8 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
  * This is called on RSM step interrupt IRQ or RSM EOS
  * RSM overflow is checked
  * if n_steps_required==0, all available results will be read
+ * Note: instead of passing the number of steps to process we should rather rely on PKTRAM circular buffer to detect end of available steps,
+ * but this pointer is not reliable on KW47 as it is flushed right after EOS (HW bug fixed on next generations)
  */
 static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm_meas_t *hadm_meas_p)
 {
@@ -1185,8 +1239,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[circ_buff_p->curr_step_idx];
     hadm_info_t *hadm_info_p = &hadm_meas_p->info;
     hadm_proc_t *hadm_proc_p = &hadm_procs[hadm_meas_p->config_p->connIdx];
-    uint8_t *res_buff1_in_p;
     uint8_t *res_buff1_p;
+    uint8_t *res_buff1_in_p;
     uint8_t *res_buff2_in_p;
     uint8_t *res_buff2_p;
     uint8_t *res_buff_p;
@@ -1350,6 +1404,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         DEBUG_PIN1_SET
                             /* Compute integer and fractional adjustment in ns */
                             frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx, rtt_data.p_delta, rtt_data.int_adj);
+
 #ifdef RTT_DEBUG
                         rtt_frac_dbg_buffer[circ_buff_p->curr_step_idx] = frac_delay;
                         rtt_p_delta_dbg_buffer[circ_buff_p->curr_step_idx] = rtt_data.p_delta;
@@ -1501,6 +1556,7 @@ void RSM_INT_IRQHandler(void)
     uint32_t irq_status = LCL_HAL_RSM_GET_IRQ_STATUS_FLAGS;
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
     hadm_meas_t *hadm_meas_p = hadm_device.active_meas_p;
+    uint32_t abort_reason = 0;
     
     DEBUG_PIN0_SET
 
@@ -1519,14 +1575,14 @@ void RSM_INT_IRQHandler(void)
     {
         /* RSM has aborted */
         type = HADM_EVENT_EOS;
-        uint32_t abort_reason = XCVR_MISC->RSM_CSR & (XCVR_MISC_RSM_CSR_RSM_PLL_ABORT_MASK | XCVR_MISC_RSM_CSR_RSM_UNDR_ERR_MASK | XCVR_MISC_RSM_CSR_RSM_OVF_ERR_MASK | XCVR_MISC_RSM_CSR_RSM_TIMEOUT0_ABORT_MASK);
+        abort_reason = XCVR_MISC->RSM_CSR & (XCVR_MISC_RSM_CSR_RSM_PLL_ABORT_MASK | XCVR_MISC_RSM_CSR_RSM_UNDR_ERR_MASK | XCVR_MISC_RSM_CSR_RSM_OVF_ERR_MASK | XCVR_MISC_RSM_CSR_RSM_TIMEOUT0_ABORT_MASK);
         
         if (abort_reason & XCVR_MISC_RSM_CSR_RSM_TIMEOUT0_ABORT_MASK)
         {
             hal_status = HADM_HAL_ABORTED_SYNC;
         }
         else if ((abort_reason & XCVR_MISC_RSM_CSR_RSM_UNDR_ERR_MASK) &&
-                 (hadm_meas->info.sync_step_id == 0xFF))
+                 (!hadm_meas_p->mode0_complete))
         {
             /* KW47 HW bug workaround on reflector: when mode0 retry is enabled, there's a small
              * probability that the RSM does not send an abort IRQ in case the last mode0 is
@@ -1590,7 +1646,6 @@ void RSM_INT_IRQHandler(void)
             {
                 /* Last mode 0 has been received */
                 hal_status = lcl_hadm_handle_last_mode0(hadm_meas_p);
-
                 if (hal_status != HADM_HAL_SUCCESS)
                 {
                     type = HADM_EVENT_EOS;
@@ -1603,7 +1658,7 @@ void RSM_INT_IRQHandler(void)
                     if (hadm_meas_p->pkt_ram.step_config.curr_step_idx < hadm_meas_p->config_p->stepsNb)
                     {
                         /* Push more config steps if needed */
-                        lcl_hadm_set_steps_config(hadm_meas_p->pkt_ram.nb_steps_before_irq + HADM_HAL_PKT_RAM_NB_STEPS_MARGIN, hadm_meas_p, TRUE);
+                        lcl_hadm_set_steps_config(hadm_meas_p->pkt_ram.nb_steps_before_irq, hadm_meas_p, TRUE);
                     }
                 }
                 circ_buff_p->curr_step_idx = 0; /* reset current read index to process results in next step interrupt */
@@ -1611,25 +1666,52 @@ void RSM_INT_IRQHandler(void)
         }
         else if (irq_status & LCL_HAL_XCVR_RSM_IRQ_STEP)
         {
-            /* Step interrupt */
-            if (hadm_meas_p->pkt_ram.step_config.curr_step_idx < hadm_meas_p->config_p->stepsNb)
+            if (!hadm_meas_p->mode0_complete)
             {
-                /* Push more config steps if needed */
-                lcl_hadm_set_steps_config(hadm_meas_p->pkt_ram.nb_steps_before_irq, hadm_meas_p, TRUE);
-            }
-            
-            /* Read available step results */
-            hal_status = lcl_hadm_get_step_results(hadm_meas_p->pkt_ram.nb_steps_before_irq, hadm_meas_p);
-            if (hal_status == HADM_HAL_SUCCESS)
-            {
-                type = HADM_EVENT_STEP_INT;
+                /* postpone mode0 processing as we need CFO and AGC to be frozen before reporting to LL */
+                type = HADM_EVENT_INVALID;
+                hadm_meas_p->pkt_ram.nb_irq_steps_postponed++;
             }
             else
             {
-                assert(false);
-                type = HADM_EVENT_EOS;
+                uint32_t steps_to_process; /* HW workaround, see note in lcl_hadm_get_step_results */
+
+                /* Step interrupt */
+                if (hadm_meas_p->pkt_ram.step_config.curr_step_idx < hadm_meas_p->config_p->stepsNb)
+                {
+                    /* Push more config steps if needed */
+                    lcl_hadm_set_steps_config(hadm_meas_p->pkt_ram.nb_steps_before_irq, hadm_meas_p, TRUE);
+                }
+                else
+                {
+                    /* We are close to EOS, set one step per interrupt to minimize EOS processing latency */
+                    hadm_meas_p->pkt_ram.nb_steps_before_irq = 1;
+                    lcl_hal_pkt_ram_config_rsm_int_nbstep(hadm_meas_p->pkt_ram.nb_steps_before_irq);
+                }
+                DEBUG_PIN0_PULSE
+                /* Read available step results */
+                if ((hadm_meas_p->pkt_ram.nb_irq_steps_handled == 0) &&
+                    (hadm_meas_p->pkt_ram.nb_steps_before_irq < hadm_meas_p->config_p->mode0Nb))
+                {
+                    /* Process postponed IRQ plus current one */
+                    steps_to_process = (hadm_meas_p->pkt_ram.nb_irq_steps_postponed + 1) * hadm_meas_p->pkt_ram.nb_steps_before_irq;
+                }
+                else
+                {
+                    steps_to_process = hadm_meas_p->pkt_ram.nb_steps_before_irq;
+                }
+                hal_status = lcl_hadm_get_step_results(steps_to_process, hadm_meas_p);
+                if (hal_status == HADM_HAL_SUCCESS)
+                {
+                    type = HADM_EVENT_STEP_INT;
+                }
+                else
+                {
+                    assert(false);
+                    type = HADM_EVENT_EOS;
+                }
+                hadm_meas_p->pkt_ram.nb_irq_steps_handled++;
             }
-            hadm_meas_p->pkt_ram.nb_irq_steps_handled++;
         }
     }
 
@@ -1661,7 +1743,10 @@ void RSM_INT_IRQHandler(void)
         if (hal_status == HADM_HAL_ABORTED_SYNC)
             hadm_info_p->flags |= FLAGS_HADM_SYNC_ERROR;
         else if (hal_status == HADM_HAL_ABORTED)
+        {
             hadm_info_p->flags |= FLAGS_HADM_ABORT;
+            hadm_info_p->flags |= (abort_reason << 2) & FLAGS_HADM_RSM_ABORT_REASON;
+        }
     }
     
     if (((hadm_meas_p->debug_flags & HADM_DBG_FLG_DBG_INFO) != 0) &&
@@ -1712,7 +1797,7 @@ void BRF_INT_IRQHandler(void)
 
         if (compensate_cfo)
         {
-            uint32_t rsm_curr_step = ((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_CURRENT_STEPS_MASK) >> XCVR_MISC_RSM_CSR_RSM_CURRENT_STEPS_SHIFT);
+            uint32_t rsm_curr_step = LCL_HAL_RSM_GET_CURRENT_STEP;
             /* Prepare CFO for next step */
             rsm_curr_step ++;
             if ((rsm_curr_step > hadm_meas_p->config_p->mode0Nb) && (rsm_curr_step < hadm_meas_p->config_p->stepsNb))

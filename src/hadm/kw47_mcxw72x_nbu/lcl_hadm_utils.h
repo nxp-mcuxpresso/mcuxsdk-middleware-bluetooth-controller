@@ -21,7 +21,7 @@
 
 /* === Macros ============================================================== */
 #if !defined(NDEBUG) || (defined(gValidationBuildOptions) && (gValidationBuildOptions == 1))
-#define HADM_ENABLE_DEBUG_PINS /* Disable in case of conflicts with PTD2-3 PINs */
+#define HADM_ENABLE_DEBUG_PINS_SINGLE /* Disable in case of conflicts with PTD2-3 PINs */
 #endif
 
 /* Control CFO compensation refinment on each step */
@@ -38,7 +38,7 @@
 /* DEBUG_PIN0: low frequency debug pin
  * DEBUG_PIN1: high frequency debug pin
  */
-#ifdef HADM_ENABLE_DEBUG_PINS
+#if defined(HADM_ENABLE_DEBUG_PINS)
 #define DEBUG_PIN0_SET {GPIOD->PSOR = 0x08;} // set PTD3
 #define DEBUG_PIN0_CLR {GPIOD->PCOR = 0x08;} // clear PTD3
 #define DEBUG_PIN0_TGL {GPIOD->PTOR = 0x08;} // toggle PTD3
@@ -48,6 +48,17 @@
 #define DEBUG_PIN1_TGL {GPIOD->PTOR = 0x04;} // toggle PTD2
 #define DEBUG_PIN1_PULSE {DEBUG_PIN1_TGL DEBUG_PIN1_TGL}
 #define DEBUG_PIN_ALL_TGL {GPIOD->PTOR = 0x0C;} // toggle PTD2 and PTD3
+#elif defined(HADM_ENABLE_DEBUG_PINS_SINGLE)
+/* Use only PIN0 */
+#define DEBUG_PIN0_SET {GPIOD->PSOR = 0x04;} // set PTD2
+#define DEBUG_PIN0_CLR {GPIOD->PCOR = 0x04;} // clear PTD2
+#define DEBUG_PIN0_TGL {GPIOD->PTOR = 0x04;} // toggle PTD2
+#define DEBUG_PIN0_PULSE {DEBUG_PIN0_TGL DEBUG_PIN0_TGL}
+#define DEBUG_PIN1_SET
+#define DEBUG_PIN1_CLR
+#define DEBUG_PIN1_TGL
+#define DEBUG_PIN1_PULSE
+#define DEBUG_PIN_ALL_TGL DEBUG_PIN0_TGL
 #else
 #define DEBUG_PIN0_SET
 #define DEBUG_PIN0_CLR
