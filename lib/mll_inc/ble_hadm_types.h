@@ -247,13 +247,15 @@ typedef struct TBleHadmEvent_
 
     /* Scheduling data */
     uint16 uiConnHandle;
-    uint16 uiHadmHandle;      /* Handle for HADM link in the scheduler */
+    uint8  ucSubeventIdx;
     uint8  ucConfigId;
     uint8  ucFlags;           /* Utility flags for runtime optimization */
     uint16 uiStartConnEvCnt;  /* ACL connection event counter at which the subevent is started */
     uint32 ulStartOffsetUs;   /* Offset to ACL anchor point [us] */
     uint32 ulActivityLen;     /* Length of subevent including pre-post preparation [us] */
     uint16 uiHalPrepareTimeUs;/* Time needed to HAL for event preparation before actual start of event */
+    uint16 uiHalWarmupTimeUs; /* Time needed to HAL for warming up (CDT trigger to 1st bit over the air) */
+    uint16 uiHalWarmdownTimeUs; /* Time needed to HAL for warming down (before RF is ready for another activity) */
 
     /* Buffering data */
     boolean pendingData;      /* Some data is waiting to be flushed via HCI */
@@ -265,6 +267,7 @@ typedef struct TBleHadmEvent_
 typedef struct TBleHadmConnection_tag
 {
     uint16  uiConnHandle;
+    uint16  uiHadmHandle;
     TBleHadmConnectionState_t eConnState;
     uint16  uiFlags;                        /*!<< Utility flags for runtime operation */
     uint8   ucStartProcedureConfigId;       /* Tracks configId of the current Start Procedure */
@@ -297,10 +300,10 @@ typedef struct TBleHadmConnection_tag
     TBleHadmConfiguration_t *pActiveConfig;     /* NULL when no active/running procedure */
     uint16  ulRepIdx;                           /* Index of procedure for repeat count down */
     uint8   ucSubeventIdx;                      /* Index of current subevent within the procedure */
+    uint8   ucSubeventFlipIdx;                  /* Flip/flop index for subeventPool (subevent being processed by Scheduler) */
     int16  iProcCountTerminateDiff;             /* Peer ProcCount minus Local ProcCount stored during termination procedure */
     uint16  uiStartCSProcCount;                 /* StartCSProcCount, the starting CSProcCount value used for the first instance of the CS procedure series */
-
-    TBleHadmEvent subevent;                     /* Current subevent data */
+    TBleHadmEvent subeventPool[2U];             /* Active/Prepared subevent data */
 #if defined(BT60_HADM)
     TBleHadmDrbgContext_t drbgContext;
 #endif

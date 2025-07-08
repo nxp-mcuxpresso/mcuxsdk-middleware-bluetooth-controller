@@ -359,11 +359,11 @@ typedef struct BLE_HADM_SubeventResultsData_tag
 /*! Configuration for an HADM SubEvent */
 typedef struct BLE_HADM_SubeventConfig_tag
 {
-    uint32 rxWindowUs;                 /*!< Duration of the Rx window [us] (mode0 timeout detection): if set to 0, the HAL will not program any timeout */
     uint8 configBufferUsed;            /*! 0: available, 1 if still in use by the HAL */
     uint8 connIdx;                     /*!< HAL connection index */
     uint8 subeventIdx;                 /*!< index of CS subevent within the CS procedure */
     uint8 typeFlags;                   /*!< SubEvent type flags (bitmap) (first/last) in CS procedure */
+    uint32 rxWindowUs;                 /*!< Duration of the Rx window [us] (mode0 timeout detection): if set to 0, the HAL will not program any timeout */
     BLE_HADM_subevent_mode_t mode;     /*!< SubEvent mode */
     uint8 debugFlags;                  /*!< Opaque flags passed from App to LL down to HAL */
     BLE_HADM_phase_cont_t phaseCont;   /*!< Configures phase continuity scheme */
@@ -537,10 +537,15 @@ const BLE_HADM_HalProperties_t *BLE_HADM_GetProperties(void);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
- * This API allows the LL to retrieve, for the given config, the preparation time needed
- * by the HAL before being able to launch the subevent (unit: us).
+ * This API allows the LL to retrieve several preparation times (unit: us) used by the HAL for the given config.
+ * - preparation time: needed by the HAL before being able to launch the subevent
+ * - warmup time: needed between cdt_expiry_cs and the 1st bit over the air 
+ * - warmdown time: needed before the RF is ready for another activity
  */
-uint16 BLE_HADM_GetPrepareTime(const BLE_HADM_SubeventConfig_t *hadm_config);
+void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
+                                    uint16 *prepare_time,
+                                    uint16 *warmup_time,
+                                    uint16 *warmdown_time);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
