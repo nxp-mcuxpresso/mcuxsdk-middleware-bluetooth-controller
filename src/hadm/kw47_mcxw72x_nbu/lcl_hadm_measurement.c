@@ -809,8 +809,13 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
     }
     else
     {
-        /* Just free config buffer */
-        BLE_HADM_ReleaseConfigBuffer((BLE_HADM_SubeventConfig_t **)&hadm_meas_p->config_p);
+        /* No EOS IRQ will be triggered, simply free resources */
+        if (hadm_meas_p->config_p != NULL)
+        {
+            ((BLE_HADM_SubeventConfig_t*)hadm_meas_p->config_p)->configBufferUsed = 0;
+            hadm_meas_p->config_p = NULL;
+        }
+        lcl_hadm_free_meas_instance(hadm_meas_p);
     }
 
     if (config->typeFlags & HADM_SUBEVT_LAST)
@@ -818,8 +823,6 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
         /* End of procedure, clean context */
         hadm_procs[config->connIdx].is_proc_init_done = false;
     }
-
-    lcl_hadm_free_meas_instance(hadm_meas_p);
 
     DEBUG_PIN0_CLR
 }
@@ -835,10 +838,8 @@ void lcl_hadm_stop_procedure(uint8 connIdx)
         /* we have a subevent in HADM_HAL_MEAS_STATE_RUNNING state on the connIdx beeing shut down */
         if (hadm_meas_p->config_p->connIdx == connIdx)
         {
+            lcl_hadm_stop_measurement(hadm_meas_p->config_p);
             hadm_meas_p->state = HADM_HAL_MEAS_STATE_ABORTING;
-            /* Abort RSM, this will set ABORT flag, trigger EOS IRQ, wait for RSM to switch to IDLE */
-            XCVR_LCL_RsmStopAbort(TRUE);
-            /* Note: Various buffers will be freed as part of regular RSM EOS/Abort code path */
         }
     }
     else
