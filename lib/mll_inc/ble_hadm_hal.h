@@ -167,8 +167,7 @@ typedef enum
 {
     HADM_RTT_PHY_1MBPS = 0U,
     HADM_RTT_PHY_2MBPS,
-    HADM_RTT_PHY_MAX,
-    HADM_RTT_PHY_INVALID = HADM_RTT_PHY_MAX
+    HADM_RTT_PHY_MAX
 } BLE_HADM_rttPhyMode_t;
 
 typedef enum 
