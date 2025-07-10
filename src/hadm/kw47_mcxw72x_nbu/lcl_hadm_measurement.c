@@ -49,12 +49,15 @@
  */
 #define HADM_HAL_PREPARE_US (50U)
 
+/* In some cases (low power), the SW INT is triggered with up to 9us later than HW trigger */
+#define HADM_HAL_RSM_TRIGGER_DELAY_MARGIN (10U)
+
 /*! Time to be programmed to RSM_TRIGGER_DELAY
  *  Does not need to be exact, should cover RSM SW initialization
  *  Optimized version corresponds to CS/CS transition (no restore/save for BLE registers)
  */
-#define HADM_HAL_RSM_TRIGGER_DELAY (135U)
-#define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U)
+#define HADM_HAL_RSM_TRIGGER_DELAY (135U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
+#define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
 
 /* 2us between cdt_expiry and RSM FSM start */
 #define HADM_HAL_RSM_TRIGGER_OFFSET (2U)
