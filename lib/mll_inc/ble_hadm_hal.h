@@ -32,9 +32,6 @@
 #define HADM_MAX_NB_CONNECTIONS (2U)
 #endif
 
-/* Maximum number of CS subevents that can be handled in parrallel by the HAL */
-#define HADM_MAX_NB_SIMULT_SUBEVENTS (2U)
-
 #if (HADM_HAL_VERSION == 1)
 #define HADM_MAX_NB_STEPS (128U) /*!< Max number of HADM steps within a subevent */
 #define HADM_MAX_NB_STEPS_RTT (106U) /*!< Max number of HADM steps containing RTT packets within a subevent. RSM limitation */
