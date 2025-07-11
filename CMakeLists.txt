@@ -241,27 +241,44 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.controller_api)
 endif()
 
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hadm)
+    # common header files
     mcux_add_source(
-        SOURCES lib/mll_inc/ble_hadm_hal.h
+        SOURCES
+                lib/mll_inc/ble_hadm_hal.h
                 lib/mll_inc/ble_hadm_types.h
                 lib/mll_inc/ble_hadm_api.h
-                src/hadm/ble_hadm_hal_impl.c
-                src/hadm/lcl_hadm_hartt.c
                 src/hadm/lcl_hadm_hartt.h
-                src/hadm/lcl_hadm_aes.c
                 src/hadm/lcl_hadm_aes.h
     )
+
+    # kw47/mcxw72 - using an optimized library prebuilt with IAR toolchain
     mcux_add_source(
-        SOURCES src/hadm/kw47_mcxw72x_nbu/lcl_hadm_measurement.c
-                src/hadm/kw47_mcxw72x_nbu/lcl_hadm_measurement.h
-                src/hadm/kw47_mcxw72x_nbu/lcl_hadm_utils.c
+        SOURCES src/hadm/kw47_mcxw72x_nbu/lcl_hadm_measurement.h
                 src/hadm/kw47_mcxw72x_nbu/lcl_hadm_utils.h
                 src/hadm/kw47_mcxw72x_nbu/lcl_xcvr_hal.h
-                src/hadm/kw47_mcxw72x_nbu/lcl_xcvr_hal.c
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
         CORE_IDS "cm33" "cm33_core1"
     )
+    mcux_add_include(
+        INCLUDES interface
+                 src/hadm
+                 src/hadm/kw47_mcxw72x_nbu
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
+    )
+    mcux_add_library(
+        LIBS lib/ble_hadm_kw47_mcxw72x_nbu.a
+        TOOLCHAINS kds armgcc mcux iar
+        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
+    )
+    # kw43 uses the same sources than kw47 but external dependencies are different
+    # so to guarantee compatibility, add a specific library
+    mcux_add_library(
+        LIBS lib/ble_hadm_kw43_mcxw70_nbu.a
+        TOOLCHAINS kds armgcc mcux iar
+        DEVICE_IDS ${KW43_FAMILY}
+    )
 
+    # kw45/mcxw71 - compiling from sources
     mcux_add_source(
         SOURCES src/hadm/kw45_k32w1_nbu/lcl_hadm_measurement.c
                 src/hadm/kw45_k32w1_nbu/lcl_hadm_measurement.h
@@ -269,14 +286,10 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_hadm)
                 src/hadm/kw45_k32w1_nbu/lcl_hadm_utils.h
                 src/hadm/kw45_k32w1_nbu/lcl_xcvr_hal.h
                 src/hadm/kw45_k32w1_nbu/lcl_xcvr_hal.c
+                src/hadm/ble_hadm_hal_impl.c
+                src/hadm/lcl_hadm_hartt.c
+                src/hadm/lcl_hadm_aes.c
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
-    )
-
-    mcux_add_include(
-        INCLUDES interface
-                 src/hadm
-                 src/hadm/kw47_mcxw72x_nbu
-        DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
     )
     mcux_add_include(
         INCLUDES interface
