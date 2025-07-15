@@ -94,8 +94,10 @@
    (((HADM_CONFIG_P)->debugFlags & HADM_DBG_FLG_RSMINIT_OPTIM_DIS) || \
     ((HADM_CONFIG_P)->mode != HADM_SUBEVT_TEST_MODE))
 
-/* Maximum number of CS subevents that can be handled in parrallel by the HAL */
-#define HADM_MAX_NB_SIMULT_SUBEVENTS (HADM_MAX_NB_CONNECTIONS)
+/* Maximum number of CS subevents that can be handled in parrallel by the HAL.
+ * Each connection may require two config buffers as preparation overlaps execution
+ */
+#define HADM_MAX_NB_SIMULT_SUBEVENTS (HADM_MAX_NB_CONNECTIONS * 2U)
 
 /* At the end of the subevent, we may need up to 3 result buffers due to lot of latency
  * in result processing, causing possible overlap with next subevent */
