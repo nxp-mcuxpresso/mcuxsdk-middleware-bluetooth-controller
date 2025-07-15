@@ -991,7 +991,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         /* Compute CFO compensation */
         if (compensate_cfo && (step_config_p->mode != HADM_STEP_MODE0))
         {
-            LCL_HAL_COMPUTE_STEP_CFO(cfo, hadm_proc->cfo_channel, step_config_p->channel, hadm_proc->ppm);
+            cfo = LCL_HAL_COMPUTE_STEP_CFO(hadm_proc->cfo_channel, step_config_p->channel, hadm_proc->ppm);
 
         }
 #endif
@@ -1190,7 +1190,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 LCL_HAL_ENABLE_FO_ENTRY();
                 /* Compute CFO compensation to apply at next step */
                 int32_t cfo;
-                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel, hadm_proc->ppm);
+                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel, hadm_proc->ppm);
                 lcl_hadm_apply_cfo_per_step(cfo);
 #else
                 /* Initial CFO compensation */
@@ -1204,7 +1204,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 int16_t step_cfo;
                 step_idx = mode0Nb + 1U;
 
-                LCL_HAL_COMPUTE_STEP_CFO(step_cfo, hadm_proc->cfo_channel, step_config_p[step_idx].channel, hadm_proc->ppm);
+                step_cfo = LCL_HAL_COMPUTE_STEP_CFO(hadm_proc->cfo_channel, step_config_p[step_idx].channel, hadm_proc->ppm);
               
                 circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
                 assert(circ_buff_p->curr_step_idx == step_idx);
@@ -1817,7 +1817,7 @@ void BRF_INT_IRQHandler(void)
             {
                 BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
                 int32_t cfo;
-                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, step_config_p->channel, hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel, hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
                 lcl_hadm_apply_cfo_per_step(cfo);
             }
         }
