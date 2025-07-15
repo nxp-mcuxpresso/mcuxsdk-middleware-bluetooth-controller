@@ -784,8 +784,12 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     /* End of critical configuration section: past this point, the RSM is supposed to run */
     DEBUG_PIN0_PULSE
 
-    /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
-    lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
+    /* Check that subevent has some main mode steps (may have zero non-mode0 steps if procedure reaches 256 steps) */
+    if (hadm_meas_p->config_p->stepsNb > hadm_meas_p->config_p->mode0Nb)
+    {
+      /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
+      lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
+    }
 
     DEBUG_PIN1_CLR
     DEBUG_PIN0_CLR
