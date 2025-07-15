@@ -1817,7 +1817,7 @@ void BRF_INT_IRQHandler(void)
             {
                 BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
                 int32_t cfo;
-                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, step_config_p->channel, hadm_proc->ppm);
+                LCL_HAL_COMPUTE_CHANNEL_CFO(cfo, step_config_p->channel, hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
                 lcl_hadm_apply_cfo_per_step(cfo);
             }
         }
