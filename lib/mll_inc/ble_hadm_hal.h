@@ -326,6 +326,7 @@ typedef enum
 typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
 {
     int16 rttFineTuningHns[HADM_RTT_PHY_MAX];  /*! Fine RTT compensation value per PHY (will be substracted from ToA-ToD, added to ToD-ToA) */
+    int16 ppmFineTuning;                      /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
 /*! Storage for an HADM event data */
