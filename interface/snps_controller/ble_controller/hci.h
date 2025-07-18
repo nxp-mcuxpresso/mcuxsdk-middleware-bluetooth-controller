@@ -6,19 +6,29 @@
  ******************************************************************************
  * @copy
  *
- *COPYRIGHT 2025 SYNOPSYS, Inc. This Synopsys "product" and all associated documentation 
- *are proprietary to Synopsys, Inc. and may only be used pursuant to the terms and 
- *conditions of a written license agreement with Synopsys, Inc or with a licensee of Synopsys 
- *who has been granted by Synopsys the right to grant access to this Synopsys "product" 
- *and associated documentation to specified users. All other use, 
- *reproduction, modification, or distribution of the Synopsys "product" or the associated 
- *documentation is strictly prohibited.
- *
- *
- * THE ENTIRE NOTICE ABOVE MUST BE REPRODUCED ON ALL AUTHORIZED COPIES.
- *
- * <h2><center>&copy; (C) COPYRIGHT 2025 SYNOPSYS, INC.</center></h2>
- * <h2><center>&copy; 	ALL RIGHTS RESERVED</center></h2>
+ * Synopsys MIT License:
+ * 
+ * Copyright (c) 2020-Present Synopsys, Inc
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * the Software, to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom
+ * the Software is furnished to do so, subject to the following conditions:
+ * 
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ *  
+ * 
+ * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING, BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE ARISING FROM,
+ * OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE
  *
  * \n\n<b>References</b>\n
  * -Documents folder .
