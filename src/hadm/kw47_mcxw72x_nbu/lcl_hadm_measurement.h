@@ -103,6 +103,9 @@
  * in result processing, causing possible overlap with next subevent */
 #define HADM_MAX_NB_SIMULT_RESULT_BUFFERS (3U)
 
+/* Helper to detect steressfull conditions when debugging */
+//#define HAL_ENABLE_ASSERT_ON_STRESS
+
 /* === Types ================================================================ */
 /*! Contains some register backup values captured after Mode0 phase */
 typedef enum

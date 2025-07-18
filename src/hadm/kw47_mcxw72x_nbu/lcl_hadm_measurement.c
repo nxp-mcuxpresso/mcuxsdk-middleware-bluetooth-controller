@@ -683,7 +683,9 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     hadm_meas_p->result_p = lcl_hadm_utils_get_result_buffer();
     if (hadm_meas_p->result_p == NULL)
     {
+#ifdef HAL_ENABLE_ASSERT_ON_STRESS
         assert(false);
+#endif
         return HADM_HAL_MEMORY_FULL;
     }
     
@@ -777,8 +779,13 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
      status +=  SIMU_LCL_RsmGo(rsm_config_p->role, rsm_config_p);
 #else
     rsm_state = LCL_HAL_XCVR_GET_RSM_STATE;
+#ifdef HAL_ENABLE_ASSERT_ON_STRESS
     assert(rsm_state == LCL_HAL_XCVR_RSM_STATE_DELAY);
-    (void)rsm_state;
+#endif
+    if (rsm_state != LCL_HAL_XCVR_RSM_STATE_DELAY)
+    {
+        hal_status = HADM_HAL_COLLISION;
+    }
 #endif
 
     /* End of critical configuration section: past this point, the RSM is supposed to run */
@@ -1284,7 +1291,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
         
         if (hadm_meas_p->result_p == NULL)
         {
+#ifdef HAL_ENABLE_ASSERT_ON_STRESS
             assert(FALSE);
+#endif
             return HADM_HAL_MEMORY_FULL;
         }
         hadm_meas_p->result_p->connIdx = hadm_meas_p->config_p->connIdx;
@@ -1724,7 +1733,9 @@ void RSM_INT_IRQHandler(void)
                 }
                 else
                 {
+#ifdef HAL_ENABLE_ASSERT_ON_STRESS
                     assert(false);
+#endif
                     type = HADM_EVENT_EOS;
                 }
                 hadm_meas_p->pkt_ram.nb_irq_steps_handled++;
@@ -1781,7 +1792,7 @@ void RSM_INT_IRQHandler(void)
     DEBUG_PIN1_SET
     if (HADM_EVENT_INVALID != type)
     {
-        BLE_HADM_NotifyLL(hadm_meas_p->result_p, type, hal_status);
+        BLE_HADM_NotifyLL(hadm_meas_p->config_p->connIdx, hadm_meas_p->result_p, type, hal_status);
     }
     DEBUG_PIN1_CLR
 
