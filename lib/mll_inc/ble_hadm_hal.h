@@ -478,7 +478,7 @@ typedef struct BLE_HADM_HalCapabilities_tag
  * API to notify LL about HADM HAL events.
  * Is called from an ISR.
  */
-void BLE_HADM_NotifyLL(BLE_HADM_SubeventResultsData_t *result_p, BLE_HADM_event_type_t type, BLE_HADM_STATUS_t status);
+void BLE_HADM_NotifyLL(uint8 connIdx, BLE_HADM_SubeventResultsData_t *result_p, BLE_HADM_event_type_t type, BLE_HADM_STATUS_t status);
 
 #if (HADM_HAL_VERSION == 1)
 /*!
