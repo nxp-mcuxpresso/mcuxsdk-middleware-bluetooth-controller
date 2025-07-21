@@ -65,6 +65,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu)
                 src/KW4x/board.c
                 src/hybrid_gfsk/hybrid_gfsk_hal.c
                 lib/mll_inc/hybrid_gfsk_hal.h
+                lib/mll_inc/ble_debug_struct.h
     )
     mcux_add_include(
         INCLUDES src/KW4x
@@ -104,6 +105,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_app_base)
                 src/KW4x/ll_types.h
                 interface/controller_init.h
                 lib/mll_inc/controller_api_ll.h
+                lib/mll_inc/ble_debug_struct.h
                 src/KW4x/app.h
                 src/KW4x/board.h
                 src/KW4x/board.c

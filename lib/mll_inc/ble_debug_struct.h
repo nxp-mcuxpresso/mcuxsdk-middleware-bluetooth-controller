@@ -14,7 +14,10 @@
 #ifndef BLE_DEBUG_STRUCT_H_
 #define BLE_DEBUG_STRUCT_H_
 
+#include "fwk_debug_struct.h"
+
 #define NB_BUF_ENTRIES 23U
+#if defined(NBUDBG_USE_LEGACY_STRUCT)
 typedef struct
 {
   /*1 x 32 bit*/
@@ -44,6 +47,8 @@ typedef struct
   uint32 r11;
   uint32 r12;
 }DEBUG_STRUCT_EXCEPTION;
+#endif
+
 typedef struct BLE_LM_RES_STATE_NBU_T
 {
   // Scan BIT0;
@@ -59,7 +64,9 @@ typedef struct
 {
   /*3 x 32 bit*/
   uint16 error_bitmask;
+#if defined(NBUDBG_USE_LEGACY_STRUCT)
   uint16 exception_id;
+#endif
   uint32 task_stack_overflow_mask;
   uint32 idle_task_free_running_counter;
   /*2 x 32 bit*/
@@ -68,13 +75,17 @@ typedef struct
   uint8 scan_sched_free_running_counter;
   uint8 init_scan_sched_free_running_counter;
 
+#if defined(BLE_DEBUG_LL) || defined(NBUDBG_USE_LEGACY_STRUCT)
   union
   {
-#ifdef BLE_DEBUG_LL
+#if defined(BLE_DEBUG_LL)
     DEBUG_STRUCT_LEGACY     dbg_legacy;
 #endif /*BLE_DEBUG_LL*/
+#if defined(NBUDBG_USE_LEGACY_STRUCT)
     DEBUG_STRUCT_EXCEPTION  dbg_exception;
+#endif
   }u;
+#endif
 }DBG_STRUCT_CUST;
 
 union info
@@ -94,17 +105,17 @@ typedef struct
   uint8 error_count;
   uint8 warning_count;
   uint8 issue_triggered;
-
+#if defined(NBUDBG_USE_LEGACY_STRUCT)
   /*1 x 32 bit*/
   uint32 length;
   /*1 x 32 bit*/
   uint32 nbu_sha1;
-
+#endif
   /*26 x 32 bit maximum*/
   union info dbg_info;
 
   /*1 x 32 bit*/
   uint32 reserved2;
 }DEBUG_STRUCT;
-extern DEBUG_STRUCT debug_struct;
+
 #endif // BLE_DEBUG_STRUCT

@@ -41,6 +41,7 @@
 #if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
 #include "hdi.h"
 #endif
+#include "ble_debug_struct.h"
 
 /*******************************************************************************
  * Definitions
@@ -54,20 +55,6 @@
 #define gNbuMaxTxPowerDbm_c                    10U
 #define gNbuMaxTxPowerLdoTrim_c                15U
 #endif
-
-typedef struct
-{
-  uint8 mode;
-  uint8 error_count;
-  uint8 warning_count;
-  uint8 reserved1;
-  uint32 length;
-  uint32 nbu_sha1;
-}DEBUG_STRUCT_INFO;
-
-/* m_sqram_debug_start defined in linker script */
-extern uint32_t m_sqram_debug_start[];
-static DEBUG_STRUCT_INFO* debug_info = (DEBUG_STRUCT_INFO*)(m_sqram_debug_start);
 
 /************************************************************************************
 *************************************************************************************
@@ -226,9 +213,9 @@ uint32_t Controller_RadioInit(void)
 
 uint32_t Controller_SetNbuVersion(const uint8* repo_digest)
 {
-  /*MSB of SHA1 is stored in repo_digest[0]*/
-  debug_info->nbu_sha1 = repo_digest[0]|(repo_digest[1] << 8U)|(repo_digest[2] << 16U)|(repo_digest[3]<<24U);
-  return 0;
+    /*MSB of SHA1 is stored in repo_digest[0]*/
+    NBUDBG_SET_SHA(repo_digest[0]|(repo_digest[1] << 8U)|(repo_digest[2] << 16U)|(repo_digest[3]<<24U));
+    return 0;
 }
 
 osa_status_t Controller_Init(const nbuIntf_t* nbuInterface)
