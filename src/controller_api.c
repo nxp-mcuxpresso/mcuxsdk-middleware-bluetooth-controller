@@ -218,8 +218,8 @@ osa_status_t Controller_SetChannelSelectionAlgo2(bool enable)
         api_return = KOSA_StatusError;
     }
     return api_return;
-}    
-    
+}
+
 osa_status_t Controller_GetNextLinLayerEventUsUnsafe(uint32_t* remaining_time)
 {
     osa_status_t api_return = KOSA_StatusError;
@@ -248,7 +248,7 @@ osa_status_t Controller_GetTimestamp(uint32_t* timestamp)
 osa_status_t Controller_GetTimestampEx(uint32_t* ll_timing_slot, uint16_t* ll_timing_us, uint64_t *tstmr)
 {
     osa_status_t api_status;
-    int32_t      ret[5];
+    uint32_t     ret[5];
     bool         rpmsg_status = PLATFORM_NbuApiReq((uint8_t*)&ret[0], API_Controller_GetTimestampEx,
                                 (const uint8_t*)"", NULL, 20U);
     if (rpmsg_status)
@@ -271,11 +271,11 @@ osa_status_t Controller_GetTimestampEx(uint32_t* ll_timing_slot, uint16_t* ll_ti
     return api_status;
 }
 
-osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle, 
-                                           uint8_t  sk_or_skd_req, 
-                                           uint8_t  sk_or_skd[16], 
-                                           uint8_t  iv[8], 
-                                           uint8_t  payload_counter_tx[5], 
+osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle,
+                                           uint8_t  sk_or_skd_req,
+                                           uint8_t  sk_or_skd[16],
+                                           uint8_t  iv[8],
+                                           uint8_t  payload_counter_tx[5],
                                            uint8_t  payload_counter_rx[5])
 {
     osa_status_t api_status;
