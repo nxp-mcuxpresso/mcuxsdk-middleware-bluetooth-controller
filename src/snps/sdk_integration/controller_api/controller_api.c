@@ -6,6 +6,7 @@
 #include "controller_interface.h"
 #include "ble_controller.h"
 #include "nxp_hoststack_adapter.h"
+#include "fsl_debug_console.h"
 
 osa_status_t Controller_TaskInit(void)
 {
@@ -20,6 +21,30 @@ osa_status_t Controller_Init(gHostHciRecvCallback_t callback)
         return KOSA_StatusError;
     }
     return KOSA_StatusSuccess;
+}
+
+osa_status_t Controller_SetDeviceAddress(uint8_t* bdAddr)
+{
+    status_t status;
+    osa_status_t ret = KOSA_StatusSuccess;
+
+    status = BLEController_WriteBdAddr(bdAddr);
+
+    if(status == kBLEC_Success)
+    {
+        PRINTF("bd_addr = ");
+        for (int32_t i = 5; i >= 0; i--)
+        {
+            PRINTF("%s%x%s", bdAddr[i] < 0x10 ? "0" : "", bdAddr[i], i ? ":" : "");
+        }
+        PRINTF("\r\n");
+    }
+    else
+    {
+        ret = KOSA_StatusError;
+    }
+
+    return ret;
 }
 
 osa_status_t Controller_SetTxPowerLevel(uint8_t level, txChannelType_t channel)
