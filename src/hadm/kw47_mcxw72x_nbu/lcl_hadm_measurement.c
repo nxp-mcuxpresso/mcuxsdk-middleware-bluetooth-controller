@@ -1701,6 +1701,7 @@ void RSM_INT_IRQHandler(void)
             else
             {
                 uint32_t steps_to_process; /* HW workaround, see note in lcl_hadm_get_step_results */
+                bool_t shorten_last_step_processing = FALSE;
 
                 /* Step interrupt */
                 if (hadm_meas_p->pkt_ram.step_config.curr_step_idx < hadm_meas_p->config_p->stepsNb)
@@ -1710,9 +1711,7 @@ void RSM_INT_IRQHandler(void)
                 }
                 else
                 {
-                    /* We are close to EOS, set one step per interrupt to minimize EOS processing latency */
-                    hadm_meas_p->pkt_ram.nb_steps_before_irq = 1;
-                    lcl_hal_pkt_ram_config_rsm_int_nbstep(hadm_meas_p->pkt_ram.nb_steps_before_irq);
+                    shorten_last_step_processing = TRUE;
                 }
                 DEBUG_PIN0_PULSE
                 /* Read available step results */
@@ -1727,6 +1726,12 @@ void RSM_INT_IRQHandler(void)
                     steps_to_process = hadm_meas_p->pkt_ram.nb_steps_before_irq;
                 }
                 hal_status = lcl_hadm_get_step_results(steps_to_process, hadm_meas_p);
+                if (shorten_last_step_processing)
+                {
+                    /* We are close to EOS, set one step per interrupt to minimize EOS processing latency */
+                    hadm_meas_p->pkt_ram.nb_steps_before_irq = 1;
+                    lcl_hal_pkt_ram_config_rsm_int_nbstep(hadm_meas_p->pkt_ram.nb_steps_before_irq);
+                }
                 if (hal_status == HADM_HAL_SUCCESS)
                 {
                     type = HADM_EVENT_STEP_INT;
