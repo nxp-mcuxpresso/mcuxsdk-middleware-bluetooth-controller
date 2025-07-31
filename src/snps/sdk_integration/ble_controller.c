@@ -13,6 +13,7 @@
 #include "ll_intf.h"
 #include "hci_transport.h"
 #include "ble_controller_lowlevel.h"
+#include "os_wrapper.h"
 
 #ifdef DUMP_HCI
 #include "fsl_usart.h"
@@ -368,7 +369,8 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
                                  power_range_dbm_t *selected_power_range)
 {
     debug_hci_printf("Controller_Init ...\n");
-    ble_stat_t ret = SUCCESS;
+    ble_stat_t result = SUCCESS;
+    blec_result_t ret = kBLEC_Success;
     const struct hci_dispatch_tbl *p_hci_dis_tbl = NULL;
 
     const int ll_irq_prio = NVIC_GetPriority(BLE_LL_IRQn);
@@ -395,33 +397,41 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
         }
     }
 
-    blec_result_t retLowLevel = BLEController_InitLowLevel(callback ? cmdBufferPoolRaw : NULL, HCI_CMD_BUF_BLOCK_SIZE, MAX_HCI_COMMANDS);
-    if (retLowLevel != kBLEC_Success)
+
+    ret = BLEController_SetTaskStackSize(OS_WRAPPER_LL_THREAD_STACK_SIZE_BYTES, OS_WRAPPER_LL_HIGH_PRIO_THREAD_STACK_SIZE_BYTES);
+    if (ret != kBLEC_Success)
+    {
+        debug_hci_printf("BLEController_SetTaskStackSize Error\n");
+        return ret;
+    }
+
+    ret = BLEController_InitLowLevel(callback ? cmdBufferPoolRaw : NULL, HCI_CMD_BUF_BLOCK_SIZE, MAX_HCI_COMMANDS);
+    if (ret != kBLEC_Success)
     {
         debug_hci_printf("BLEController_InitLowLevel Error\n");
-        return retLowLevel;
+        return ret;
     }
 
     hci_get_dis_tbl(&p_hci_dis_tbl);
 
-    ret = ll_intf_init(p_hci_dis_tbl);
-    if (ret != SUCCESS)
+    result = ll_intf_init(p_hci_dis_tbl);
+    if (result != SUCCESS)
     {
         debug_hci_printf("ll_intf_init Error\n");
         return kBLEC_ErrorLLInit;
     }
     debug_hci_printf("ll_intf_init done.\n");
 
-    ret = ll_hci_init(Hci_transport_send_packet);
-    if (ret != SUCCESS)
+    result = ll_hci_init(Hci_transport_send_packet);
+    if (result != SUCCESS)
     {
         debug_hci_printf("ll_hci_init Error\n");
         return kBLEC_ErrorLLHCIInit;
     }
     debug_hci_printf("ll_hci_init done\n");
 
-    ret = ll_intf_select_tx_power_table(BLEController_getTableIdx(requested_max_power_dBm));
-    if (ret != SUCCESS)
+    result = ll_intf_select_tx_power_table(BLEController_getTableIdx(requested_max_power_dBm));
+    if (result != SUCCESS)
     {
         debug_hci_printf("ll_intf_select_tx_power_table Error\n");
         return kBLEC_ErrorSelectPowerTable;
@@ -431,8 +441,8 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
 
     debug_hci_printf("ll_intf_select_tx_power_table done\n");
 
-    ret = ll_intf_config_ll_ctx_params(0, 1);
-    if (ret != SUCCESS)
+    result = ll_intf_config_ll_ctx_params(0, 1);
+    if (result != SUCCESS)
     {
         debug_hci_printf("ll_intf_config_ll_ctx_params Error\n");
         return kBLEC_ErrorLLConfigCtx;
@@ -441,8 +451,8 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
 
     /* select sleeptimer clock source type */
     uint16_t ptr_slp_clk_freq_value = 0;
-    ret                             = ll_intf_le_select_slp_clk_src((uint8_t)RTC_SLPTMR, &ptr_slp_clk_freq_value);
-    if (ret != SUCCESS)
+    result                             = ll_intf_le_select_slp_clk_src((uint8_t)RTC_SLPTMR, &ptr_slp_clk_freq_value);
+    if (result != SUCCESS)
     {
         debug_hci_printf("ll_intf_le_select_slp_clk_src Error\n");
         return kBLEC_ErrorLLSlpClkSrc;

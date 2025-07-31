@@ -58,7 +58,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll)
         )
     endif()
 
-    if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll_freertos)
+    if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll_os)
         add_snps_ll_common()
 
         mcux_add_source(
@@ -66,14 +66,14 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll)
         )
 
         mcux_add_library(
-            LIBS lib/snps_controller/libble_ll_freertos.a
-                 lib/snps_controller/libble_ll_utils_freertos.a
+            LIBS lib/snps_controller/libble_ll_os.a
+                 lib/snps_controller/libble_ll_utils_os.a
             TOOLCHAINS mdk armgcc mcux iar
             DEVICE_IDS ${MCXW23_FAMILY}
         )
     endif()
 
-    if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll_freertos_uart)
+    if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll_os_uart)
         add_snps_ll_common()
 
         mcux_add_source(
@@ -81,8 +81,8 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.snps_ll)
         )
 
         mcux_add_library(
-            LIBS lib/snps_controller/libble_ll_freertos.a
-                lib/snps_controller/libble_ll_utils_freertos_uart.a
+            LIBS lib/snps_controller/libble_ll_os.a
+                lib/snps_controller/libble_ll_utils_os_uart.a
             TOOLCHAINS mdk armgcc mcux iar
             DEVICE_IDS ${MCXW23_FAMILY}
         )

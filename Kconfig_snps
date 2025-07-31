@@ -7,13 +7,13 @@ menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
     if MCUX_COMPONENT_middleware.wireless.snps_ll
         choice MCUX_COMPONENT_middleware.wireless.snps_ll_selection
             prompt "selection"
-            default MCUX_COMPONENT_middleware.wireless.snps_ll_freertos if MCUX_COMPONENT_middleware.freertos-kernel
+            default MCUX_COMPONENT_middleware.wireless.snps_ll_os if MCUX_COMPONENT_middleware.freertos-kernel
             default MCUX_COMPONENT_middleware.wireless.snps_ll_bm
 
             if MCUX_COMPONENT_middleware.freertos-kernel
-                config MCUX_COMPONENT_middleware.wireless.snps_ll_freertos
+                config MCUX_COMPONENT_middleware.wireless.snps_ll_os
                     bool "freertos"
-                config MCUX_COMPONENT_middleware.wireless.snps_ll_freertos_uart
+                config MCUX_COMPONENT_middleware.wireless.snps_ll_os_uart
                     bool "freertos_uart"
             endif
             

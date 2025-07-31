@@ -67,6 +67,17 @@ os_pool_def_t os_pool_##type
 extern os_pool_def_t os_pool_##type
 
 /* Exported macros ------------------------------------------------------------*/
+/*
+ * The following values are also used during the compilation of the ll libraries. If changed a call to 
+ * BLEController_SetTaskStackSize(OS_WRAPPER_LL_THREAD_STACK_SIZE_BYTES, OS_WRAPPER_LL_HIGH_PRIO_THREAD_STACK_SIZE_BYTES)
+ * needs to be made to apply the changes.
+ * If the LL is initialized using BLEController_Init() this call takes place automatically.
+ * It is not recommended to reduce the values unless the needed stack sizes have been throughly profiled for your specific
+ * application.
+ * */
+#define OS_WRAPPER_LL_THREAD_STACK_SIZE_BYTES	4000
+#define OS_WRAPPER_LL_HIGH_PRIO_THREAD_STACK_SIZE_BYTES	2000
+
 /* Exported types -------------------------------------------------------------*/
 
 /**
