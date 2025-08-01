@@ -7,16 +7,16 @@ menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
     if MCUX_COMPONENT_middleware.wireless.snps_ll
         choice MCUX_COMPONENT_middleware.wireless.snps_ll_selection
             prompt "selection"
-            default MCUX_COMPONENT_middleware.wireless.snps_ll_os if MCUX_COMPONENT_middleware.freertos-kernel
+            default MCUX_COMPONENT_middleware.wireless.snps_ll_os if ! MCUX_COMPONENT_component.osa_bm
             default MCUX_COMPONENT_middleware.wireless.snps_ll_bm
 
-            if MCUX_COMPONENT_middleware.freertos-kernel
+            if ! MCUX_COMPONENT_component.osa_bm
                 config MCUX_COMPONENT_middleware.wireless.snps_ll_os
-                    bool "freertos"
+                    bool "os"
                 config MCUX_COMPONENT_middleware.wireless.snps_ll_os_uart
-                    bool "freertos_uart"
+                    bool "os_uart"
             endif
-            
+
             config MCUX_COMPONENT_middleware.wireless.snps_ll_bm
             bool "bm"
 
@@ -32,7 +32,7 @@ menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
             bool "nxp_hoststack_adapter" 
             default y 
         endif
-        
+
         config MCUX_COMPONENT_middleware.wireless.snps_ll_controller_api
         bool "controller_api" 
     endif
