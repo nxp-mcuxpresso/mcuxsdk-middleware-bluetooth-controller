@@ -1,3 +1,8 @@
+/* Copyright 2021-2025 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "os_wrapper.h"
 #include "fsl_os_abstraction.h"
 #include <limits.h>
