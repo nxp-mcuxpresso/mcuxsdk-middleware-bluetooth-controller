@@ -1422,6 +1422,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     int32_t frac_delay = 0;
                     int32_t rtt_ts = 0;
                     uint8_t nadm_metric = 0xFF; /* NADM not available by default */
+                    uint8_t nadm_symb_err = 0x0U; 
                     rtt_pkt_no++;
                     XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)&rtt_data_raw, &rtt_data, (XCVR_RSM_SQTE_RATE_T)rate); /* OJE TODO: optimize...*/
                     if (rtt_data.rtt_vld && rtt_data.rtt_found)
@@ -1469,6 +1470,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         {
                             uint32_t nadm_fm_corr_value = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
                             XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, fm_corr_target, fm_corr_div, nadm_metric);
+                            nadm_symb_err = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)
+                                                     >>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
+
                         }
                     }
                     if (step_config_p->mode == HADM_STEP_MODE1)
@@ -1479,7 +1483,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     {
                         *res_buff_p++ = BLE_HADM_STEP3_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                     }
-                    *res_buff_p++ = (HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld)); /* Packet_AA_Quality (1 byte) */
+                    *res_buff_p++ = ( (nadm_symb_err << 4 & 0xF0) | HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld)); /* Payload_errors[7:4] | Packet_AA_Quality[3:0] (1 byte) */
                     *res_buff_p++ = nadm_metric; /* Packet_NADM */
                     *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, (uint8_t)(nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK)); /* Packet_RSSI (1 byte) */
                     HADM_SET_RTT_TS_DIFF(rtt_data.rtt_vld, rtt_ts, res_buff_p); /* ToX-ToX time diff (2 bytes) */
