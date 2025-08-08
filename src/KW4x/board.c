@@ -23,7 +23,11 @@ void BOARD_SystemCoreClockUpdate(void)
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     uint32_t froPostDivSel = BOARD_GetSystemCoreClockSel();
 
-    SystemCoreClock = froPostDivFreq[froPostDivSel];
+    if (froPostDivSel < (sizeof(froPostDivFreq) / sizeof(froPostDivFreq[0])))
+    {
+        SystemCoreClock = froPostDivFreq[froPostDivSel];
+    }
+
 #endif
 }
 
