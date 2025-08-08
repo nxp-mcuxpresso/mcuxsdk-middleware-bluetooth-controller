@@ -103,6 +103,9 @@ static const uint32_t aa_test_list[HADM_UT_AA_LIST_SIZE] = {
 /* === Types ================================================================ */
 
 /* === Externals ============================================================ */
+/* LTC access protection */
+extern void (* lock_LTC)();
+extern void (* unlock_LTC)();
 
 /* === Globals ============================================================= */
 
@@ -236,6 +239,12 @@ void BLE_HADM_SetDmaDebugBuff(uint16 dma_debug_buff_size, uint32 dma_debug_buff_
 void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_buff, const uint8 *key, const int cbc, const uint8 *iv )
 {
     status_t status = kStatus_Success;
+
+    if (lock_LTC)
+    {
+        lock_LTC();
+    }
+
 #ifndef SIMULATOR
     if (cbc == 1) 
     {
@@ -252,6 +261,12 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
     }
 #endif
     assert(kStatus_Success == status);
+
+    if (unlock_LTC)
+    {
+        unlock_LTC();
+    }
+
     (void)status;
 }
 
