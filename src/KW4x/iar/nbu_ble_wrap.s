@@ -89,6 +89,9 @@ _tx_initialize_low_level
 
   MOV r0, #0xE000E000                     ; Build address of NVIC registers
 
+  LDR r1, =0x00000010                     ; DIV_0_TRP
+  STR r1, [r0, #0xD14]                    ; Configuration Control Register setting
+
   LDR r1, =0x00000000                     ; Rsrv, UsgF, BusF, MemM
   STR r1, [r0, #0xD18]                    ; Setup System Handlers 4-7 Priority Registers
 
