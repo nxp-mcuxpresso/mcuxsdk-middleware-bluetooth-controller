@@ -7,28 +7,19 @@
  * @copy
  *
  * Synopsys MIT License:
- * 
  * Copyright (c) 2020-Present Synopsys, Inc
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * the Software, to deal in the Software without restriction, including without
- * limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom
- * the Software is furnished to do so, subject to the following conditions:
- * 
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- *  
- * 
- * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING, BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE ARISING FROM,
- * OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of the Software,
+ * to deal in the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+ * to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in all copies or 
+ * substantial portions of the Software.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,INCLUDING,
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE ARISING FROM,
+ * OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
  *
  * \n\n<b>References</b>\n
  * -Documents folder .
@@ -4073,6 +4064,23 @@ void ll_intf_get_profile_statistics(uint32_t* exec_time, uint32_t* drift_time);
  * @retval sleep timer value in us.
  */
 uint64_t ll_intf_get_sleep_timer_us();
+
+#if (SUPPORT_MASTER_CONNECTION || (SUPPORT_SLAVE_CONNECTION && SUPPORT_CHANNEL_CLASSIFICATION))
+/**
+ * @brief  set channel assessment state.
+ *
+ * @param  state		: [in] 0:inactive, >=1: active
+ *
+ */
+void ll_intf_set_channel_assessment_state(uint8_t state);
+/**
+ * @brief  get the current channel assessment state.
+ *
+ * @retval  state		: [in] 0:inactive, >=1: active
+ *
+ */
+uint8_t ll_intf_get_channel_assessment_state(void);
+#endif /* (SUPPORT_MASTER_CONNECTION || (SUPPORT_SLAVE_CONNECTION && SUPPORT_CHANNEL_CLASSIFICATION)) */
 #endif /* INCLUDE_LL_INTF_H */
 
 // reuse-pragma endSub nMAC_ONLY

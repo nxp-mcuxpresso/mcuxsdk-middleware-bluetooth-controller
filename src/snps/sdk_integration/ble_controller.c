@@ -237,7 +237,9 @@ static void Hci_transport_send_packet(ble_buff_hdr_t *ptr_evnt_hdr)
 blec_result_t BLEController_ProcessHciPacket(blec_hciPacketType_t packetType, void *pPacket, uint16_t packetSize)
 {
     blec_result_t ret = kBLEC_Success;
-
+#ifdef DEBUG_HCI
+    PrintDeferredHciBufs();
+#endif
     debug_hci_printf("\tHCI H->L[%x %x %x]", packetSize, pPacket, packetType);
 
     for (int i = 0; i < packetSize; i++)
@@ -361,6 +363,9 @@ func_exit:
 
 void BLEController_EmngrHandleAllEvents(void)
 {
+#ifdef DEBUG_HCI
+    PrintDeferredHciBufs();
+#endif
     emngr_handle_all_events();
 }
 
@@ -374,9 +379,8 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
     const struct hci_dispatch_tbl *p_hci_dis_tbl = NULL;
 
     const int ll_irq_prio = NVIC_GetPriority(BLE_LL_IRQn);
-    const int ll_sleep_irq_prio = NVIC_GetPriority(BLE_SLP_TMR_IRQn);
 
-    /* Make sure LL interrupts have highest priority (only check enabled interrupts). This is a prerequisite of the system. */
+    /* Make sure LL interrupt has the highest priority (only check enabled interrupts). This is a prerequisite of the system. */
     for (int irq = 0; irq <= WAKE_PAD_IRQn; irq++)
     {
         if(NVIC_GetEnableIRQ(irq) &&
@@ -386,12 +390,6 @@ blec_result_t BLEController_Init(blecHostHciRecvCallback_t callback,
             if(NVIC_GetPriority(irq) <= ll_irq_prio)
             {
                 debug_hci_printf("irq %d with priority %d must have lower priority than BLE_LL_IRQn irq prio %d\n", irq, NVIC_GetPriority(irq), ll_irq_prio);
-                return kBLEC_ErrorLLIrqPriorityInit;
-            }
-
-            if(NVIC_GetPriority(irq) <= ll_sleep_irq_prio)
-            {
-                debug_hci_printf("irq %d with priority %d must have lower priority than BLE_SLP_TMR_IRQn irq prio %d\n", irq, NVIC_GetPriority(irq), ll_sleep_irq_prio);
                 return kBLEC_ErrorLLIrqPriorityInit;
             }
         }
