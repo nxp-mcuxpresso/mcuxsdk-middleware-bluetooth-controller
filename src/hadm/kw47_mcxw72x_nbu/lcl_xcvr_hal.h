@@ -308,7 +308,7 @@ typedef enum
         ((((int32_t)step_channel - (int32_t)proc_cfo_channel) * ppm)/HADM_PPM_DIVIDER) /* in Hz */
 
 #define LCL_HAL_COMPUTE_CHANNEL_CFO(channel, ppm) \
-        ((((int32_t)2402U + (channel)) * (ppm))/HADM_PPM_DIVIDER) /* in Hz */
+        ((((int32_t)2402 + (int32_t)(channel)) * (int32_t)(ppm)) / ((int32_t)HADM_PPM_DIVIDER)) /* in Hz */
 
 #define LCL_HAL_PROGRAM_MODE0_TIMEOUT(timeout_us) \
     {\

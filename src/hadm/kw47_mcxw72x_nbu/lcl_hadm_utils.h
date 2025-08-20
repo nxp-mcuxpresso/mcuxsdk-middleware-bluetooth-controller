@@ -193,7 +193,7 @@ void lcl_hadm_disable_interrupts(void);
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
 void lcl_hadm_enable_interrupts_for_subevent(bool trig_on_tx);
 void lcl_hadm_restore_interrupts_for_subevent(void);
-void lcl_hadm_apply_cfo_per_step(int32_t cfo);
+uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo);
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 void lcl_hadm_restore_interrupts(void);
 void lcl_hadm_init_tpms(void);

@@ -287,16 +287,26 @@ void lcl_hadm_restore_interrupts_for_subevent(void)
 
 /* Programm FOM register values.
  * Those values do not have to be reset after use since they are not relevant
- * without a FOM trigger (cleared via LCL_HAL_DISABLE_FO_ENTRY)
+ * without a FOM trigger (cleared via LCL_HAL_DISABLE_FO_ENTRY).
+ * Return  0/1 for success/error correspondingly.
  */
-void lcl_hadm_apply_cfo_per_step(int32_t cfo)
+uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo)
 {
-    /* Hz to 0.95Hz unit */
-    cfo = (cfo * 67) / 64;
+    uint32_t temp = (cfo >= 0) ? (uint32_t)cfo : (uint32_t)(-cfo);
+
+    if ((cfo > 262143) || (cfo < -262143))  /* check CFO limitation: (2^32 / 16384) - 1 */
+    {
+        return 1U;
+    }
+    /* Hz to 0.95Hz unit, see XCVR_LCL_RsmCompCfo() */
+    temp = ((temp * 16384U) / 15625U);
+    cfo = (cfo >= 0) ? (int32_t)temp : (int32_t)(-temp);
     /* 1Mbps PHY */
     XCVR_MISC->IPS_FO_DRS0_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
     /* 2 Mbps PHY */
     XCVR_MISC->IPS_FO_DRS1_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+
+    return 0U;
 }
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 
