@@ -32,7 +32,7 @@
 /* === Globals ============================================================= */
 uint32_t nvic_backup;
 
-BLE_HADM_SubeventConfig_t  configBuffer[HADM_MAX_NB_SIMULT_SUBEVENTS];
+BLE_HADM_SubeventConfig_t  configBuffer[HADM_MAX_NB_HAL_CONFIG_BUFFERS];
 BLE_HADM_SubeventResultsData_t resultsDataBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS];
 static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
 
@@ -55,7 +55,7 @@ extern const uint8_t rtt_type_2_payload_size[7U];
 void lcl_hadm_utils_init_buffers(void)
 {
     /* Initialise HAL config & results buffer */
-    for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
+    for (int i=0; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         configBuffer[i].configBufferUsed = 0;
     }
@@ -73,7 +73,7 @@ BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer()
 {
     BLE_HADM_SubeventConfig_t *config_p = NULL;
     
-    for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
+    for (int i=0; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         if (configBuffer[i].configBufferUsed == 0)
         {
@@ -90,7 +90,7 @@ BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer()
 /* Free HAL config buffer(s) belonging to connIdx */
 void lcl_hadm_utils_free_config_buffer(uint8 connIdx)
 {
-    for (int i=0; i < HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
+    for (int i=0; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         if ((configBuffer[i].configBufferUsed == 1) && (configBuffer[i].connIdx == connIdx))
         {

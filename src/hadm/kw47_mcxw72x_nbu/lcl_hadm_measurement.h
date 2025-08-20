@@ -94,10 +94,19 @@
    (((HADM_CONFIG_P)->debugFlags & HADM_DBG_FLG_RSMINIT_OPTIM_DIS) || \
     ((HADM_CONFIG_P)->mode != HADM_SUBEVT_TEST_MODE))
 
-/* Maximum number of CS subevents that can be handled in parrallel by the HAL.
- * Each connection may require two config buffers as preparation overlaps execution
+/* Maximum number of CS subevents contexts that can be handled simultaneously by the HAL.
+ * simultaneous: a subevent postprocessing may overlap the next subevent preprocessing.
+ * Typically defines the number of PKT RAM circular buffer.
  */
-#define HADM_MAX_NB_SIMULT_SUBEVENTS (HADM_MAX_NB_CONNECTIONS * 2U)
+#define HADM_MAX_NB_SIMULT_SUBEVENTS (2U)
+
+/* Each connection may have the need to prepare an HAL config buffer upfront,
+ * hence the need to have a large number of configuration buffers.
+ * Furthermore, the configuration buffer lifetime of the current subevent may overlap
+ * the lifetime of the next subevent config buffer, so we need to have one additional buffer
+ * for the running config.
+ */
+#define HADM_MAX_NB_HAL_CONFIG_BUFFERS (HADM_MAX_NB_CONNECTIONS + 1U)
 
 /* At the end of the subevent, we may need up to 3 result buffers due to lot of latency
  * in result processing, causing possible overlap with next subevent */

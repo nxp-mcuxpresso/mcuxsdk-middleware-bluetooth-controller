@@ -182,9 +182,11 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         hadm_meas[i].pkt_ram.step_config.ram_type = 0;
         hadm_meas[i].pkt_ram.step_config.buff_len = HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE;
         hadm_meas[i].pkt_ram.step_config.base_ptr = (uint32_t *)TX_PACKET_RAM + (i * HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE);
+        assert((hadm_meas[i].pkt_ram.step_config.base_ptr + hadm_meas[i].pkt_ram.step_config.buff_len) <= (((uint32_t *)TX_PACKET_RAM) + TX_PACKET_RAM_PACKET_RAM_COUNT));
         hadm_meas[i].pkt_ram.step_result.ram_type = 1;
         hadm_meas[i].pkt_ram.step_result.buff_len = HADM_HAL_PKT_RAM_RESULT_CIRC_BUFF_SIZE;
         hadm_meas[i].pkt_ram.step_result.base_ptr = (uint32_t *)RX_PACKET_RAM + (i * HADM_HAL_PKT_RAM_RESULT_CIRC_BUFF_SIZE);
+        assert((hadm_meas[i].pkt_ram.step_result.base_ptr + hadm_meas[i].pkt_ram.step_result.buff_len) <= (((uint32_t *)RX_PACKET_RAM) + RX_PACKET_RAM_PACKET_RAM_COUNT));
 
         lcl_hadm_free_meas_instance(&hadm_meas[i]);
         
