@@ -347,6 +347,11 @@ bleResult_t Controller_SetDTMBaudrate(dtmBaudrate_t baudrate);
  ********************************************************************************** */
 bleResult_t Controller_SetMaxTxPower(int8_t power_dBm, uint8_t ldo_ant_trim);
 
+/*! *********************************************************************************
+ * \brief  Restore the LDO Ana Trim
+ ********************************************************************************** */
+void Controller_RestoreLdoAntTrim(void);
+
 #endif /* _CONTROLLER_INTERFACE_H_ */
 
 /*! *********************************************************************************

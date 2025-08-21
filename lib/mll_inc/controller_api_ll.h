@@ -184,6 +184,17 @@ extern void NbuPwrPeakReductionActivityStart(void);
 extern void NbuPwrPeakReductionActivityStop(void);
 extern void NbuPwrPeakReductionDisable(void);
 
+/*!
+ * \brief Start or stop transmitter modulation test.
+ *
+ * \param[in]  test         0/1/2/3/4 for disabled / unmodulated / 0's mod / 1's mod / pseudo random mod
+ * \param[in]  rf_channel   0 to 39 for frequency 2402+2*rf_channel (Mhz)
+ * \param[in]  phy          0/1 for 1M/2M PHY
+ * \param[in]  power_dBm    tx power level in dBm
+ * \return uint32 API status 0 success, others failure
+*/
+extern uint32 Controller_ContinuousTransmission(uint8 test, uint8 rf_channel, uint8 phy, int8 power_dBm);
+
 extern unsigned long long PLATFORM_GetTimestamp(void);
 
 /* Get BLE native clock in half slot and the native clock offset in quarter us */

@@ -13,6 +13,10 @@
 #include "controller_init.h"
 #include "controller_api_ll.h"
 
+#include "nxp2p4_xcvr.h"
+#include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
+#include "nxp_xcvr_coding_config.h"
+
 /*******************************************************************************
  * Types & defines
  ******************************************************************************/
@@ -290,4 +294,37 @@ bool Controller_EnableSecurityFeature()
 {
   uint32 status = LL_API_EnableSecurityFeature();
   return ((status == 0U) ? true: false);
+}
+
+uint32 Controller_ContinuousTransmission(uint8 test, uint8 rf_channel, uint8 phy, int8 power_dBm)
+{
+    uint32 status = 0;
+    
+    if( test > 1U || rf_channel > 39U || phy > 1U)
+    {
+        status = 1;
+    }
+    else if( test == 0U )
+    {
+        XCVR_DftTxOff();
+        
+        // restore BLE_LL mode
+        XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
+    }
+    else
+    {
+        LL_API_SetTxPowerLevelDbmImmediate(power_dBm);
+
+        if( test == 1U )
+        {
+            XCVR_DftTxCW((rf_channel * 2U + 2402U)*1000000U);
+        }
+        else
+        {
+            // todo
+            status = 1;
+        }
+    }
+    
+    return status;
 }
