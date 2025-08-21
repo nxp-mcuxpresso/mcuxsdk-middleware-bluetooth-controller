@@ -75,7 +75,7 @@
 #define HADM_INVALID_REFERENCE_POWER_LEVEL   (0x7F)
 
 /* Fine tuning for RTT HW compensation. Measure distance at 0 meters: fine_latency=zero_dist/0.3*2 (hns) */
-#define HADM_RXTX_FINE_LATENCY_1MBPS_HNS     (-1835)
+#define HADM_RXTX_FINE_LATENCY_1MBPS_HNS     (-1909)
 #define HADM_RXTX_FINE_LATENCY_2MBPS_HNS     (-3452)
 
 #define HADM_TX_LATENCY_NS             (2000U)  /* tx_on (RSM DT_TX state to 1st bit over the air). Measured */
