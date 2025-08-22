@@ -274,12 +274,6 @@ void LL_API_UpdateLastNativeClkBeforeSleep(void);
 void LL_API_WaitForClkUpdtFromLowPwr(void);
 
 /*!
- * \brief API used to notify link layer of the NBU core wakeu.
- *
- */
-void LL_API_NotifyWakeUp(void);
-
-/*!
  * \brief First initialization stage of the BLE Controller.
  *  Must be called before RTOS scheduler is started and before calling NB_API_PostKernelInit().
  *  On ThreadX, this is typically called before tx_kernel_enter().
@@ -338,5 +332,12 @@ __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
 {
     nbuInterf->nbuExitCritical();
 }
+
+/*!
+ * \brief Do an handcheck with application core that will work as a watchdog to detect 
+ * if the NBU is stuck.
+ *
+ */
+void LL_API_NotifyWakeUp(void);
 
 #endif // CONTROLLER_API_H_
