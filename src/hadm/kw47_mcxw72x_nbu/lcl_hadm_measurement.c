@@ -17,6 +17,7 @@
 #include "EmbeddedTypes.h"
 #include "nxp_xcvr_lcl_ctrl.h"
 #include "nxp_xcvr_lcl_step_mgr.h"
+#include "nxp_xcvr_trim.h"
 #include "lcl_hadm_measurement.h"
 #include "lcl_xcvr_hal.h"
 #include "lcl_hadm_utils.h"
@@ -223,9 +224,13 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         hadm_device.ant2gpio[i] = 0U;
     }
 
+    hadm_device.rtt_static_comp.rttRCcal = HADM_RCCAL_CENTER;
+    hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = HADM_CBPF_ATTEN_CENTER_1MBPS;
+    hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = HADM_CBPF_ATTEN_CENTER_2MBPS;
+
     /* Perform initial calibration */
     hadm_device.is_rsm_cal_done = false;
-    
+
 #ifndef SIMULATOR
     hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_1MBPS);
     if (hal_status == HADM_HAL_SUCCESS)
@@ -240,13 +245,40 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     {
         hal_status = lcl_hadm_calibrate_pll(HADM_RTT_PHY_2MBPS);
     }
+
+    /* Read CBPF filter data from IFR - needed to compute internal RTT delay */
+    {
+        rf_ifr_rtt_trim_t rtt_trim_values;
+
+        if (XCVR_TRIM_ReadRttIfr(&rtt_trim_values))
+        {
+            if (rtt_trim_values.rf_rtt_tg_trim_rccal != RTT_TRIM_TG_RCCAL_WIDTH_MASK)
+            {
+                hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values.rf_rtt_tg_trim_rccal;
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
+            }
+            if (rtt_trim_values.rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
+            {
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
+            }
+        }
+        else
+        {
+            /* Default values will be used */
+        }
+    }
+
     if (hal_status == HADM_HAL_SUCCESS)
 #endif
     {
         hadm_device.is_rsm_cal_done = true;
     }
-    /* Initialize temperature compensation (assume 20 degrees C in case the host does not inform NBU) */
-    lcl_hadm_handle_temperature_change(20);
+
+    /* Initialize RTT compensation for device contributors */
+    lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
+
+    /* Initialize temperature compensation (assume 25 degrees C in case the host does not inform NBU) */
+    lcl_hadm_handle_temperature_change(HADM_TEMPERATURE_CENTER);
 
     /* Init LTC for DRBG */
     LTC_Init(LTC0);
@@ -599,6 +631,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->sniffer_mode_en = (hadm_config->role == HADM_ROLE_SNIFFER);
     rsm_config_p->enable_inpr = (bool)hadm_config->inlinePhaseReturn;
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
+    rsm_config_p->use_rccal_manual_override = true;
+    rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
     {

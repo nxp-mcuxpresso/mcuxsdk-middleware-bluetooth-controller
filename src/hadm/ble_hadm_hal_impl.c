@@ -151,6 +151,13 @@ void BLE_HADM_SetZeroDistanceCompensationData(BLE_HADM_ZeroDistanceCompensationD
 {
     hadm_device.zero_distance_comp = *compData;
 }
+
+void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias)
+{
+    hadm_device.rtt_static_comp = *rttBias;
+    /* Update derived delay */
+    lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
+}
                                             
 BLE_HADM_STATUS_t BLE_HADM_SubeventCheckConfig(const BLE_HADM_SubeventConfig_t *config)
 {

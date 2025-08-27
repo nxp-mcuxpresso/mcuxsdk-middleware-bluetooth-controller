@@ -74,8 +74,16 @@
 /* "If the reference power level value is not available during a subevent, then this value shall be set to 0x7F." */
 #define HADM_INVALID_REFERENCE_POWER_LEVEL   (0x7F)
 
+/* Temperature at which RTT compensation is zero */
+#define HADM_TEMPERATURE_CENTER             (25)
+
+/* Center/Default values for CBPF characterisation (used for RTT delay compenstion) */
+#define HADM_RCCAL_CENTER                   (17)
+#define HADM_CBPF_ATTEN_CENTER_1MBPS        (650) /* 6.5 dB (*100) */
+#define HADM_CBPF_ATTEN_CENTER_2MBPS        (650) /* 6.5 dB (*100) */
+
 /* Fine tuning for RTT HW compensation. Measure distance at 0 meters: fine_latency=zero_dist/0.3*2 (hns) */
-#define HADM_RXTX_FINE_LATENCY_1MBPS_HNS     (-1909)
+#define HADM_RXTX_FINE_LATENCY_1MBPS_HNS     (-1920)
 #define HADM_RXTX_FINE_LATENCY_2MBPS_HNS     (-3452)
 
 #define HADM_TX_LATENCY_NS             (2000U)  /* tx_on (RSM DT_TX state to 1st bit over the air). Measured */
@@ -173,7 +181,6 @@
         *report_p++ = qual_metric; \
     } while (0)
 
-
 /* === Globals ============================================================= */
 
 /* === Externals =========================================================== */
@@ -205,6 +212,7 @@ void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_c
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur);
 uint32_t lcl_hadm_utils_wait_for_rsm_irq(uint32_t *rsm_step_no, uint32_t rsm_mode);
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device);
+void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device);
 void lcl_hadm_utils_compute_pct_and_tqi(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);
 void lcl_hadm_utils_compute_pct(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);

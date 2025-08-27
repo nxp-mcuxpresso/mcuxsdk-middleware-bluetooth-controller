@@ -246,11 +246,16 @@ typedef struct
      /*! Store PLL calibration data for each HADM channel */
     hadm_pll_cal_data_t    cal_data[HADM_RTT_PHY_MAX][HADM_MAX_CHANNELS];
 #endif
+    /* Device characterisation data obtained from IFR */
+    BLE_HADM_RttBiasParameters_t rtt_static_comp;
     /*! Store zero distance compensation information */
     BLE_HADM_ZeroDistanceCompensationData_t zero_distance_comp;
     /*! RTT compensation delay computed from current temperature */
     int32_t rtt_temperature_comp_hns[HADM_RTT_PHY_MAX];
     int16_t current_temperature;
+    /*! Constant device-specific RTT compensation delay (obtained from characterisation) */
+    int32_t rtt_static_comp_hns[HADM_RTT_PHY_MAX];
+
     uint16_t dma_debug_buff_size;
     uint32_t dma_debug_buff_address;
 } hadm_device_t;

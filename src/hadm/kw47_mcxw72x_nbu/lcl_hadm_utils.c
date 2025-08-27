@@ -159,25 +159,39 @@ uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal)
 
 /* Compute RTT latency for a given temperature.
  * Characterization has shown that the delay can be approximated as a polynomial of degree 2.
- * Curve is positioned on Y axis so that there's no delay at 20 degrees C which is the recommended
+ * Curve is positioned on Y axis (hence the -1) so that there's no delay at 25 degrees C which is the recommended
  * temperature to perform zero distance calibration.
- * This will also garantie normal behavior at 20 degrees C if the host does not transmit temperature information (hcibb).
- * For 1Mbps: delay (half ns) =  0.0012x2 + 0.0488x - 1
- * For 2Mbps: delay (half ns) =  0.0007x2 + 0.056x - 1
+ * This will also garantie normal behavior at 25 degrees C if the host does not transmit temperature information (hcibb).
+ * For 1Mbps: delay (half ns) =  0.0016x2 + 0.008x - 1
+ * For 2Mbps: delay (half ns) =  idem
  * Fixed point conversions:
- *      0.0012  => 20*2^14
- *      0.0488  => 800*2^14
- *      0.0007  => 11*2^14
- *      0.056   => 917*2^14
+ *      0.016  => 26*2^14
+ *      0.008  => 131*2^14
  * Return: half ns unit
  */
-#define HADM_TEMP_SCALE_FACTOR (1<<14)
-#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) (((20 * (_TEMP) + 800) * (_TEMP))/HADM_TEMP_SCALE_FACTOR - 1)
-#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) (((11 * (_TEMP) + 917) * (_TEMP))/HADM_TEMP_SCALE_FACTOR - 1)
+#define HADM_RTT_SCALE_FACTOR (1<<14)
+#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) (((26 * (_TEMP) + 131) * (_TEMP))/HADM_RTT_SCALE_FACTOR - 1)
+#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) (((26 * (_TEMP) + 131) * (_TEMP))/HADM_RTT_SCALE_FACTOR - 1)
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device)
 {
     hadm_device->rtt_temperature_comp_hns[HADM_RTT_PHY_1MBPS] = HADM_CALC_RTT_TEMP_DELAY_1MBPS(temperature);
     hadm_device->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS] = HADM_CALC_RTT_TEMP_DELAY_2MBPS(temperature);
+}
+
+/* Compute device-specific constant contributions to RTT delay */
+void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p)
+{
+    int32_t static_delay_hns;
+
+    /* RCCal delay in hns = -0.774*(rccal-17) ns * 2 (0.774 in fixed point s14 = 12681) */
+    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-12681)) / (HADM_RTT_SCALE_FACTOR>>1);
+
+    /* 1Mbps: CBPF attenuation delay in ns = 14.86(a-6.5). Since a is stored *100 => in hns = 2*14.86(a-6.5)/100. (14.86 in fixed point s5 = 475) */
+    hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_1MBPS] = static_delay_hns +
+     (((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] - HADM_CBPF_ATTEN_CENTER_1MBPS) * 475) / (100*(1<<(5-1)));
+
+    hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS] = 0; //TODO
+
 }
 
 /* Compute latency that has to be removed from ToA-ToD values (resp. substracted from ToD-ToA) :
@@ -222,6 +236,9 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     ts_hw_delay = HADM_TX_LATENCY_NS + HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_config_p->rttPhy) * 1000U;
     /* Convert to half ns */
     ts_hw_delay *= 2U;
+
+    /* Add per-device static compensation */
+    ts_hw_delay += hadm_device->rtt_static_comp_hns[hadm_config_p->rttPhy];
 
     /* Finer HW compensation based on characterization (EVK boards) */
     ts_hw_delay += (hadm_config_p->rttPhy == HADM_RTT_PHY_1MBPS) ? HADM_RXTX_FINE_LATENCY_1MBPS_HNS : HADM_RXTX_FINE_LATENCY_2MBPS_HNS;
