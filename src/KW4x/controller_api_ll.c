@@ -12,6 +12,7 @@
 #include "ll_types.h"
 #include "controller_init.h"
 #include "controller_api_ll.h"
+#include "fwk_platform_dbg.h"
 
 #include "nxp2p4_xcvr.h"
 #include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
@@ -327,4 +328,9 @@ uint32 Controller_ContinuousTransmission(uint8 test, uint8 rf_channel, uint8 phy
     }
     
     return status;
+}
+
+int Controller_FaultIndicationToHost(void)
+{
+    return PLATFORM_Nbu2HostFaultIndication();
 }
