@@ -329,6 +329,13 @@ typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
     int16 ppmFineTuning;                      /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
+/*! Allow to override CBPF parameters usually stored in IFR - KW47+ only */
+typedef struct BLE_HADM_RttBiasParameters_tag
+{
+    uint8 rttRCcal;                           /* RTT RCCal value */
+    int16 rttCbpfAtt[HADM_RTT_PHY_MAX];       /* RTT CBPF filter attenuation - positive value, dB * 100 */
+} BLE_HADM_RttBiasParameters_t;
+
 /*! Storage for an HADM event data */
 typedef struct BLE_HADM_SubeventResultsData_tag
 {
@@ -518,6 +525,12 @@ BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable);
  * This API allows the LL to configure calibration parameters.
  */
 void BLE_HADM_SetZeroDistanceCompensationData(BLE_HADM_ZeroDistanceCompensationData_t *compData);
+
+/*!
+ * Abstract function that needs to be implemented by the HW-specific HAL implementation.
+ * This API allows to set RCCal and CBPF attenuation values to compute RTT bias.
+ */
+void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.

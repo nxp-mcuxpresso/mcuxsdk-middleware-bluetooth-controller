@@ -340,4 +340,11 @@ __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
  */
 void LL_API_NotifyWakeUp(void);
 
+/*!
+ * \brief  Informs the Host that the NBU is encountering a fault.
+ *
+ * \return 0 if success
+ */
+int Controller_FaultIndicationToHost(void);
+
 #endif // CONTROLLER_API_H_
