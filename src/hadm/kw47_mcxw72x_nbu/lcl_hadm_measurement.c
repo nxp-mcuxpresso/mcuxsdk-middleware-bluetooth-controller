@@ -224,6 +224,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         hadm_device.ant2gpio[i] = 0U;
     }
 
+    hadm_device.rccal_manual_override_needed = FALSE;
     hadm_device.rtt_static_comp.rttRCcal = HADM_RCCAL_CENTER;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = HADM_CBPF_ATTEN_CENTER_1MBPS;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = HADM_CBPF_ATTEN_CENTER_2MBPS;
@@ -254,6 +255,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         {
             if (rtt_trim_values.rf_rtt_tg_trim_rccal != RTT_TRIM_TG_RCCAL_WIDTH_MASK)
             {
+                hadm_device.rccal_manual_override_needed = TRUE;
                 hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values.rf_rtt_tg_trim_rccal;
                 hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
             }
@@ -631,7 +633,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->sniffer_mode_en = (hadm_config->role == HADM_ROLE_SNIFFER);
     rsm_config_p->enable_inpr = (bool)hadm_config->inlinePhaseReturn;
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
-    rsm_config_p->use_rccal_manual_override = true;
+    rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)

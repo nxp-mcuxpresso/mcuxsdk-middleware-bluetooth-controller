@@ -255,6 +255,7 @@ typedef struct
     int16_t current_temperature;
     /*! Constant device-specific RTT compensation delay (obtained from characterisation) */
     int32_t rtt_static_comp_hns[HADM_RTT_PHY_MAX];
+    bool    rccal_manual_override_needed; /*!< Set to TRUE if RCCAL/CPBF IFR values are trimmed to freeze rccal */
 
     uint16_t dma_debug_buff_size;
     uint32_t dma_debug_buff_address;

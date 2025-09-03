@@ -155,6 +155,7 @@ void BLE_HADM_SetZeroDistanceCompensationData(BLE_HADM_ZeroDistanceCompensationD
 void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias)
 {
     hadm_device.rtt_static_comp = *rttBias;
+    hadm_device.rccal_manual_override_needed = TRUE;
     /* Update derived delay */
     lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
 }

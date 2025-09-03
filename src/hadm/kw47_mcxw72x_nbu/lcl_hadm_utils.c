@@ -183,15 +183,21 @@ void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p)
 {
     int32_t static_delay_hns;
 
+    /* 1Mbps*/
     /* RCCal delay in hns = -0.774*(rccal-17) ns * 2 (0.774 in fixed point s14 = 12681) */
     static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-12681)) / (HADM_RTT_SCALE_FACTOR>>1);
 
-    /* 1Mbps: CBPF attenuation delay in ns = 14.86(a-6.5). Since a is stored *100 => in hns = 2*14.86(a-6.5)/100. (14.86 in fixed point s5 = 475) */
+    /* CBPF attenuation delay in ns = 14.86(a-6.5). Since a is stored *100 => in hns = 2*14.86(a-6.5)/100. (14.86 in fixed point s5 = 475) */
     hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_1MBPS] = static_delay_hns +
      (((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] - HADM_CBPF_ATTEN_CENTER_1MBPS) * 475) / (100*(1<<(5-1)));
 
-    hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS] = 0; //TODO
+    /* 2Mbps*/
+    /* RCCal delay in hns = -0.339*(rccal-17) ns * 2 (0.339 in fixed point s14 = 5554) */
+    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-5554)) / (HADM_RTT_SCALE_FACTOR>>1);
 
+     /* CBPF attenuation delay in ns = 16.015(a-9). Since a is stored *100 => in hns = 2*16.015(a-9)/100. (16.015 in fixed point s5 = 512) */
+    hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS] = static_delay_hns +
+     (((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] - HADM_CBPF_ATTEN_CENTER_2MBPS) * 512) / (100*(1<<(5-1)));
 }
 
 /* Compute latency that has to be removed from ToA-ToD values (resp. substracted from ToD-ToA) :
