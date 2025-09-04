@@ -54,7 +54,16 @@ typedef struct
 } controller_board_gpio_map_t;
 
 #ifndef BLECONTROLLER_GPIO_MAP
-#define BLECONTROLLER_GPIO_MAP {} 
+#define BLECONTROLLER_GPIO_MAP {\
+    {DBG_IO_SCHDLR_HNDL_NXT_TRACE,10},\
+    {DBG_IO_LLWCC_CMN_HG_ISR,13},\
+    {DBG_IO_SCHDLR_EXEC_EVNT_TRACE,14},\
+    {DBG_IO_SCHDLR_HNDL_MISSED_EVNT,15}\
+}
+#endif
+
+#ifndef LL_DBG_GPIO_FOR_RADIO_ACTIVITY
+#define LL_DBG_GPIO_FOR_RADIO_ACTIVITY 16
 #endif
 
 static const controller_board_gpio_map_t controller_board_gpio_map[] = BLECONTROLLER_GPIO_MAP;
