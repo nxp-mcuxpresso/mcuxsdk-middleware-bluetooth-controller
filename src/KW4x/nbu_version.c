@@ -67,3 +67,11 @@
 #endif
 
 RegisterNbuInfo(gNbuVerMajor_c, gNbuVerMinor_c, gNbuVerPatch_c, gNbuVerBuildNo_c); /* DO NOT MODIFY */
+
+void NbuGetVersion(uint8_t *output)
+{
+  output[0] = nbu_version.versionNumber[0];
+  output[1] = nbu_version.versionNumber[1];
+  output[2] = nbu_version.versionNumber[2];
+  output[3] = nbu_version.versionBuildNo;
+}

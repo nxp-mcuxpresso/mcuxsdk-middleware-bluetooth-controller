@@ -183,7 +183,7 @@ extern unsigned char NbuGetCodedIndicator(void);
 extern void NbuPwrPeakReductionActivityStart(void);
 extern void NbuPwrPeakReductionActivityStop(void);
 extern void NbuPwrPeakReductionDisable(void);
-
+extern void NbuGetVersion(uint8 *output);
 /*!
  * \brief Start or stop transmitter modulation test.
  *
