@@ -15,6 +15,11 @@
 #include "nxp2p4_xcvr.h"
 #include "ll_types.h"
 #include "hybrid_gfsk_hal.h"
+#include "controller_init.h"
+
+#include "nxp2p4_xcvr.h"
+#include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
+#include "nxp_xcvr_coding_config.h"
 
 /*******************************************************************************
  * Definitions
@@ -276,4 +281,73 @@ uint32_t hybrid_gfsk_get_rx_pkt_min_dur_us(void)
 uint32 hybrid_gfsk_hal_enabled(void)
 {
     return 1U;
+}
+
+uint32 hybrid_gfsk_hal_continuous_tx(uint8_t test, uint8_t generic_channel, uint8_t param, uint8_t power_level_nslice)
+{
+    uint32 status = 0U;
+
+    if( test > 4U || generic_channel > 127U || param > 1U)
+    {
+        status = 1U;
+    }
+    else if( test == 0U )
+    {
+        // abort the tx
+        XCVR_DftTxOff();
+        
+        // restore BLE_LL mode
+        XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
+        
+        // restore corrupted registers
+        Controller_RestoreLdoAntTrim();
+    }
+    else
+    {
+        const xcvr_config_t *xcvr_config = &xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
+        const xcvr_coding_config_t *rbme_config = &xcvr_ble_coded_s8_config;
+        
+        // switch to GFSK
+        XCVR_SetActiveLL(XCVR_ACTIVE_LL_GENFSK);
+        
+        // setup TX power level
+        GENFSK->TX_POWER = power_level_nslice;
+        GENFSK->CHANNEL_NUM0 = generic_channel;
+
+        // PHY valid for modulated TX
+        GENFSK->ENH_FEATURE &= ~GENFSK_ENH_FEATURE_DATARATE_CONFIG_SEL_MASK;
+        if ( (param&1U) != 0 )
+        {
+            // setup 2M data rate for modulated TX
+            GENFSK->ENH_FEATURE |= GENFSK_ENH_FEATURE_DATARATE_CONFIG_SEL_MASK;
+        }
+
+        // abort the ongoing tx
+        XCVR_DftTxOff();
+
+        switch(test)
+        {
+            case 1U:
+                // unmodulated tx
+                XCVR_DftTxCW((generic_channel + 2360U)*1000000U);
+                break;
+
+            case 2U:
+                // 0's modulated tx
+                XCVR_DftTxPatternReg(generic_channel, &xcvr_config, &rbme_config, 0x00000000);
+                break;
+
+            case 3U:
+                // 1's modulated tx
+                XCVR_DftTxPatternReg(generic_channel, &xcvr_config, &rbme_config, 0xFFFFFFFFU);
+                break;
+
+            case 4U:
+                // PN modulated tx, lfsr_length is arbitrary value
+                XCVR_DftTxLfsrReg(generic_channel, &xcvr_config, &rbme_config, 3U);
+                break;
+        }
+    }
+
+    return status;
 }
