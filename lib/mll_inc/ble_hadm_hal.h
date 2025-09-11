@@ -15,8 +15,9 @@
 #ifndef _BLE_HADM_HAL_H_
 #define _BLE_HADM_HAL_H_
 
-#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) || (defined (KW47_FIX) || defined (KW43_FIX))
-#define HADM_HAL_VERSION 2 /* For KW47 architecture */
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) ||\
+    (defined(KWXX) && (KWXX>=KW47))
+#define HADM_HAL_VERSION 2 /* For KW47/KW43 architecture */
 #else
 #define HADM_HAL_VERSION 1 /* For KW45 architecture */
 #endif
@@ -329,7 +330,7 @@ typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
     int16 ppmFineTuning;                      /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
-/*! Allow to override CBPF parameters usually stored in IFR - KW47+ only */
+/*! Allow to override CBPF parameters usually stored in IFR - KW47 and onwards only */
 typedef struct BLE_HADM_RttBiasParameters_tag
 {
     uint8 rttRCcal;                           /* RTT RCCal value */
@@ -375,7 +376,7 @@ typedef struct BLE_HADM_SubeventConfig_tag
     uint8 stepsNb;                     /*!< Number of steps in the SubEvent */
     uint8 pnSeqNb;                     /*!< Number of steps containing a RTT packet in the SubEvent (step modes 0,1 and 3) */
     uint8 mode0Nb;                     /*!< Number of steps mode 0 */
-    uint8 inlinePhaseReturn;           /*!< KW47 only: 1 if inlinePhaseReturn is supported by both sides (capabilities), otherwise 0 */
+    uint8 inlinePhaseReturn;           /*!< KW47 and onwards only: 1 if inlinePhaseReturn is supported by both sides (capabilities), otherwise 0 */
     BLE_HADM_role_t role;              /*!< 0=initiator, 1=reflector */
     int8 txPwrLevel;                   /*! Tx power for the entire SubEvent (dBm) */
     BLE_HADM_rttType_t rttTypes;       /*!< Type of RTT: coarse, frac, frac+soundSeq */
