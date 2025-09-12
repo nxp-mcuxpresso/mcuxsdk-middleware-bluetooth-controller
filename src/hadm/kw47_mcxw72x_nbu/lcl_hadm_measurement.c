@@ -917,7 +917,7 @@ static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm
     {
         /* In this mode, an additional per-step IRQ is setup with higher priority than RSM IRQ, in order to program CFO via Fast Override Module */
         lcl_hadm_enable_interrupts_for_subevent(hadm_config->role == HADM_ROLE_INITIATOR);
-        /* FOM override occurs on fom_tx/tx_en which happens before TSM raises the IT, so will apply to the next step. */
+        /* FOM override occurs on fom_tx/tx_en or fom_rx/rx_en which happens before TSM raises the IT, so will apply to the next step. */
         LCL_HAL_SET_PLL_OFFSET_FO_ENTRY();
     }
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
@@ -980,7 +980,7 @@ static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort
         lcl_hal_xcvr_hadm_deinit(hadm_meas_p->config_p);
     }
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-    if (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)
+    if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
     {
         lcl_hadm_restore_interrupts_for_subevent();
     }
@@ -1203,7 +1203,9 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 {
                     /* Record AGC index and keep the smallest */
                     hadm_proc->agc_idx2 = sync_info2_p->agc_idx;
-                    /* Override the estimated CFO and channel used for CFO estimation, use Reflector device CFO */
+                    /* Override the estimated CFO and channel used for CFO estimation.
+                     * Sniffer will use CFO vs Reflector as the Initiator will compensate its own CFO vs Reflector.
+                     */
                     hadm_proc->cfo = sync_info2_p->cfo;
                     hadm_proc->cfo_channel = step_config_p[step_idx].channel;
                 }
@@ -1235,10 +1237,11 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0)
             {
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-                /* Enable FOM entry trigger for next step */
-                LCL_HAL_ENABLE_FO_ENTRY();
-                /* Compute CFO compensation to apply at next step */
                 int32_t cfo;
+                /* Enable FOM entry trigger for next step. TX trigger if initator, RX trigger otherwise. */
+                LCL_HAL_ENABLE_FO_ENTRY(hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR);
+                /* Compute CFO compensation to apply at next step */
+                /* Initiator or sniffer */
                 cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
                                                   hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
@@ -1267,10 +1270,10 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             /* Program time-grid adjustment (Initiator only) */
             lcl_hal_xcvr_program_time_adjustement((int32_t)hadm_proc->ppm/HADM_PPM_DIVIDER);
         }
-        else
+        if (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR)
         {   /* Reflector Only */
             /*
-             * In some PKT-Tone cases, cfo_est may be activated (depends on received AA) for tones, affecting badly the phase.
+             * In some PKT-Tone cases, cfo_est may be non-null (depends on received AA) after PKT Rx, affecting badly tone phase.
              * To workaround this effect, we force cfo_est to zero by enabling ovveride.
              * Affected register XCVR_RX_DIG->CTRL1 is part of XCVR backup/restore.
              */
@@ -1878,9 +1881,11 @@ void BRF_INT_IRQHandler(void)
             rsm_curr_step ++;
             if ((rsm_curr_step > hadm_meas_p->config_p->mode0Nb) && (rsm_curr_step < hadm_meas_p->config_p->stepsNb))
             {
-                BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
                 int32_t cfo;
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel, hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
+                /* Initiator or sniffer */
+                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel,
+                                                  hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
             }
         }
