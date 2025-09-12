@@ -49,7 +49,9 @@ menu "ble_controller"
         depends on MCUX_HW_BOARD_kw45b41zevk_nbu
     config MCUX_COMPONENT_middleware.wireless.nbu_xp_hosted_lib
         bool "nbu_xp_hosted_lib"
-        depends on MCUX_HW_BOARD_kw45b41zevk_nbu
+        select MCUX_COMPONENT_driver.ltc
+        select MCUX_COMPONENT_driver.tpm
+        depends on MCUX_HW_BOARD_kw45b41zevk_nbu || MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk
     config MCUX_COMPONENT_middleware.wireless.nbu_all_hosted_lib
         bool "nbu_all_hosted_lib"
         #depends on MCUX_HW_BOARD_kw47evk || MCUX_HW_BOARD_mcxw72evk
