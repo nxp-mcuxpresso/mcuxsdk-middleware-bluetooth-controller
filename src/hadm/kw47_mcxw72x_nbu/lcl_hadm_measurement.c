@@ -913,13 +913,10 @@ static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm
 #ifndef SIMULATOR
     lcl_hal_xcvr_hadm_init(hadm_meas_p, hadm_config);
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-    if (hadm_config->role != HADM_ROLE_REFLECTOR)
-    {
-        /* In this mode, an additional per-step IRQ is setup with higher priority than RSM IRQ, in order to program CFO via Fast Override Module */
-        lcl_hadm_enable_interrupts_for_subevent(hadm_config->role == HADM_ROLE_INITIATOR);
-        /* FOM override occurs on fom_tx/tx_en or fom_rx/rx_en which happens before TSM raises the IT, so will apply to the next step. */
-        LCL_HAL_SET_PLL_OFFSET_FO_ENTRY();
-    }
+    /* In this mode, an additional per-step IRQ is setup with higher priority than RSM IRQ, in order to program CFO via Fast Override Module */
+    lcl_hadm_enable_interrupts_for_subevent(hadm_config->role == HADM_ROLE_INITIATOR);
+    /* FOM override occurs on fom_tx/tx_en or fom_rx/rx_en which happens before TSM raises the IT, so will apply to the next step. */
+    LCL_HAL_SET_PLL_OFFSET_FO_ENTRY();
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 #endif /* SIMULATOR */
 }
@@ -980,10 +977,7 @@ static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort
         lcl_hal_xcvr_hadm_deinit(hadm_meas_p->config_p);
     }
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-    if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
-    {
-        lcl_hadm_restore_interrupts_for_subevent();
-    }
+    lcl_hadm_restore_interrupts_for_subevent();
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
     lcl_hadm_consume_drbg(hadm_meas_p);
 #endif /* SIMULATOR */
@@ -1232,7 +1226,6 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         lcl_hal_xcvr_setup_rssi_continuous(false); 
 
         /* Compute CFO & time grid adjustment */
-        if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
         {
             if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0)
             {
@@ -1241,16 +1234,20 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 /* Enable FOM entry trigger for next step. TX trigger if initator, RX trigger otherwise. */
                 LCL_HAL_ENABLE_FO_ENTRY(hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR);
                 /* Compute CFO compensation to apply at next step */
-                /* Initiator or sniffer */
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
-                                                  hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
+                {
+                    /* Initiator or sniffer */
+                    cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
+                                                      hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                }
+                else
+                {
+                    /* Reflector */
+                    cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
+                                                      -hadm_device.zero_distance_comp.ppmFineTuning);
+                }
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
-#else
-                /* Initial CFO compensation */
-                XCVR_LCL_RsmCompCfo(-hadm_proc->cfo);
-#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
-
-#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
+#elif defined(HADM_CFO_COMP_PER_STEP_VIA_PKTRAM)
                 /* Update CFO programmed for already-built config steps */
                 /* At this point only 1 step has been prepared in addition of the mode 0 steps */
                 hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_result;
@@ -1264,7 +1261,10 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 uint32_t *config_write_ptr = circ_buff_p->base_ptr + (mode0Nb * LCL_HAL_PKT_RAM_STEP_CONFIG_MODE0_SIZE); /* skip mode 0s */
                 
                 LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(config_write_ptr, step_cfo);
-#endif
+#else
+                /* Initial CFO compensation */
+                XCVR_LCL_RsmCompCfo(-hadm_proc->cfo);
+#endif /* HADM_CFO_COMP_XXX */
             }
             
             /* Program time-grid adjustment (Initiator only) */
@@ -1872,7 +1872,7 @@ void BRF_INT_IRQHandler(void)
         XCVR_MISC->XCVR_STATUS = XCVR_MISC_XCVR_STATUS_TSM_IRQ0_MASK;
         hadm_meas_t *hadm_meas_p = hadm_device.active_meas_p;
         hadm_proc_t *hadm_proc = &hadm_procs[hadm_meas_p->config_p->connIdx];
-        bool_t compensate_cfo = (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR) && (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0);
+        bool_t compensate_cfo = (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0);
 
         if (compensate_cfo)
         {
@@ -1883,9 +1883,18 @@ void BRF_INT_IRQHandler(void)
             {
                 int32_t cfo;
                 BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
-                /* Initiator or sniffer */
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel,
-                                                  hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
+                {
+                    /* Initiator or sniffer */
+                    cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel,
+                                                      hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                }
+                else
+                {
+                    /* Reflector */
+                    cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel,
+                                                      -hadm_device.zero_distance_comp.ppmFineTuning);
+                }
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
             }
         }
