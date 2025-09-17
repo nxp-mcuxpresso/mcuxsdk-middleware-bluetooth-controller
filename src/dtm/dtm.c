@@ -168,7 +168,7 @@ static void DTM_send_test_status_event(uint16_t response, uint8_t status)
     if( NULL != pPacketBuffer )
     {
         pPacketBuffer[0U] = ((response >> 7U) & 0x7FU);
-        pPacketBuffer[1U] = status & 0x1U | (((response ) & 0x7FU) << 1U);
+        pPacketBuffer[1U] = (status & 0x1U) | (((response ) & 0x7FU) << 1U);
         (void)SerialManager_OpenWriteHandle((serial_handle_t)g_dtmHandle, (serial_write_handle_t)gDtmSerialWriteHandle);
         (void)SerialManager_InstallTxCallback(gDtmSerialWriteHandle, (serial_manager_callback_t)DTM_serial_manager_tx_callback, pPacketBuffer);
         if(kStatus_SerialManager_Success != SerialManager_WriteNonBlocking(gDtmSerialWriteHandle, pPacketBuffer, 2U))
