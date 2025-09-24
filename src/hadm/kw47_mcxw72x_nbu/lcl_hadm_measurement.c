@@ -345,13 +345,8 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate)
     /* trigger calibration */
     XCVR_LCL_CalibrateDcocStart((XCVR_RSM_SQTE_RATE_T)rate);
     /* wait for results */
-    status = XCVR_LCL_CalibrateDcocComplete();
-    
-    DEBUG_PIN1_CLR
+    status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rate]);
 
-    /* store values for future usage */
-    lcl_xcvr_hal_store_dcoc_cal(rate);
-    
     DEBUG_PIN0_CLR
 
     return (status == gXcvrLclStatusSuccess ? HADM_HAL_SUCCESS : HADM_HAL_FAIL);
@@ -910,7 +905,7 @@ void lcl_hadm_stop_procedure(uint8 connIdx)
 static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config)
 {
 #ifndef SIMULATOR
-    lcl_hal_xcvr_hadm_init(hadm_meas_p, hadm_config);
+    lcl_hal_xcvr_hadm_init(&hadm_device, hadm_meas_p, hadm_config);
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
     /* In this mode, an additional per-step IRQ is setup with higher priority than RSM IRQ, in order to program CFO via Fast Override Module */
     lcl_hadm_enable_interrupts_for_subevent(hadm_config->role == HADM_ROLE_INITIATOR);
@@ -1220,6 +1215,9 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         {
             lcl_hal_xcvr_set_rxgain2(hadm_proc->agc_idx2);
         }
+
+        /* Readjust DCOC calibration based on gain (DC residual impacts RTT 2Mbps dispersion in particular) */
+        XCVR_LCL_OverrideDcoc(XCVR_LCL_CombineCoarseFineDc(&hadm_device.dcoc_cal_results[hadm_meas_p->config_p->rttPhy], hadm_proc->agc_idx), true);
 
         /* fallback to one shot RSSI */
         lcl_hal_xcvr_setup_rssi_continuous(false); 

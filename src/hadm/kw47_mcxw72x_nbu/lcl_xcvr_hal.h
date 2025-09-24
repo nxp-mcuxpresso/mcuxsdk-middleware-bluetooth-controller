@@ -374,7 +374,7 @@ void lcl_hal_xcvr_setup_rssi_continuous(bool_t continuous);
 uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx);
 uint16_t lcl_hal_xcvr_calc_aa_delay(bool_t warmup);
 void lcl_hal_xcvr_hadm_backup(void);
-void lcl_hal_xcvr_hadm_init(hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
+void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config);
 void lcl_hal_xcvr_mciq_tsm_setup(void);
 void lcl_hal_xcvr_mciq_tsm_override_tx_warmup(void);

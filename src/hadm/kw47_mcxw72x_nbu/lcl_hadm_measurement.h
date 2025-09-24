@@ -259,6 +259,7 @@ typedef struct
 
     uint16_t dma_debug_buff_size;
     uint32_t dma_debug_buff_address;
+    xcvr_dc_cal_results_t dcoc_cal_results[HADM_RTT_PHY_MAX];
 } hadm_device_t;
 
 /* === Externals ============================================================ */

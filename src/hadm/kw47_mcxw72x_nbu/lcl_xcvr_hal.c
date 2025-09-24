@@ -49,8 +49,6 @@ typedef struct soc_xcvr_settings_tag
 /* === Globals ============================================================= */
 lcl_xcvr_hal_xcvr_settings_t  xcvr_settings;
 
-static uint32_t dcoc_ctrl_2[HADM_RTT_PHY_MAX] = {0, 0}; /* used to store XCVR_RX_DIG->DCOC_CTRL2, typically after calibration for CS operation */
-
 /* === Externals =========================================================== */
 
 /* === Prototypes ========================================================== */
@@ -305,20 +303,13 @@ int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx)
     return rpl;
 }
 
-/* Store DCOC values from current ones */
-void lcl_xcvr_hal_store_dcoc_cal(BLE_HADM_rttPhyMode_t rate)
-{
-    assert(rate < HADM_RTT_PHY_MAX);
-    dcoc_ctrl_2[rate] = XCVR_LCL_SetupManualDcoc();
-}
-
 void lcl_hal_xcvr_hadm_backup(void)
 {
     /* Backup TSM registers modified during ranging for later restoration */
     (void)XCVR_LCL_GetTsmTimings(&xcvr_settings.tsm_regs_backup);
 }
 
-void lcl_hal_xcvr_hadm_init(hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config)
+void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config)
 {  
     NbuPwrPeakReductionActivityStart();
     
@@ -330,8 +321,8 @@ void lcl_hal_xcvr_hadm_init(hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventCon
     xcvr_settings.xcvr_rx_dig_dcoc_ctrl_2 = XCVR_RX_DIG->DCOC_CTRL2;
     xcvr_settings.xcvr_radio_ctrl_rf_ctrl = RADIO_CTRL->RF_CTRL;
     
-    assert(dcoc_ctrl_2[hadm_config->rttPhy] != 0);
-    XCVR_LCL_OverrideDcoc(dcoc_ctrl_2[hadm_config->rttPhy], true);
+    assert(hadm_device_p->dcoc_cal_results[hadm_config->rttPhy].dcoc_ctrl2_value != 0);
+    XCVR_LCL_OverrideDcoc(hadm_device_p->dcoc_cal_results[hadm_config->rttPhy].dcoc_ctrl2_value, true);
        
     /* Backup XCVR registers modified during ranging for later restoration */
     (void)XCVR_LCL_RsmRegBackup(&xcvr_settings.xcvr_regs_backup);
