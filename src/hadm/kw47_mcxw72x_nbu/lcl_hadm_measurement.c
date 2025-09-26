@@ -341,7 +341,6 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate)
     xcvrLclStatus_t status;
     
     DEBUG_PIN0_SET
-    DEBUG_PIN1_SET
 
     /* trigger calibration */
     XCVR_LCL_CalibrateDcocStart((XCVR_RSM_SQTE_RATE_T)rate);
@@ -1319,7 +1318,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     uint32_t nb_iter;  /* Number of iterations on result records */
 
     uint32_t common_stat;
-    uint32_t nadm_error_rssi = 0U;
+    uint32_t nadm_error = 0U;
+    uint8_t rssi_nb;
     uint32_t rtt_data_raw;
     uint32_t tpm = 0U;  /* TPM timestamp unit is 1/32MHz */
     int ap;
@@ -1404,7 +1404,12 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             /* Decode packet status if present */
             if (step_config_p->mode != HADM_STEP_MODE2)
             {
-                nadm_error_rssi = *hadm_meas_p->pkt_ram.result_read_ptr++;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+                rssi_nb = (hadm_meas_p->pkt_ram.result_read_ptr[0U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT;
+#else
+                rssi_nb = (hadm_meas_p->pkt_ram.result_read_ptr[2U] & 0xFF0000U) >> 16U;
+#endif
+                nadm_error = *hadm_meas_p->pkt_ram.result_read_ptr++;
                 rtt_data_raw = *hadm_meas_p->pkt_ram.result_read_ptr;
                 hadm_meas_p->pkt_ram.result_read_ptr += 2U; /* skip cfo_est */
                 tpm = *hadm_meas_p->pkt_ram.result_read_ptr++;
@@ -1471,8 +1476,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     {
                         int32_t ffo_correction = 0;
                         DEBUG_PIN1_SET
-                            /* Compute integer and fractional adjustment in ns */
-                            frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx, rtt_data.p_delta, rtt_data.int_adj);
+                        /* Compute integer and fractional adjustment in ns */
+                        frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx, rtt_data.p_delta, rtt_data.int_adj);
 
 #ifdef RTT_DEBUG
                         rtt_frac_dbg_buffer[circ_buff_p->curr_step_idx] = frac_delay;
@@ -1510,9 +1515,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         }
                         if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
                         {
-                            uint32_t nadm_fm_corr_value = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
+                            uint32_t nadm_fm_corr_value = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
                             XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, fm_corr_target, fm_corr_div, nadm_metric);
-                            nadm_symb_err = ((nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)
+                            nadm_symb_err = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)
                                                      >>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
 
                         }
@@ -1527,7 +1532,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     }
                     *res_buff_p++ = ( (nadm_symb_err << 4 & 0xF0) | HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld)); /* Payload_errors[7:4] | Packet_AA_Quality[3:0] (1 byte) */
                     *res_buff_p++ = nadm_metric; /* Packet_NADM */
-                    *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, (uint8_t)(nadm_error_rssi & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK)); /* Packet_RSSI (1 byte) */
+                    *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, rssi_nb); /* Packet_RSSI (1 byte) */
                     HADM_SET_RTT_TS_DIFF(rtt_data.rtt_vld, rtt_ts, res_buff_p); /* ToX-ToX time diff (2 bytes) */
                     *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
 

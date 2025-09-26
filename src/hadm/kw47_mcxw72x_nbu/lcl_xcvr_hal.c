@@ -131,7 +131,7 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
         sync_info_p->rssi = (rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT;
 #else
-        sync_info_p->rssi = (rsm_read_ptr[3U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> 8U;
+        sync_info_p->rssi = (rsm_read_ptr[3U] & 0xFF0000U) >> 16U;
 #endif
         temp = rsm_read_ptr[2U];
         sync_info_p->valid = ((temp & (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK)) == (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK));
