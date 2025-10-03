@@ -102,6 +102,7 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .T_IP2_TimesSupported       = 0x0048, /* T_IP2=80 or 40us */
     .T_FCS_TimesSupported       = 0x0050, /* T_FCS=80 or 50us */
     .T_PM_TimesSupported        = 0x0002, /* T_PM=20us */
+	.TX_SNR                     = 0x0F    /* 18dB, 21 dB, 24 dB and 27dB supported */
 };
 
 /* Contains data associated to this device */
@@ -632,6 +633,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
     rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
+	rsm_config_p->tx_snr_setting = (hadm_config->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_config->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
     {
