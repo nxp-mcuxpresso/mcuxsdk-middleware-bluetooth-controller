@@ -905,6 +905,13 @@ int main(void)
     PLATFORM_SetFrequencyConstraintFromController(3);
 #endif
 
+    /* Wait for the XTAL to be ready before running anything else
+     * The XTAL is started by the main core, so we need to wait for its readiness */
+    RF_CMC1->IRQ_CTRL |= RF_CMC1_IRQ_CTRL_RDY_IE_MASK;
+    while ((RF_CMC1->IRQ_CTRL & RF_CMC1_IRQ_CTRL_XTAL_RDY_MASK) == 0U)
+    {
+    }
+
     // inform LL about the clock update
     LL_API_ClockUpdated();
 
