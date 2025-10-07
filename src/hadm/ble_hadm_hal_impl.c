@@ -149,6 +149,10 @@ BLE_HADM_STATUS_t BLE_HADM_Calibrate(BLE_HADM_rttPhyMode_t rate)
 
 void BLE_HADM_SetZeroDistanceCompensationData(BLE_HADM_ZeroDistanceCompensationData_t *compData)
 {
+    if(hadm_device.zero_distance_comp.phaseRotationOffset != compData->phaseRotationOffset)
+    {
+        lcl_hadm_utils_calc_phase_rotation_offset(compData->phaseRotationOffset);
+    }
     hadm_device.zero_distance_comp = *compData;
 }
 
@@ -159,7 +163,7 @@ void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias)
     /* Update derived delay */
     lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
 }
-                                            
+
 BLE_HADM_STATUS_t BLE_HADM_SubeventCheckConfig(const BLE_HADM_SubeventConfig_t *config)
 {
     BLE_HADM_STATUS_t status;

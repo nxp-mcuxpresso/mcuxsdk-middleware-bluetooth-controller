@@ -46,6 +46,9 @@ const uint8_t hadm_ant_perm_to_idx[2][HADM_MAX_NB_ANTENNA_PATHS] =
 
 extern const uint8_t rtt_type_2_payload_size[7U];
 
+static int32_t pct_sin_phase_offset[HADM_MAX_CHANNELS];
+static int32_t pct_cos_phase_offset[HADM_MAX_CHANNELS];
+
 /* === Externals =========================================================== */
 
 /* === Prototypes ========================================================== */
@@ -506,4 +509,168 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
     return (uint8_t)ant_id;
 }
 
+void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch)
+{
+    int32_t i_out, q_out;
+    int32_t i = (*iq & 0xfff);
+    int32_t q = (*iq & 0xfff000) >> 12;
+
+    i = i | (i & 0x800 ? 0xfffff000 : 0);
+    q = q | (q & 0x800 ? 0xfffff000 : 0);
+
+    i_out = ((i * pct_cos_phase_offset[ch]) - (q * pct_sin_phase_offset[ch])) >> 12; /* phase offset in fixed point 20.12 */
+    q_out = ((q * pct_cos_phase_offset[ch]) + (i * pct_sin_phase_offset[ch])) >> 12; /* phase offset in fixed point 20.12 */
+
+    *iq = ((uint16_t)i_out&0xfff) | (((uint16_t)q_out&0xfff) << 12);
+}
+
+void lcl_hadm_init_phase_offset(void)
+{
+    for (uint8_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
+        pct_cos_phase_offset[ch] = (1 << 12);
+        pct_sin_phase_offset[ch] = 0;
+    }
+}
+
+#define PCT_FIXED_POINT_UNIT  14
+#define PI_4_FIXED_POINT      12868  /* PI/4    * 2^12 */
+#define PI_2_FIXED_POINT      25736  /* PI/2    * 2^12 */
+#define PI_FIXED_POINT        51472  /* PI      * 2^12 */
+#define TWO_PI_FIXED_POINT    102943 /* 2*PI    * 2^12 */
+
+#define FACT_2_FIXED_POINT    8192   /* 1/2    * 2^12 */
+#define FACT_3_FIXED_POINT    2730   /* 1/6    * 2^12 */
+#define FACT_4_FIXED_POINT    682    /* 1/24   * 2^12 */
+#define FACT_5_FIXED_POINT    136    /* 1/120  * 2^12  */
+#define FACT_6_FIXED_POINT    23     /* 1/720  * 2^12 */
+
+/* Note: input and output should be in fixed point 20.12 */
+static int32_t lcl_utils_sqrt_fixed_point(int32_t x)
+{
+    int32_t guess, temp;
+    uint8_t msb_pos;
+    /* x must be positive */
+    if (x <= 0) return 0; 
+    /* sqrt(1) = 1 */
+    if (x == (1 << PCT_FIXED_POINT_UNIT)) return (1 << PCT_FIXED_POINT_UNIT);
+    
+    /* Find the position of the most significant bit */
+    temp = x;
+    msb_pos = 0U;
+    while (temp > 1) 
+    {
+        temp >>= 1;
+        msb_pos++;
+    }
+    
+    /* Initial guess based on bit position */
+    guess = 1 << (msb_pos >> 1U);
+    if (msb_pos & 1U)
+    {
+      /* Adjust for odd bit positions */
+      guess += guess >> 1; 
+    }
+    
+    /* Ensure guess is in proper fixed-point range */
+    if (guess < (1 << (PCT_FIXED_POINT_UNIT/2))) 
+    {
+      /* Minimum reasonable guess */
+      guess = (1 << (PCT_FIXED_POINT_UNIT/2));
+    }
+    
+    /* Heron's iterations */
+    for (int i = 0; i < 8; i++)
+    {
+      int64_t quotient;
+      int32_t prev_guess, diff;
+        
+      prev_guess = guess;
+        
+      /* Calculate x/guess using 64-bit intermediate to avoid overflow */
+      quotient = ((int64_t)x << PCT_FIXED_POINT_UNIT) / guess;
+      guess = (guess + (int32_t)quotient) >> 1;
+        
+      /* Check for convergence */
+      diff = guess - prev_guess;
+      if (diff < 0) 
+      {
+        diff = -diff;
+      }
+      if (diff < 2) break; /* Converged */
+    }
+    return guess;
+}
+
+static int32_t lcl_utils_normalize_angle(int32_t angle, int32_t *cos_sign, int32_t *sin_sign)
+{
+    *cos_sign = 1;
+    *sin_sign = 1;
+
+    /* Normalize angle to [0, 2*PI] */
+    while (angle >= TWO_PI_FIXED_POINT) angle -= TWO_PI_FIXED_POINT;
+    while (angle < 0) angle += TWO_PI_FIXED_POINT;
+    
+    /* Use symmetry to reduce to [0, PI/2] */
+    if (angle > PI_FIXED_POINT) {
+        angle = TWO_PI_FIXED_POINT - angle;
+        *sin_sign = -1;
+    }
+    if (angle > PI_2_FIXED_POINT) {
+        angle = PI_FIXED_POINT - angle;
+        *cos_sign = -1;
+    }
+    return angle;
+}
+
+/* Note: input and output should be in fixed point 20.12 */
+static int32_t lcl_utils_compute_sine_fixed_point(int32_t angle)
+{
+    int32_t x, x2, x3, x5;
+   
+    /* Taylor series: sin(x) = x - x^3/3! + x^5/5! - x^7/7! */
+    x = angle;
+    x2 = (x * x)   >> PCT_FIXED_POINT_UNIT;
+    x3 = (x2 * x)  >> PCT_FIXED_POINT_UNIT;
+    x5 = (x3 * x2) >> PCT_FIXED_POINT_UNIT;
+
+    return (x - ((x3 * FACT_3_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) + ((x5 * FACT_5_FIXED_POINT >> PCT_FIXED_POINT_UNIT)));
+}
+
+static int32_t lcl_utils_compute_cosine_fixed_point(int32_t angle)
+{
+    int32_t x, x2, x4, x6;
+   
+    /* Taylor series: sin(x) = x - x^2/2! + x^4/4! -x^6/6! */
+    x = angle;
+    x2 = (x * x)   >> PCT_FIXED_POINT_UNIT;
+    x4 = (x2 * x2) >> PCT_FIXED_POINT_UNIT;
+    x6 = (x4 * x2) >> PCT_FIXED_POINT_UNIT;
+
+    return ((1<<PCT_FIXED_POINT_UNIT) - ((x2 * FACT_2_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) + ((x4 * FACT_4_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) - ((x6 * FACT_6_FIXED_POINT) >> PCT_FIXED_POINT_UNIT));
+}
+
+void lcl_hadm_utils_calc_phase_rotation_offset(int32 phaseRotationOffset)
+{ 
+    int32_t angle_fp, norm_angle_fp; 
+    int32_t sine, cos_sign, sin_sign;
+
+    angle_fp = phaseRotationOffset;
+    if(angle_fp != 0)
+    {
+        for(int8_t chn=0; chn<HADM_MAX_CHANNELS; chn++)
+        {
+            norm_angle_fp = lcl_utils_normalize_angle((angle_fp * chn), &cos_sign, &sin_sign);
+            if(norm_angle_fp < PI_4_FIXED_POINT)
+            {
+                sine = lcl_utils_compute_sine_fixed_point(norm_angle_fp);
+            }
+            else
+            {
+                sine = lcl_utils_compute_cosine_fixed_point(norm_angle_fp - PI_2_FIXED_POINT);
+            }
+            pct_sin_phase_offset[chn] = sin_sign * sine;
+            pct_cos_phase_offset[chn] = cos_sign * lcl_utils_sqrt_fixed_point(((1<<(2*PCT_FIXED_POINT_UNIT)) - (sine*sine))>>PCT_FIXED_POINT_UNIT); 
+        }
+    }
+}
 /* EOF */

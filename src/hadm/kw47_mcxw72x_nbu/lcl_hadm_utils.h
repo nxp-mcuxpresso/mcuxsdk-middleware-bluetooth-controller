@@ -157,13 +157,14 @@
  *    Phase Correction Term (22 bits containing 11 least significant bits to indicate I sample and 11 most significant bits to indicate Q sample)
  * Note: HW output is :{rx_dft_iq_out_q[10:0], rx_if_mixer_idx[9:5], rx_dft_iq_out_i[10:0], rx_if_mixer_idx[4:0]}
  */
-#define HADM_SET_RTP_PCT(iq_in, report_p) \
+
+#define HADM_DECODE_HW_RTP_PCT(iq_in) (uint32_t)((iq_in & 0xfff0) >> 4U) | ((iq_in & 0xfff00000) >> 8U)
+#define HADM_ENCODE_HCI_RTP_PCT(iq_hci, report_p) \
     do \
     {\
-        uint32_t iq_out = ((iq_in & 0xfff0) >> 4U) | ((iq_in & 0xfff00000) >> 8U); /* store rx_dft_iq_out_i in LSB and rx_dft_iq_out_q in MSB (packed in 2x12bits) */ \
-        *report_p++ = (iq_out & 0x0000FF); \
-        *report_p++ = (iq_out & 0x00FF00) >> 8U; \
-        *report_p++ = (iq_out & 0xFF0000) >> 16U; \
+        *report_p++ = (iq_hci & 0x0000FF); \
+        *report_p++ = (iq_hci & 0x00FF00) >> 8U; \
+        *report_p++ = (iq_hci & 0xFF0000) >> 16U; \
     } while (0)
 
 /*! Encode Tone Quality Indicator */
@@ -221,6 +222,9 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 
 void lcl_hadm_AES_EncryptEcb_128(const uint32_t *key, const uint32_t *plaintext, uint32_t *ciphertext);
+void lcl_hadm_utils_calc_phase_rotation_offset(int32 phaseRotationOffset);
+void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch);
+void lcl_hadm_init_phase_offset(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

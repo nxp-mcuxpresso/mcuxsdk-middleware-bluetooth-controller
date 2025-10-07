@@ -282,6 +282,9 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     /* Initialize temperature compensation (assume 25 degrees C in case the host does not inform NBU) */
     lcl_hadm_handle_temperature_change(HADM_TEMPERATURE_CENTER);
 
+    /* Initialize default value for phase rotation offset */
+    lcl_hadm_init_phase_offset();
+
     /* Init LTC for DRBG */
     LTC_Init(LTC0);
 
@@ -1542,6 +1545,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 }
             case HADM_STEP_MODE2:
                 {
+                    uint32_t curr_iq;
                     /* Keep pm extension bit corresponding to peer device role */
                     uint8_t t_pm_ext = (step_config_p->pm_ext >> role) & 0x1U;
                     if (step_config_p->mode == HADM_STEP_MODE2)
@@ -1552,19 +1556,23 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     /* Store PCT[ap], 3 bytes each 22 significant bits  +  Tone Quality Indicator [ap] (1 byte each) */
                     for(ap = 0; ap < hadm_meas_p->n_ap; ap++)
                     {
-                        HADM_SET_RTP_PCT(iq[ap], res_buff_p);
+                        curr_iq = HADM_DECODE_HW_RTP_PCT(iq[ap]);
+                        lcl_hadm_measurement_phase_rotation(&curr_iq, step_config_p->channel);
+                        HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, false, 0);
                     }
                     /* Determine if N_AP+1 PCT has been received or not */
                     if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1) != 0))
                     {
-                        HADM_SET_RTP_PCT(iq[ap], res_buff_p);
+                        curr_iq = HADM_DECODE_HW_RTP_PCT(iq[ap]);
+                        lcl_hadm_measurement_phase_rotation(&curr_iq, step_config_p->channel);
+                        HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, true, t_pm_ext);
                     }
                     else
                     {
-
-                        HADM_SET_RTP_PCT(0, res_buff_p);
+                        curr_iq = 0;
+                        HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(0x3, res_buff_p, true, 0);
                     }
                     break;
