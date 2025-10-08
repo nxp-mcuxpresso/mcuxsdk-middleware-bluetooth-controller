@@ -327,7 +327,8 @@ typedef enum
 typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
 {
     int16 rttFineTuningHns[HADM_RTT_PHY_MAX];  /*! Fine RTT compensation value per PHY (will be substracted from ToA-ToD, added to ToD-ToA) */
-    int16 ppmFineTuning;                      /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
+    int16 ppmFineTuning;                       /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
+    int32 phaseRotationOffset;                 /*! Phase rotation offset to apply to compensate phase-based zero distance in fixed point 18.14 */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
 /*! Allow to override CBPF parameters usually stored in IFR - KW47 and onwards only */
