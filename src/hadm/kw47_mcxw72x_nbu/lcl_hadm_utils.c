@@ -44,10 +44,39 @@ const uint8_t hadm_ant_perm_to_idx[2][HADM_MAX_NB_ANTENNA_PATHS] =
   {0U,1U,0U,1U}  // Refl
 };
 
+/*! Antenna permutation index: N_AP=4*/
+const uint8_t hadm_ant_perm_to_ap[24][HADM_MAX_NB_ANTENNA_PATHS] = 
+{
+    {0U, 1U, 2U, 3U}, // AP1, AP2, AP3, AP4
+    {1U, 0U, 2U, 3U}, // AP2, AP1, AP3, AP4
+    {0U, 2U, 1U, 3U}, // AP1, AP3, AP2, AP4
+    {2U, 0U, 1U, 3U}, // AP3, AP1, AP2, AP4
+    {2U, 1U, 0U, 3U}, // AP3, AP2, AP1, AP4
+    {1U, 2U, 0U, 3U}, // AP2, AP3, AP1, AP4
+    {0U, 1U, 3U, 2U}, // AP1, AP2, AP4, AP3
+    {1U, 0U, 3U, 2U}, // AP2, AP1, AP4, AP3
+    {0U, 3U, 1U, 2U}, // AP1, AP4, AP2, AP3
+    {3U, 0U, 1U, 2U}, // AP4, AP1, AP2, AP3
+    {3U, 1U, 0U, 2U}, // AP4, AP2, AP1, AP3
+    {1U, 3U, 0U, 2U}, // AP2, AP4, AP1, AP3
+    {0U, 3U, 2U, 1U}, // AP1, AP4, AP3, AP2
+    {3U, 0U, 2U, 1U}, // AP4, AP1, AP3, AP2
+    {0U, 2U, 3U, 1U}, // AP1, AP3, AP4, AP2
+    {2U, 0U, 3U, 1U}, // AP3, AP1, AP4, AP2
+    {2U, 3U, 0U, 1U}, // AP3, AP4, AP1, AP2
+    {3U, 2U, 0U, 1U}, // AP4, AP3, AP1, AP2
+    {3U, 1U, 2U, 0U}, // AP4, AP2, AP3, AP1
+    {1U, 3U, 2U, 0U}, // AP2, AP4, AP3, AP1
+    {3U, 2U, 1U, 0U}, // AP4, AP3, AP2, AP1
+    {2U, 3U, 1U, 0U}, // AP3, AP4, AP2, AP1
+    {2U, 1U, 3U, 0U}, // AP3, AP2, AP4, AP1
+    {1U, 2U, 3U, 0U}, // AP2, AP3, AP4, AP1
+};
+
 extern const uint8_t rtt_type_2_payload_size[7U];
 
-static int32_t pct_sin_phase_offset[HADM_MAX_CHANNELS];
-static int32_t pct_cos_phase_offset[HADM_MAX_CHANNELS];
+static int32_t pct_sin_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
+static int32_t pct_cos_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
 
 /* === Externals =========================================================== */
 
@@ -478,7 +507,7 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p)
         ant_gpio[3] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][3]];
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, ant_gpio, ena_antsw_pa_ramping);
     }
-    else /* direct map btw antenna permutation index and antenna index */
+    else /* direct map btw antenna path and antenna index */
     {
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, hadm_device.ant2gpio, ena_antsw_pa_ramping);
     }
@@ -509,7 +538,9 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
     return (uint8_t)ant_id;
 }
 
-void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch)
+#define PCT_FIXED_POINT_UNIT  14
+
+void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_id)
 {
     int32_t i_out, q_out;
     int32_t i = (*iq & 0xfff);
@@ -518,31 +549,38 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch)
     i = i | (i & 0x800 ? 0xfffff000 : 0);
     q = q | (q & 0x800 ? 0xfffff000 : 0);
 
-    i_out = ((i * pct_cos_phase_offset[ch]) - (q * pct_sin_phase_offset[ch])) >> 12; /* phase offset in fixed point 20.12 */
-    q_out = ((q * pct_cos_phase_offset[ch]) + (i * pct_sin_phase_offset[ch])) >> 12; /* phase offset in fixed point 20.12 */
+    i_out = ((i * pct_cos_phase_offset[ant_id][ch]) - (q * pct_sin_phase_offset[ant_id][ch])) >> PCT_FIXED_POINT_UNIT; /* phase offset in fixed point 18.14 */
+    q_out = ((q * pct_cos_phase_offset[ant_id][ch]) + (i * pct_sin_phase_offset[ant_id][ch])) >> PCT_FIXED_POINT_UNIT; /* phase offset in fixed point 18.14 */
 
     *iq = ((uint16_t)i_out&0xfff) | (((uint16_t)q_out&0xfff) << 12);
 }
 
+/**
+ * Initialize phase offset to default values.
+ * Phase rotation happens but no rotation is applied.
+ */
 void lcl_hadm_init_phase_offset(void)
 {
-    for (uint8_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
-        pct_cos_phase_offset[ch] = (1 << 12);
-        pct_sin_phase_offset[ch] = 0;
+    uint8_t ant;
+    for (ant = 0U; ant < HADM_MAX_NB_ANTENNAS; ant++)
+    {
+        for (uint8_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
+            pct_cos_phase_offset[ant][ch] = (1 << PCT_FIXED_POINT_UNIT);
+            pct_sin_phase_offset[ant][ch] = 0;
+        }
     }
 }
 
-#define PCT_FIXED_POINT_UNIT  14
-#define PI_4_FIXED_POINT      12868  /* PI/4    * 2^12 */
-#define PI_2_FIXED_POINT      25736  /* PI/2    * 2^12 */
-#define PI_FIXED_POINT        51472  /* PI      * 2^12 */
-#define TWO_PI_FIXED_POINT    102943 /* 2*PI    * 2^12 */
+#define PI_4_FIXED_POINT      12868  /* PI/4    * 2^14 */
+#define PI_2_FIXED_POINT      25736  /* PI/2    * 2^14 */
+#define PI_FIXED_POINT        51472  /* PI      * 2^14 */
+#define TWO_PI_FIXED_POINT    102943 /* 2*PI    * 2^14 */
 
-#define FACT_2_FIXED_POINT    8192   /* 1/2    * 2^12 */
-#define FACT_3_FIXED_POINT    2730   /* 1/6    * 2^12 */
-#define FACT_4_FIXED_POINT    682    /* 1/24   * 2^12 */
-#define FACT_5_FIXED_POINT    136    /* 1/120  * 2^12  */
-#define FACT_6_FIXED_POINT    23     /* 1/720  * 2^12 */
+#define FACT_2_FIXED_POINT    8192   /* 1/2    * 2^14 */
+#define FACT_3_FIXED_POINT    2730   /* 1/6    * 2^14 */
+#define FACT_4_FIXED_POINT    682    /* 1/24   * 2^14 */
+#define FACT_5_FIXED_POINT    136    /* 1/120  * 2^14  */
+#define FACT_6_FIXED_POINT    23     /* 1/720  * 2^14 */
 
 /* Note: input and output should be in fixed point 20.12 */
 static int32_t lcl_utils_sqrt_fixed_point(int32_t x)
@@ -649,27 +687,60 @@ static int32_t lcl_utils_compute_cosine_fixed_point(int32_t angle)
     return ((1<<PCT_FIXED_POINT_UNIT) - ((x2 * FACT_2_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) + ((x4 * FACT_4_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) - ((x6 * FACT_6_FIXED_POINT) >> PCT_FIXED_POINT_UNIT));
 }
 
-void lcl_hadm_utils_calc_phase_rotation_offset(int32 phaseRotationOffset)
+void lcl_hadm_utils_calc_phase_rotation_offset(int32 *phaseRotationOffset)
 { 
     int32_t angle_fp, norm_angle_fp; 
     int32_t sine, cos_sign, sin_sign;
-
-    angle_fp = phaseRotationOffset;
-    if(angle_fp != 0)
+    int8_t ant_id, chn; 
+    for(ant_id=0; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
     {
-        for(int8_t chn=0; chn<HADM_MAX_CHANNELS; chn++)
+        angle_fp = phaseRotationOffset[ant_id];
+        if(angle_fp != 0)
         {
-            norm_angle_fp = lcl_utils_normalize_angle((angle_fp * chn), &cos_sign, &sin_sign);
-            if(norm_angle_fp < PI_4_FIXED_POINT)
+            for(chn=0; chn<HADM_MAX_CHANNELS; chn++)
             {
-                sine = lcl_utils_compute_sine_fixed_point(norm_angle_fp);
+                norm_angle_fp = lcl_utils_normalize_angle((angle_fp * chn), &cos_sign, &sin_sign);
+                if(norm_angle_fp < PI_4_FIXED_POINT)
+                {
+                    sine = lcl_utils_compute_sine_fixed_point(norm_angle_fp);
+                }
+                else
+                {
+                    sine = lcl_utils_compute_cosine_fixed_point(norm_angle_fp - PI_2_FIXED_POINT);
+                }
+                pct_sin_phase_offset[ant_id][chn] = sin_sign * sine;
+                pct_cos_phase_offset[ant_id][chn] = cos_sign * lcl_utils_sqrt_fixed_point(((1<<(2*PCT_FIXED_POINT_UNIT)) - (sine*sine))>>PCT_FIXED_POINT_UNIT); 
             }
-            else
+        }
+    }
+}
+
+void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq)
+{
+    
+    if (is_single_antenna_config(hadm_meas_p))
+    {
+        /* A single antenna configuration requires no permutation, only antenna_id 0 is used */
+        (void)memset(ant_id_seq, 0U, HADM_MAX_NB_ANTENNAS);
+    }
+    else
+    {
+        /* Perform antenna permutation index to antenna index mapping */
+        uint8_t role = hadm_meas_p->config_p->role;
+        uint8_t perm_idx = hadm_meas_p->config_p->chModePmAntMap[step_id].ant_perm;
+
+        if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7) 
+        {
+            for (uint8_t i = 0U; i < HADM_MAX_NB_ANTENNAS; i++) 
             {
-                sine = lcl_utils_compute_cosine_fixed_point(norm_angle_fp - PI_2_FIXED_POINT);
+                /* Map antenna paths for 2:2 configuration */
+                ant_id_seq[i] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]];
             }
-            pct_sin_phase_offset[chn] = sin_sign * sine;
-            pct_cos_phase_offset[chn] = cos_sign * lcl_utils_sqrt_fixed_point(((1<<(2*PCT_FIXED_POINT_UNIT)) - (sine*sine))>>PCT_FIXED_POINT_UNIT); 
+        }
+        else
+        {
+            /* Direct mapping btw antenna path and antenna id*/
+            (void)memcpy(ant_id_seq, hadm_ant_perm_to_ap[perm_idx], HADM_MAX_NB_ANTENNAS);
         }
     }
 }
