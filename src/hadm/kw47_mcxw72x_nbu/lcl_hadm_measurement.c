@@ -662,6 +662,10 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     {
         rsm_config_p->mode0_timeout_usec = 0; /* means no timeout */
     }
+	
+	#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED, /* Disables the phase compensation by default */
+	#endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     
     status = XCVR_LCL_ValidateRsmSettings(rsm_config_p);
     if (gXcvrLclStatusSuccess != status)
