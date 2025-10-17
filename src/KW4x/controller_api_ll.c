@@ -293,7 +293,15 @@ bool Controller_EnableSecurityFeature()
   return ((status == 0U) ? true: false);
 }
 
-int Controller_FaultIndicationToHost(void)
+int Controller_DebugEventNotification(ll_dbgEventType_t event_type)
 {
-    return PLATFORM_Nbu2HostFaultIndication();
+    if (event_type == ll_errorEvent)
+    {
+        PLATFORM_NbuRaiseFault();
+    }
+    else
+    {
+        (void)PLATFORM_Nbu2HostWarningIndication();
+    }
+    return 0;
 }
