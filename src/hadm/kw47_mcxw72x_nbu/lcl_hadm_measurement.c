@@ -1247,7 +1247,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
                 /* Compute CFO compensation to apply at next step */
                 /* Initiator or sniffer */
                 cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
-                                                  hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                                                  hadm_proc->ppm);
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
 #else
                 /* Initial CFO compensation */
@@ -1899,8 +1899,7 @@ void BRF_INT_IRQHandler(void)
                 int32_t cfo;
                 BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
                 /* Initiator or sniffer */
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel,
-                                                  hadm_proc->ppm + hadm_device.zero_distance_comp.ppmFineTuning);
+                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel, hadm_proc->ppm);
                 (void)lcl_hadm_apply_cfo_per_step(cfo);
             }
         }
