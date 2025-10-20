@@ -782,15 +782,9 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         /* Configure RSM block. Will start on NBU HW trigger */
         status = XCVR_LCL_RsmInit(rsm_config_p);    
         status += XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
-        if (hadm_config_p->phaseCont != HADM_PHASE_CONT_DISABLED)
-        {
-            XCVR_LCL_EnaLpmClkSwitch(1);
-            XCVR_LCL_EnaDividerSync(true);
-        }
-        if (hadm_config_p->phaseCont == HADM_PHASE_COHERENCY)
-        {
-            (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
-        }
+        XCVR_LCL_EnaLpmClkSwitch(1);
+        XCVR_LCL_EnaDividerSync(true);
+        (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
         assert(gXcvrLclStatusSuccess == status);
     }
     else
