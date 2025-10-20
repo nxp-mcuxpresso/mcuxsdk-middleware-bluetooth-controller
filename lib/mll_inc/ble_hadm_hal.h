@@ -18,8 +18,10 @@
 #if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) ||\
     (defined(KWXX) && (KWXX>=KW47))
 #define HADM_HAL_VERSION 2 /* For KW47/KW43 architecture */
-#else
-#define HADM_HAL_VERSION 1 /* For KW45 architecture */
+#endif
+
+#ifndef HADM_HAL_VERSION
+#error "HADM_HAL_VERSION is not defined"
 #endif
 
 /* === Includes ============================================================= */
@@ -27,19 +29,9 @@
 /* === Macros =============================================================== */
 /* Maximum number of CS procedure context that can be handled in parrallel by the HAL */
 /* Contexts are used to store per-procedure persistent data that need to be retained between several subevents (AGC, phase consitency ...) */
-#if (HADM_HAL_VERSION == 2)
 #define HADM_MAX_NB_CONNECTIONS (6U)
-#else
-#define HADM_MAX_NB_CONNECTIONS (2U)
-#endif
 
-#if (HADM_HAL_VERSION == 1)
-#define HADM_MAX_NB_STEPS (128U) /*!< Max number of HADM steps within a subevent */
-#define HADM_MAX_NB_STEPS_RTT (106U) /*!< Max number of HADM steps containing RTT packets within a subevent. RSM limitation */
-#define HADM_MAX_NB_STEPS_RTT_RAND (10U) /*!< Max number of HADM steps containing RTT packets with 32 bits random payload within an subevent. To limit memory footprint impact */
-#else
 #define HADM_MAX_NB_STEPS (160U) /*!< Max number of HADM steps within a subevent */
-#endif
 
 /*! Min number of HADM steps within a subevent */
 #define HADM_MIN_NB_STEPS (2U) 
@@ -391,13 +383,7 @@ typedef struct BLE_HADM_SubeventConfig_tag
     uint8 rttAntennaID;                /*! Antenna ID for RTT steps */
     BLE_HADM_AntennaConfigIndex_t toneAntennaConfigIdx; /*! Antenna configuration index. 0: no diversity */
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *chModePmAntMap; /*!< Step configuration length=stepsNb */
-#if (HADM_HAL_VERSION == 1)
-    BLE_HADM_PN_list_t pnList[HADM_MAX_NB_STEPS_RTT]; /*!< PN sequence list. List index is the nth step containing a RTT packet. Length=pnSeqNb */
-    BLE_HADM_PN_rand_t pnRand[HADM_MAX_NB_STEPS_RTT_RAND]; /*! PN random sequence (if used) */
-#else
     BLE_HADM_PN_list_t pnList[HADM_MAX_NB_STEPS_MODE0]; /*!< PN sequence list for mode0 */
-#endif
-
 } BLE_HADM_SubeventConfig_t;
 
 /*! Storage for HAL properties */
@@ -489,13 +475,6 @@ typedef struct BLE_HADM_HalCapabilities_tag
  */
 void BLE_HADM_NotifyLL(uint8 connIdx, BLE_HADM_SubeventResultsData_t *result_p, BLE_HADM_event_type_t type, BLE_HADM_STATUS_t status);
 
-#if (HADM_HAL_VERSION == 1)
-/*!
- * API to wait for the active HADM Link to reach its synchronization point.
- */
-uint32 LL_SCHED_HadmWaitAnchorOffset();
-#endif
-
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
  * This API initializes HADM HAL resources.
@@ -579,8 +558,7 @@ BLE_HADM_STATUS_t BLE_HADM_Calibrate(BLE_HADM_rttPhyMode_t rate);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
- * HADM_HAL_VERSION==1: Need to be coupled with BLE_HADM_SubeventStart() since it is disruptive in terms of HW programming.
- * HADM_HAL_VERSION==2: Can be called assynchrounously from LL since not disruptive on any HW module
+ * Can be called assynchrounously from LL since not disruptive on any HW module
  */
 BLE_HADM_STATUS_t BLE_HADM_SubeventConfigApply(const BLE_HADM_SubeventConfig_t *config);
 
@@ -605,7 +583,6 @@ void BLE_HADM_ProcedureStop(uint8 connIdx);
 /*! AES wrapper function used for DRBG */
 void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_buff, const uint8 *key, const int cbc, const uint8 *iv );
 
-#if (HADM_HAL_VERSION == 2)
 /*!
  * API Used by HAL to request DRBG AA / Payload generation for one CS SYNC step
  * cs_sync_step_data buffer is filled as follows:
@@ -622,7 +599,6 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
  * This mode is used when the HAL has missed a subevent, but still needs to keep DRBG context in sync.
  */
 uint8 BLE_HADM_DRBG_Generate_CS_SYNC_step(uint8 hadmConnIdx, uint8 subeventIdx, uint8 stepCnt, BLE_HADM_rttType_t rtt_type, uint32 *cs_sync_step_data);
-#endif
 
 /*!
  * API Used by LL to release HAL results buffer

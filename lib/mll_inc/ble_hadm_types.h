@@ -240,10 +240,6 @@ typedef struct TBleHadmConfiguration_tag
 typedef struct TBleHadmEvent_ 
 {
     BLE_HADM_SubeventConfig_t      *config_p; /* pointer to HAL config buffer allocated for this subevent */
-#if (HADM_HAL_VERSION == 1)
-    BLE_HADM_SubeventResultsData_t *result_p; /* pointer to HAL config buffer provided for this subevent */
-    BLE_HADM_STATUS_t status; /* Status of HAL measurement */
-#endif
 
     /* Scheduling data */
     uint16 uiConnHandle;
