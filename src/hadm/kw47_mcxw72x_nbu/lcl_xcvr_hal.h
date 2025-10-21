@@ -214,11 +214,12 @@ typedef enum
 #define LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE       (3U)
 #define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE0_SIZE        (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U) /* 5 words */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE) /* 3 words */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE)      /* 3 words */
 #define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U) /* 5 words + payload size x 2 */
 #else
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + n_ap) /* 3 words + phase_add_ap */
-#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + n_ap + 2U) /* 5 words + phase_add_ap + payload size x 2 */
+/* These defines are without multi_ant_permut_mode and n_ap < 5 */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE2_SIZE(n_ap)  (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 1U)      /* 3 words + phase_add_ap */
+#define LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) (LCL_HAL_PKT_RAM_STEP_CONFIG_COMMON_SIZE + 2U + 1U) /* 5 words + phase_add_ap */
 #endif // NXP_RADIO_GEN
 #define LCL_HAL_PKT_RAM_STEP_CONFIG_SIZE_MAX(n_ap)    (LCL_HAL_PKT_RAM_STEP_CONFIG_MODE13_SIZE(n_ap) + 8U) /* includes maximum payload size (4*2) */
     
