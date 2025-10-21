@@ -210,15 +210,6 @@ typedef enum
     HADM_AA_QUALITY_INVALID = 0xFFU
 } BLE_HADM_AA_QUALITY_t;
 
-/*! Phase continuity scheme accross CS SubEvents */
-typedef enum
-{
-    HADM_PHASE_CONT_DISABLED = 0U,  /*!< No phase continuity ensures */
-    HADM_PHASE_CONT_OVERRIDES,      /*!< Phase continuity ensured by keeping certain radio blocks ON btw subevents */
-    HADM_PHASE_CONT_LOOPBACK,       /*!< Phase continuity ensured by correcting PCT after detecting phase ambiguities using loopback */
-    HADM_PHASE_COHERENCY,           /*!< Phase coherency ensured by enabling Proportional Integral Controller (PIC) feature */
-} BLE_HADM_phase_cont_t;
-
 /*! Distance calibration modes */
 typedef enum
 {
@@ -319,7 +310,6 @@ typedef enum
 typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
 {
     int16 rttFineTuningHns[HADM_RTT_PHY_MAX];  /*! Fine RTT compensation value per PHY (will be substracted from ToA-ToD, added to ToD-ToA) */
-    int16 ppmFineTuning;                       /*! ppm fine tuning - may be used to compensate phase-based zero distance - unit is 0.01 ppm */
     int32 phaseRotationOffset;                 /*! Phase rotation offset to apply to compensate phase-based zero distance in fixed point 18.14 */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
@@ -364,8 +354,8 @@ typedef struct BLE_HADM_SubeventConfig_tag
     uint32 rxWindowUs;                 /*!< Duration of the Rx window [us] (mode0 timeout detection): if set to 0, the HAL will not program any timeout */
     BLE_HADM_subevent_mode_t mode;     /*!< SubEvent mode */
     uint8 debugFlags;                  /*!< Opaque flags passed from App to LL down to HAL */
-    BLE_HADM_phase_cont_t phaseCont;   /*!< Configures phase continuity scheme */
     BLE_HADM_distance_cal_mode_t distanceCalMode;  /*!< Calibration mode to control if various compensations are applied */
+    uint8 phaseCont;                   /*!< Configures phase continuity scheme */
     uint8 stepsNb;                     /*!< Number of steps in the SubEvent */
     uint8 pnSeqNb;                     /*!< Number of steps containing a RTT packet in the SubEvent (step modes 0,1 and 3) */
     uint8 mode0Nb;                     /*!< Number of steps mode 0 */
