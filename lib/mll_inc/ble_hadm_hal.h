@@ -310,7 +310,6 @@ typedef enum
 typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
 {
     int16 rttFineTuningHns[HADM_RTT_PHY_MAX];  /*! Fine RTT compensation value per PHY (will be substracted from ToA-ToD, added to ToD-ToA) */
-    int32 phaseRotationOffset;                 /*! Phase rotation offset to apply to compensate phase-based zero distance in fixed point 18.14 */
 } BLE_HADM_ZeroDistanceCompensationData_t;
 
 /*! Allow to override CBPF parameters usually stored in IFR - KW47 and onwards only */
@@ -319,6 +318,12 @@ typedef struct BLE_HADM_RttBiasParameters_tag
     uint8 rttRCcal;                           /* RTT RCCal value */
     int16 rttCbpfAtt[HADM_RTT_PHY_MAX];       /* RTT CBPF filter attenuation - positive value, dB * 100 */
 } BLE_HADM_RttBiasParameters_t;
+
+/*! Allow to set the phase rotation offset */
+typedef struct BLE_HADM_PCTPhaseRotation_tag
+{
+    int32 offset_table[HADM_MAX_NB_ANTENNAS]; /*! Phase rotation offset to apply to compensate phase-based zero distance in fixed point 18.14 */
+} BLE_HADM_PCTPhaseRotation_t;
 
 /*! Storage for an HADM event data */
 typedef struct BLE_HADM_SubeventResultsData_tag
@@ -502,6 +507,12 @@ void BLE_HADM_SetZeroDistanceCompensationData(BLE_HADM_ZeroDistanceCompensationD
  * This API allows to set RCCal and CBPF attenuation values to compute RTT bias.
  */
 void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias);
+
+/*!
+ * Abstract function that needs to be implemented by the HW-specific HAL implementation.
+ * This API allows to set the phase rotation offset.
+ */
+void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.

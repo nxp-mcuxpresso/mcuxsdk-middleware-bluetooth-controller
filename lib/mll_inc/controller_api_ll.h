@@ -40,6 +40,12 @@ typedef struct nbuIntf_tag
     nbuExitCritical_t nbuExitCritical;
 } nbuIntf_t;
 
+typedef enum
+{
+    ll_errorEvent,
+    ll_warningEvent
+} ll_dbgEventType_t;
+
 /* enum below should be aligned with ble_general.h on app side */
 #ifndef BLE_GENERAL_H
 #define  gAdvTxChannel_c            0U
@@ -331,10 +337,10 @@ __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
 void LL_API_NotifyWakeUp(void);
 
 /*!
- * \brief  Informs the Host that the NBU is encountering a fault.
+ * \brief  Informs the Host about the NBU state (Warnings / Fatal errors)
  *
  * \return 0 if success
  */
-int Controller_FaultIndicationToHost(void);
+int Controller_DebugEventNotification(ll_dbgEventType_t event_type);
 
 #endif // CONTROLLER_API_H_
