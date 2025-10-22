@@ -33,13 +33,14 @@
 /* Approximation of complex magnitude (sqrt(i^2+q^2)). i and q need to be absolute values */
 #define MAG(i,q) (MAX(i,q) + (3*(MIN(i,q)) >> 3U))
 
-//#define RSM_DBG_IQ   /* turned on with care: all IQs received during rx-di-en will be dumped over DMA. Make sure dest buffer is large enough */
+/* turned on with care: all IQs received during rx-di-en will be dumped over DMA. Make sure dest buffer is large enough */
+//#define RSM_DBG_IQ
 
 /* Size of an IQ record when reported over the air */
 #define IQ_SIZE 3
 
 /*! To convert from HADM channel to frequency in Mhz */
-#define HADM_CHAN_NUM_TO_MHZ(channel) (2402U + channel)
+#define HADM_CHAN_NUM_TO_MHZ(channel) (2402U + (channel))
 
 #define RX_SAMPLING_RATE (4U)                /* 4 MHz @1Mbps */
 #define TX_SAMPLING_RATE (8U)                /* 8 MHz @1Mbps */
@@ -48,37 +49,38 @@
 #define HADM_T_FM            (80U)      /* Frequency measurement, T_FM = 80 us */
 #define HADM_T_RD            (5U)       /* Ramp-down, T_RD = 5 us */
 #define HADM_T_GD            (10U)      /* Guard time, T_GD = 10 us */
-#define HADM_T_SY(rate)      (rate == 0 ? 44U : 26U)  /* T_SY = 44 us using the LE 1M PHY and 26 us when using the LE 2M PHY */
+#define HADM_T_SY(rate)      (((rate) == HADM_RTT_PHY_1MBPS) ? 44U : 26U)  /* T_SY = 44 us using the LE 1M PHY and 26 us when using the LE 2M PHY */
    
-#define HADM_NUM_IQ_PER_US(us, data_rate /* 0 or 1 */, avg_win)  ((RX_SAMPLING_RATE * us * (1+data_rate)) >> avg_win) /* Number of IQ's per us depending on modulation and averaging window */
+#define HADM_NUM_IQ_PER_US(us, data_rate /* 0 or 1 */, avg_win) \
+                             ((RX_SAMPLING_RATE * (us) * (1U+(data_rate))) >> (avg_win)) /* Number of IQ's per us depending on modulation and averaging window */
 
 /*! @name HADM debug flags
  * Proprietary debug flags are encoded in HCI RTT_Type 
  * @{
  */
-#define HADM_DBG_FLG_IQ_DMA        (1 << 0)  /*< Export captured IQ to Host memory using DMA */
-#define HADM_DBG_FLG_AVG_OFF       (1 << 1)  /*< Disable HW averaging during IQ capture */
-#define HADM_DBG_FLG_DBG_INFO      (1 << 2)  /*< Add debug info to Event Result (non standard) */
-#define HADM_DBG_FLG_CFO_COMP_DIS  (1 << 3)  /*< Disable CFO compensation when set */
-#define HADM_DBG_FLG_RSMINIT_OPTIM_DIS  (1 << 4)  /*< Disable inter_subevent RSM init optimization */
+#define HADM_DBG_FLG_IQ_DMA             ((uint8_t)0x0001)  /*< Export captured IQ to Host memory using DMA */
+#define HADM_DBG_FLG_AVG_OFF            ((uint8_t)0x0002)  /*< Disable HW averaging during IQ capture */
+#define HADM_DBG_FLG_DBG_INFO           ((uint8_t)0x0004)  /*< Add debug info to Event Result (non standard) */
+#define HADM_DBG_FLG_CFO_COMP_DIS       ((uint8_t)0x0008)  /*< Disable CFO compensation when set */
+#define HADM_DBG_FLG_RSMINIT_OPTIM_DIS  ((uint8_t)0x0010)  /*< Disable inter_subevent RSM init optimization */
 /*! @}*/
 
 /*! @name HADM error flags
  *  Flags used to report errors in flags fields, @see hadm_info_t::flag
  * @{
  */
-#define FLAGS_HADM_PLL_ERROR                    0x0001          /*!< PLL lock error */
-#define FLAGS_HADM_ABORT                        0x0002          /*!< HADM sequence was aborted */
-#define FLAGS_HADM_AGC_NOT_FROZEN               0x0004          /*!< Error during AGC lock */
-#define FLAGS_HADM_IQ_CAPTURE_NOT_COMPLETE      0x0008          /*!< Error during IQ capture */
-#define FLAGS_HADM_NO_SIGNAL                    0x0010          /*!< RSSI measured became too low */
-#define FLAGS_HADM_SYNC_ERROR                   0x0020          /*!< Error happened during synchronization phase */
-#define FLAGS_HADM_RTT_TS_ERROR                 0x0040          /*!< Timestamp reading on one or more RTT packets failed */
-#define FLAGS_HADM_SW_SCHED_ERROR               0x0080          /*!< SW scheduler detected a desynchronization with RSM HW scheduler */
-#define FLAGS_HADM_XCVR_API_ERROR               0x0100          /*!< XCVR API reported an error */
-#define FLAGS_HADM_CFO_TOO_LARGE                0x0200          /*!< CFO measured was too large and could not get compensated */
-#define FLAGS_HADM_PHASE_AMBIGUITY_UNRESOLVED   0x0400          /*!< Phase ambiguity detected in loopback could not be resolved */
-#define FLAGS_HADM_RSM_ABORT_REASON             0xF800          /*!< Field where RSM abort reason is copied (5 bits) */
+#define FLAGS_HADM_PLL_ERROR                    ((uint32_t)0x0001)  /*!< PLL lock error */
+#define FLAGS_HADM_ABORT                        ((uint32_t)0x0002)  /*!< HADM sequence was aborted */
+#define FLAGS_HADM_AGC_NOT_FROZEN               ((uint32_t)0x0004)  /*!< Error during AGC lock */
+#define FLAGS_HADM_IQ_CAPTURE_NOT_COMPLETE      ((uint32_t)0x0008)  /*!< Error during IQ capture */
+#define FLAGS_HADM_NO_SIGNAL                    ((uint32_t)0x0010)  /*!< RSSI measured became too low */
+#define FLAGS_HADM_SYNC_ERROR                   ((uint32_t)0x0020)  /*!< Error happened during synchronization phase */
+#define FLAGS_HADM_RTT_TS_ERROR                 ((uint32_t)0x0040)  /*!< Timestamp reading on one or more RTT packets failed */
+#define FLAGS_HADM_SW_SCHED_ERROR               ((uint32_t)0x0080)  /*!< SW scheduler detected a desynchronization with RSM HW scheduler */
+#define FLAGS_HADM_XCVR_API_ERROR               ((uint32_t)0x0100)  /*!< XCVR API reported an error */
+#define FLAGS_HADM_CFO_TOO_LARGE                ((uint32_t)0x0200)  /*!< CFO measured was too large and could not get compensated */
+#define FLAGS_HADM_PHASE_AMBIGUITY_UNRESOLVED   ((uint32_t)0x0400)  /*!< Phase ambiguity detected in loopback could not be resolved */
+#define FLAGS_HADM_RSM_ABORT_REASON             ((uint32_t)0xF800)  /*!< Field where RSM abort reason is copied (5 bits) */
 /*! @}*/
 
 #define HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE  (256U) /* In words */
@@ -91,7 +93,7 @@
 #define HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE (HADM_MAX_NB_STEPS_MODE0 + HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL + (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*2U))
 
 #define HADM_IS_RSM_OPTIM_INACTIVE(HADM_CONFIG_P) \
-   (((HADM_CONFIG_P)->debugFlags & HADM_DBG_FLG_RSMINIT_OPTIM_DIS) || \
+   ((((HADM_CONFIG_P)->debugFlags & HADM_DBG_FLG_RSMINIT_OPTIM_DIS) != 0U) || \
     ((HADM_CONFIG_P)->mode != HADM_SUBEVT_TEST_MODE))
 
 /* Maximum number of CS subevents contexts that can be handled simultaneously by the HAL.
@@ -114,6 +116,8 @@
 
 /* Helper to detect steressfull conditions when debugging */
 //#define HAL_ENABLE_ASSERT_ON_STRESS
+
+extern const uint8_t rtt_type_2_payload_size[7U]; /* in 32 bits words */
 
 /* === Types ================================================================ */
 /*! Contains some register backup values captured after Mode0 phase */
@@ -290,9 +294,10 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void);
 BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_config);
 BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_config);
-BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *config);
+BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm_config_p);
 void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config);
 void lcl_hadm_stop_procedure(uint8 connIdx);
+void RSM_INT_IRQHandler(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

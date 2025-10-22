@@ -11,6 +11,7 @@
 /* === Includes ============================================================ */
 #include "fsl_os_abstraction.h"
 #include "EmbeddedTypes.h"
+#include "lcl_hadm_hartt.h"
 
 /* === Types =============================================================== */
 
@@ -45,7 +46,7 @@ const float sigma_2Mbps[6][4] =
 };
 #endif
 
-const int32_t sigma_1Mbps_fp[6][4] =    /* = sigma_1Mbps * 2^20 */
+static const int32_t sigma_1Mbps_fp[6][4] =    /* = sigma_1Mbps * 2^20 */
 {
 { -1407 ,  115496,  -26030 , -703866 },
 { 3380  ,  -1391 ,   11288 , 872357  },
@@ -55,7 +56,7 @@ const int32_t sigma_1Mbps_fp[6][4] =    /* = sigma_1Mbps * 2^20 */
 { 19    , 3445   ,  -910   , -9031   }
 };
 
-const int32_t sigma_2Mbps_fp[6][4] =    /* = sigma_2Mbps * 2^20 */
+static const int32_t sigma_2Mbps_fp[6][4] =    /* = sigma_2Mbps * 2^20 */
 {
 {-2697  ,142351 ,-33019 ,-442135    },
 {3712   ,-41137 ,25370  ,742535     },
@@ -140,7 +141,7 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     const float (*sigma_p)[6][4];
 #endif
 
-    if (data_rate == 0)
+    if (data_rate == 0U)
     {
         Ts =  250U; /* Ts = 1/4e6 * 1e9 (Fs = 4MHz @1Mbps) */
 #ifdef HARTT_ENABLE_FLOAT
@@ -232,6 +233,8 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     {
         frac -= Ts;
     }
+    else
+    { /* MISRA */ }
 
     return frac;
 }

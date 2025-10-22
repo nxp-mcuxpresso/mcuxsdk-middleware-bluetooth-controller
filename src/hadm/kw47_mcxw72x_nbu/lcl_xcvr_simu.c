@@ -9,9 +9,9 @@
 #include "lcl_xcvr_hal.h"
 
 /* From lcl_hadm_measurement.c */
-void lcl_hadm_irq_handler(void *userData, bool abort, uint32_t rsm_csr);
+// void lcl_hadm_irq_handler(void *userData, bool abort, uint32_t rsm_csr);
 
-static const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 32 bits words */
+// static const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 32 bits words */
 
 xcvr_lcl_rsm_config_t SIMU_rsm_settings;
 

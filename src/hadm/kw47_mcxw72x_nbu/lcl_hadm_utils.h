@@ -106,17 +106,18 @@
 
 /*! Translates RSM RTT validity results to HADM AA quality */
 #define HADM_SET_RTT_AA_QUALITY(valid) \
-    (valid ? HADM_AA_QUALITY_SUCCESS : HADM_AA_QUALITY_NOT_FOUND)
+    ((valid) ? HADM_AA_QUALITY_SUCCESS : HADM_AA_QUALITY_NOT_FOUND)
 
 /*! Set packet RSSI */
 #define HADM_SET_RTT_RSSI(valid, rssi) \
-    (valid ? rssi : 0x7F);
+    ((valid) ? rssi : 0x7F);
 
-/*! Translates RSM RTT CFO result to HADM CFO (2 bytes, unit 0.01 ppm, SQ15.0 format) */
+/*! Translates RSM RTT CFO result to HADM CFO (2 bytes, unit 0.01 ppm, SQ15.0 format)
+    ppm_in, report_p SHOULD NOT be a composite expression ! */
 #define HADM_SET_RTT_CFO(valid, ppm_in, report_p) \
     do \
     { \
-        if (valid) \
+        if ((valid)) \
         { \
             /* Clip to 15bits signed max : -100 ppm (0x58F0) to +100 ppm (0x2710)*/ \
             if (ppm_in > 10000) ppm_in = 10000; \
@@ -136,11 +137,12 @@
 /* Convert timestamps (32Mhz ticks) to us = ts / 32 */
 #define HADM_RTT_TS_TO_US(ts) ((ts) >> 5U)
 
-/*! Translates RTT timestamp difference to HADM time difference (3 bytes, Time diff in half ns, Q16.0 format, 0x8000 if unavailable) */
+/*! Translates RTT timestamp difference to HADM time difference (3 bytes, Time diff in half ns, Q16.0 format, 0x8000 if unavailable).
+    report_p SHOULD NOT be a composite expression */
 #define HADM_SET_RTT_TS_DIFF(valid, ts_diff, report_p) \
     do \
     { \
-        if (valid) \
+        if ((valid)) \
         { \
             *report_p++ = (ts_diff & 0x00FF); \
             *report_p++ = (ts_diff & 0xFF00) >> 8U; \
@@ -167,7 +169,8 @@
         *report_p++ = (iq_hci & 0xFF0000) >> 16U; \
     } while (0)
 
-/*! Encode Tone Quality Indicator */
+/*! Encode Tone Quality Indicator. report_p SHOULD NOT be a composite expression */
+/*! report_p SHOULD NOT be a composite expression */
 #define HADM_SET_RTP_TONE_QUALITY(iq_in, report_p, ext_slot, ext_pres) \
     do \
     { \
@@ -179,7 +182,7 @@
             else \
                 qual_metric |= (HADM_TQI_TONE_EXT_NOT_PRESENT << 4U);\
         } /* else MSBs already set to 0 */\
-        *report_p++ = qual_metric; \
+        *(report_p)++ = qual_metric; \
     } while (0)
 
 /* === Globals ============================================================= */
@@ -192,36 +195,25 @@ extern "C" {
 #endif
 
 void lcl_hadm_utils_init_buffers(void);
-BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer();
+BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer(void);
 BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void);
 void lcl_hadm_utils_free_config_buffer(uint8 connIdx);
 void lcl_hadm_utils_free_result_buffer(uint8 connIdx);
 void lcl_hadm_enable_lcl_interrupts(void);
-void lcl_hadm_disable_interrupts(void);
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
 void lcl_hadm_enable_interrupts_for_subevent(bool trig_on_tx);
 void lcl_hadm_restore_interrupts_for_subevent(void);
 uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo);
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
-void lcl_hadm_restore_interrupts(void);
-void lcl_hadm_init_tpms(void);
-void lcl_hadm_start_tpms(void);
-void lcl_hadm_stop_tpms(void);
-void lcl_hadm_tpm_timer_start(uint16_t delay_us);
-void lcl_hadm_tpm_timer_stop(void);
 void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_config_p, hadm_meas_t *hadm_meas_p, uint32_t sample_rate);
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur);
-uint32_t lcl_hadm_utils_wait_for_rsm_irq(uint32_t *rsm_step_no, uint32_t rsm_mode);
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device);
 void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device);
-void lcl_hadm_utils_compute_pct_and_tqi(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);
-void lcl_hadm_utils_compute_pct(uint32_t num_iq_per_step_per_ap, uint32_t n_ap, uint32_t **out_buf_p, uint8_t **out_quality_buf_p);
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p);
 uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 
-void lcl_hadm_AES_EncryptEcb_128(const uint32_t *key, const uint32_t *plaintext, uint32_t *ciphertext);
 void lcl_hadm_utils_calc_phase_rotation_offset(int32 *phaseRotationOffset);
 void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_id);
 void lcl_hadm_init_phase_offset(void);

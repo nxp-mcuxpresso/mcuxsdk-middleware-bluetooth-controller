@@ -132,8 +132,8 @@ void Controller_RestoreLdoAntTrim(void)
 *************************************************************************************
 ************************************************************************************/
 /* LTC access protection */
-void (* lock_LTC)() = NULL;
-void (* unlock_LTC)() = NULL;
+void (* lock_LTC)(void) = NULL;
+void (* unlock_LTC)(void) = NULL;
 
 /*! *********************************************************************************
 * \brief   Initializes the XCVR module

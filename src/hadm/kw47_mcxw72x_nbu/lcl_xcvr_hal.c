@@ -47,7 +47,7 @@ typedef struct soc_xcvr_settings_tag
 
 
 /* === Globals ============================================================= */
-lcl_xcvr_hal_xcvr_settings_t  xcvr_settings;
+static lcl_xcvr_hal_xcvr_settings_t xcvr_settings;
 
 /* === Externals =========================================================== */
 
@@ -96,7 +96,7 @@ void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p)
 {
     assert(hadm_meas_p->iq_avg_win >= 1U);
     /* KW47 HW supports max 16 average window size for TQI (impacted case: 2Mbps & t_pm=40) */
-    uint32_t iq_avg_dpth = MIN((hadm_meas_p->iq_avg_win - 1U), 4U);
+    uint32_t iq_avg_dpth = (uint32_t)MIN((hadm_meas_p->iq_avg_win - 1U), 4U);
     /* TQI thresholds */
     XCVR_RX_DIG->TQI_THR = XCVR_RX_DIG_TQI_THR_T1(HADM_HAL_TQI_THRESHOLD_MEDIUM) | XCVR_RX_DIG_TQI_THR_T2(HADM_HAL_TQI_THRESHOLD_BAD);
     /* TQI controls */
@@ -105,42 +105,44 @@ void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p)
                             XCVR_RX_DIG_TQI_CTRL_MAG_AVG_DPTH(3U);  /* Magnitude averager uses 8 windows*/
 }
 
+#define HADM_HAL_MODE0_RTT_VLD  (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK)
+
 bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, uint8 rate)
 {
-    uint8 step_idx;
+    uint8_t step_idx;
     bool_t aa_det;
     uint32 temp;
     int16_t cfo16;
     int32_t cfo32;
 
-    step_idx = (rsm_read_ptr[0U] & COM_RES_HDR_STEP_ID_STEP_ID_MASK);
+    step_idx = (uint8_t)(rsm_read_ptr[0U] & COM_RES_HDR_STEP_ID_STEP_ID_MASK);
     assert(step_idx < HADM_MAX_NB_STEPS_MODE0);
 
     /* Decode COMMON_MODE_RESULT_HEADER */
-    aa_det = (bool_t)((rsm_read_ptr[0U] & 0x80000000) >> 31U);
+    aa_det = ((rsm_read_ptr[0U] & 0x80000000U) == 0x80000000U);
 
     if (aa_det)
     {
         sync_info_p += step_idx;
 
-        sync_info_p->agc_idx = (rsm_read_ptr[0U] & 0xF000) >> 12U;
+        sync_info_p->agc_idx = (uint8_t)((rsm_read_ptr[0U] & 0xF000U) >> 12U);
 
         /* Decode COMMON_MODE_013_RESULT_BODY */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
-        sync_info_p->rssi = (rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT;
+        sync_info_p->rssi = (int8_t)((rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);
 #else
-        sync_info_p->rssi = (rsm_read_ptr[3U] & 0xFF0000U) >> 16U;
+        sync_info_p->rssi = (int8_t)((rsm_read_ptr[3U] & 0xFF0000U) >> 16U);
 #endif
         temp = rsm_read_ptr[2U];
-        sync_info_p->valid = ((temp & (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK)) == (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK));
+        sync_info_p->valid = ((temp & HADM_HAL_MODE0_RTT_VLD) == HADM_HAL_MODE0_RTT_VLD) ? 1U : 0U;
 
         /* format is sfix16En15 (15 bits frac, 1 bit sign). CFO=CFO_reg*R/2, where R is the bit rate. */
         cfo16 = ((int16_t) ((temp & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_MASK) >> COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_SHIFT));
         cfo32 = (int32_t)cfo16;
         if (rate == XCVR_RSM_RATE_1MBPS)
-            cfo32 *= 15; /* 1e6 / (2 * 2^15) */
+        {   cfo32 *= 15; }  /* 1e6 / (2 * 2^15) */
         else
-            cfo32 *= 30; /* 1e6 / 2^15 */
+        {   cfo32 *= 30; }  /* 1e6 / 2^15 */
         sync_info_p->cfo = cfo32;
     }
     return aa_det;
@@ -153,11 +155,11 @@ void lcl_hal_xcvr_program_time_adjustement(int32_t ppm)
     uint32_t temp, time_to_adj;
 
     if (ppm > 0)
-      tim_adj = 1U;
+    {  tim_adj = 1U; }
     else if (ppm < 0)
-      tim_adj = 3U;
+    {  tim_adj = 3U; }
     else // ppm == 0, no adjustment required
-      return;
+    {  return; }
 
     /* Given the measured ppm, compute the time adjustment interval for 1us adjustment */
     time_to_adj = (1000000U / (ABS(ppm))); /* in us */
@@ -169,13 +171,9 @@ void lcl_hal_xcvr_program_time_adjustement(int32_t ppm)
 
     temp = XCVR_MISC->RSM_CTRL7;
     temp &= ~(XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MODE_MASK | XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_DELTA_MASK | XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MASK);
-
-    if (tim_adj != 0)
-    {
-        temp |= XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MODE(1U) |/* enable 1us RSM time grid adjustment */
-                XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_DELTA(tim_adj) |
-                XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR(time_to_adj);
-    }
+    temp |= XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_MODE(1U) |/* enable 1us RSM time grid adjustment */
+            XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR_DELTA(tim_adj) |
+            XCVR_MISC_RSM_CTRL7_RSM_TIME_CORR(time_to_adj);
     XCVR_MISC->RSM_CTRL7 = temp;
 }
 
@@ -290,13 +288,13 @@ int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx)
 
     rssi_adj = XCVR_RX_DIG->NB_RSSI_CTRL0 & XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_MASK;
     /* Stored in s5.2 format, left aligned in register, divide to keep sign bits */
-    rssi_adj = rssi_adj / (1 << XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_SHIFT);
+    rssi_adj = rssi_adj / (1U << XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_SHIFT);
 
     /* AGC_IDXN_GAIN_VAL array is sorted from index 11 to 0 */
     agc_log_gain_table = (int32_t *)(&XCVR_RX_DIG->AGC_IDX11_GAIN_VAL);
     lna_gain_db = agc_log_gain_table[11-agc_idx] & XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_MASK;
     /* Stored in s7.2 format, left align then divide to keep signed bits */
-    lna_gain_db = (int16_t)(lna_gain_db << 6) / (1 << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6));
+    lna_gain_db = (int16_t)(lna_gain_db << 6) / (1U << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6));
 
     /* Convert sX.2 to integer, then to dBm */
     rpl = (rssi_adj - lna_gain_db)/4 + 13;
@@ -421,7 +419,7 @@ void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t
     DSB0->CSR |= (DSB_CSR_DSB_EN_MASK | DSB_CSR_DMA_EN_MASK | DSB_CSR_ERR_EN_MASK);
     DSB0->WMC = DSB_WMC_WMRK(1);
     DSB0->DADDR = DSB_DADDR_DADDR(m_hadmbuffer_start); /* destination buffer from CM33 system RAM - see m_hadmbuff_start in wireless_ranging_measuement.c */
-    if (nb_words > m_hadmbuffer_size) nb_words = m_hadmbuffer_size;  /* destination buffer size CM33 system RAM - see m_hadmbuffer_size in wireless_ranging_measuement.c */
+    if (nb_words > m_hadmbuffer_size) { nb_words = m_hadmbuffer_size; } /* destination buffer size CM33 system RAM - see m_hadmbuffer_size in wireless_ranging_measuement.c */
     DSB0->XCR = DSB_XCR_TCNT(nb_words);
     
     /* enable DMA mask for T_PM and T_FM */

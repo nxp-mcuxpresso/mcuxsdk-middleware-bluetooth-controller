@@ -230,34 +230,35 @@ typedef enum
 #define LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX          (LCL_HAL_PKT_RAM_STEP_RESULT_MODE3_SIZE(HADM_MAX_NB_ANTENNA_PATHS)) /* 10 words */
 #define LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX_SNIFFER  (LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX * 2U) /* 20 words */
 
+/* pkt_ram_w_ptr SHOULD NOT be a composite expression */
 #define LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, pkt_ram_w_ptr, cfo, hpm_cal_val, cs_sync_ant_id, role) \
     {\
-        uint16_t *w_ptr16 = (uint16_t *)pkt_ram_w_ptr;\
-        uint16_t mapped_chan_num = step_config_p->channel >> 1U; /* divide by 2 to get the normal BLE channel index for format #2 HOP_TBL_CFG_OVRD */    \
-        if ((step_config_p->channel & 0x1U) == 0x1U) /* original HADM channel was an odd number */\
+        uint16_t *w_ptr16 = (uint16_t *)(pkt_ram_w_ptr);\
+        uint16_t mapped_chan_num = (step_config_p)->channel >> 1U; /* divide by 2 to get the normal BLE channel index for format #2 HOP_TBL_CFG_OVRD */    \
+        if (((step_config_p)->channel & 0x1U) == 0x1U) /* original HADM channel was an odd number */\
         {\
             mapped_chan_num = (1U + mapped_chan_num) | (1U << 15U); /* go to next channel up (2MHz higher) to allow -1MHz to hit the target channel */\
         }\
         *w_ptr16++ = mapped_chan_num; /* CHANNEL_NUM */\
         uint8_t tone_ext; /* See section Tone extension slots". DRBG and RSM bits representation are swapped */\
-        if ((role == 0 /* initiator */) && (step_config_p->mode == HADM_STEP_MODE3)) \
+        if (((role) == HADM_ROLE_INITIATOR) && ((step_config_p)->mode == HADM_STEP_MODE3)) \
         {\
-            tone_ext = ((step_config_p->pm_ext & 0x1) << 1U) | ((step_config_p->pm_ext & 0x2) >> 1U); /* swap the bits */\
+            tone_ext = (((step_config_p)->pm_ext & 0x1U) << 1U) | (((step_config_p)->pm_ext & 0x2U) >> 1U); /* swap the bits */\
         }\
         else\
         {\
             /* Keep the DRBG bit corresponding to our role and force the other one to 1 (forces RSM RX) */\
-            if (step_config_p->pm_ext & (0x2U >> role)) tone_ext = 0x3U; \
-            else tone_ext = (0x2U >> role); \
+            if (((step_config_p)->pm_ext & (0x2U >> (uint8_t)(role))) != 0U) { tone_ext = 0x3U; } \
+            else { tone_ext = (0x2U >> (uint8_t)(role)); } \
         }\
-        *w_ptr16++ = (COM_MODE_013_CFG_HDR_STEP_CFG_MODE(step_config_p->mode) |\
-                    COM_MODE_013_CFG_HDR_STEP_CFG_TONE_EXT(tone_ext) |\
-                    COM_MODE_013_CFG_HDR_STEP_CFG_ANT_PERMUT(step_config_p->ant_perm) |\
-                    COM_MODE_013_CFG_HDR_STEP_CFG_ANT_CS_SYNC(cs_sync_ant_id)); /* STEP_CFG */\
+        *w_ptr16++ = (COM_MODE_013_CFG_HDR_STEP_CFG_MODE((step_config_p)->mode) |\
+                      COM_MODE_013_CFG_HDR_STEP_CFG_TONE_EXT(tone_ext) |\
+                      COM_MODE_013_CFG_HDR_STEP_CFG_ANT_PERMUT((step_config_p)->ant_perm) |\
+                      COM_MODE_013_CFG_HDR_STEP_CFG_ANT_CS_SYNC((cs_sync_ant_id))); /* STEP_CFG */\
         *w_ptr16++ = (cfo); /* STEP_CFO */\
-        *w_ptr16++ = (hpm_cal_val>>1); /* HPM_CAL_FACTOR */\
-        pkt_ram_w_ptr += 2;\
-        *pkt_ram_w_ptr++ = 0; /* CTUNE_MANUAL + PHASE_ADD */\
+        *w_ptr16++ = ((hpm_cal_val)>>1); /* HPM_CAL_FACTOR */\
+        (pkt_ram_w_ptr) += 2;\
+        *(pkt_ram_w_ptr)++ = 0; /* CTUNE_MANUAL + PHASE_ADD */\
     }
 
 #define LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(pkt_ram_w_ptr, cfo) \

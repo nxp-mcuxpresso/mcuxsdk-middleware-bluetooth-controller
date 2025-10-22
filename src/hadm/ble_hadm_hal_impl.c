@@ -18,7 +18,7 @@
 #include "lcl_hadm_measurement.h"
 #include "lcl_hadm_utils.h"
 #include "lcl_hadm_aes.h"
-#include "fwk_platform.h"
+
 /* === Macros =============================================================== */
 
 //#define HADM_UT
@@ -104,8 +104,8 @@ static const uint32_t aa_test_list[HADM_UT_AA_LIST_SIZE] = {
 
 /* === Externals ============================================================ */
 /* LTC access protection */
-extern void (* lock_LTC)();
-extern void (* unlock_LTC)();
+extern void (* lock_LTC)(void);
+extern void (* unlock_LTC)(void);
 
 /* === Globals ============================================================= */
 
@@ -130,9 +130,9 @@ static void BLE_HADM_ut_apply_aa_test_list (BLE_HADM_SubeventConfig_t *config)
 
 BLE_HADM_STATUS_t BLE_HADM_ProcedureInit(uint8 connIdx)
 {
-    lcl_hadm_init_procedure(connIdx);
+    BLE_HADM_STATUS_t status = lcl_hadm_init_procedure(connIdx);
 
-    return HADM_HAL_SUCCESS;
+    return status;
 }
 
 BLE_HADM_STATUS_t BLE_HADM_Calibrate(BLE_HADM_rttPhyMode_t rate)
@@ -142,7 +142,9 @@ BLE_HADM_STATUS_t BLE_HADM_Calibrate(BLE_HADM_rttPhyMode_t rate)
     status = lcl_hadm_calibrate_dcoc(rate);
 
     if (HADM_HAL_SUCCESS == status)
+    {
         status = lcl_hadm_calibrate_pll(rate);
+    }
 #endif
     return status;
 }
@@ -254,7 +256,7 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
 {
     status_t status = kStatus_Success;
 
-    if (lock_LTC)
+    if (lock_LTC != NULL)
     {
         lock_LTC();
     }
@@ -276,7 +278,7 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
 #endif
     assert(kStatus_Success == status);
 
-    if (unlock_LTC)
+    if (unlock_LTC != NULL)
     {
         unlock_LTC();
     }
