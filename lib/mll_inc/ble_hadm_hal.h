@@ -379,6 +379,7 @@ typedef struct BLE_HADM_SubeventConfig_tag
     BLE_HADM_AntennaConfigIndex_t toneAntennaConfigIdx; /*! Antenna configuration index. 0: no diversity */
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *chModePmAntMap; /*!< Step configuration length=stepsNb */
     BLE_HADM_PN_list_t pnList[HADM_MAX_NB_STEPS_MODE0]; /*!< PN sequence list for mode0 */
+    uint8   Tx_Snr;                //@CS_Spec #LL_CS_REQ #TX_SNR
 } BLE_HADM_SubeventConfig_t;
 
 /*! Storage for HAL properties */
@@ -409,6 +410,7 @@ typedef struct BLE_HADM_HalCapabilities_tag
     uint16 T_IP2_TimesSupported;
     uint16 T_FCS_TimesSupported;
     uint16 T_PM_TimesSupported;
+    uint8  TX_SNR;
 } BLE_HADM_HalCapabilities_t;
 
 
