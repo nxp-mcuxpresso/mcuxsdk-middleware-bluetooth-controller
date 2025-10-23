@@ -50,7 +50,7 @@
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
 #define gNbuDisableLowpower_d   1
 
-#ifndef NDEBUG
+#if defined(DEBUG)
 /* To avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
 #undef gNbuDisableLowpower_d
 #define gNbuDisableLowpower_d   1
