@@ -384,7 +384,7 @@ typedef enum {
 /**
  * The default PHY periodic calibration period in second. this Macro can be set to any value , Zero means that phy periodic calibration is disabled
  */
-#define DEFAULT_PHY_CALIBRATION_PERIOD        		60	/* Time period for PHY calibration = 10s */
+#define DEFAULT_PHY_CALIBRATION_PERIOD        		60	/* In seconds */
 
 
 
