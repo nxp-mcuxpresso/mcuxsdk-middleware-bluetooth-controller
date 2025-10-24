@@ -150,6 +150,10 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_bin)
         DEVICE_IDS ${KW47_FAMILY}
     )
     mcux_add_source(
+        SOURCES bin/mcxw72_nbu_ble_xp_hosted.bin
+        DEVICE_IDS ${MCXW72_FAMILY}
+    )
+    mcux_add_source(
         SOURCES bin/kw45b41_nbu_ble_hadm_hosted.sb3
         DEVICE_IDS ${KW45_FAMILY_WITHOUT_K32W1}
     )
