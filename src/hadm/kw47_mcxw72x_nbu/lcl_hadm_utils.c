@@ -92,8 +92,8 @@ void lcl_hadm_utils_init_buffers(void)
     for (int i=0; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
         resultsDataBuffer[i].resultBufferUsed = 0;
-        resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[i*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
-        resultsDataBuffer[i].resultBuffer2 = &gpHadmHalResultBuffer[(i*HADM_SNIFFER_DEVICE_NB+1)*HADM_HAL_BUFFER_SIZE];
+        resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[(uint32_t)i*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
+        resultsDataBuffer[i].resultBuffer2 = &gpHadmHalResultBuffer[((uint32_t)i*HADM_SNIFFER_DEVICE_NB+1U)*HADM_HAL_BUFFER_SIZE];
         resultsDataBuffer[i].resultBufferSize = HADM_HAL_BUFFER_SIZE;
     }
 }

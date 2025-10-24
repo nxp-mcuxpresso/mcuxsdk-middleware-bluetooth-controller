@@ -174,7 +174,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_hal_properties.txWarmupUs += ((xcvr_lcl_tsm_generic_config.WU_LATENCY & XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_MASK) >> XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_SHIFT);
     hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET;
 
-    hadm_hal_properties.rxWarmupUs = (uint8_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) + 1U; /* +1 as this is a count from 0 */
+    hadm_hal_properties.rxWarmupUs = (uint16_t)((xcvr_lcl_tsm_generic_config.FAST_CTRL3 & XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_MASK) >> XCVR_TSM_FAST_CTRL3_FAST_TX2RX_START_FC_SHIFT) + 1U; /* +1 as this is a count from 0 */
     hadm_hal_properties.rxWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET;
 
     for (i = 0; i < (int)HADM_MAX_NB_SIMULT_SUBEVENTS; i++)
@@ -257,11 +257,11 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
             {
                 hadm_device.rccal_manual_override_needed = TRUE;
                 hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values.rf_rtt_tg_trim_rccal;
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = (int16)rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
             }
             if (rtt_trim_values.rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
             {
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = (int16)rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
             }
         }
         else
@@ -358,7 +358,7 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate)
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate)
 {   
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    XCVR_RSM_SQTE_RATE_T xcvr_rate = (XCVR_RSM_SQTE_RATE_T) (rate & 0x1);
+    XCVR_RSM_SQTE_RATE_T xcvr_rate = (XCVR_RSM_SQTE_RATE_T)rate;
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
 
     DEBUG_PIN0_SET
@@ -371,7 +371,7 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate)
     /* Trigger manual calibration on channel 40 */
     (void)XCVR_LCL_MakeChanNumFromHadmIndex(40 /* 2442 MHz */, &chan40_ovrd);
     DEBUG_PIN1_SET
-    status += XCVR_LCL_CalibratePll(&chan40_ovrd, (xcvr_lcl_pll_cal_data_t *)&hadm_device.cal_ch40[rate], 1, false, xcvr_rate);
+    status = XCVR_LCL_CalibratePll((const channel_num_t *)&chan40_ovrd, (xcvr_lcl_pll_cal_data_t *)&hadm_device.cal_ch40[rate], 1U, false, xcvr_rate);
     DEBUG_PIN1_CLR
 #else
 
@@ -526,7 +526,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
           goto config_error;
     }
     /* Capture window size in us, this will always result in 4 averaged values / AP / step */
-    hadm_meas_p->iq_capture_win = (1 << hadm_meas_p->iq_avg_win);
+    hadm_meas_p->iq_capture_win = (uint8_t)(1U << hadm_meas_p->iq_avg_win);
 #ifndef RSM_DBG_IQ
     if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_AVG_OFF) != 0U)
 #endif
@@ -585,7 +585,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         hadm_meas_p->pkt_ram.step_result.max_step_size *= HADM_SNIFFER_DEVICE_NB;
     }
     /* Compute nb_steps_before_irq based on larget circ buffer step size (+ contingency (/2)) */
-    hadm_meas_p->pkt_ram.nb_steps_before_irq = (HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE / (MAX(hadm_meas_p->pkt_ram.step_config.max_step_size, hadm_meas_p->pkt_ram.step_result.max_step_size))) / 2U;
+    hadm_meas_p->pkt_ram.nb_steps_before_irq = (uint8_t)((HADM_HAL_PKT_RAM_CONFIG_CIRC_BUFF_SIZE / (MAX(hadm_meas_p->pkt_ram.step_config.max_step_size, hadm_meas_p->pkt_ram.step_result.max_step_size))) / 2U);
     if (hadm_meas_p->pkt_ram.nb_steps_before_irq > HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ)
     {
         hadm_meas_p->pkt_ram.nb_steps_before_irq = HADM_HAL_PKT_RAM_MAX_NB_STEPS_BEFORE_IRQ;
@@ -647,7 +647,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         (hadm_config->rxWindowUs < (mode0_timeout_usec - HADM_T_SY(hadm_config->rttPhy) - HADM_MODE0_TIMEOUT_MARGIN_US)))
     {
         /* Program the mode0 timeout (the actual duration of RX period) */
-        rsm_config_p->mode0_timeout_usec = (uint16_t)mode0_timeout_usec;
+        rsm_config_p->mode0_timeout_usec = mode0_timeout_usec;
     }
     else
     {
@@ -998,7 +998,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
     bool_t compensate_cfo = (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR) && (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0U);
 #endif
     int16_t cfo = 0;
-    uint8_t aa_offset = 1U - hadm_meas_p->config_p->role; /* offset to Rx AA */
+    uint8_t aa_offset = 1U - (uint8_t)hadm_meas_p->config_p->role; /* offset to Rx AA */
     uint8_t cs_sync_ant_id = 0U;
     
     DEBUG_PIN1_SET
@@ -1432,8 +1432,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             }
 
             /* Store Step_Data "header" */
-            *res_buff_p++ = step_config_p->mode; /* Step_Mode */
-            *res_buff_p++ = step_config_p->channel; /* Step_Channel */
+            *res_buff_p++ = (uint8_t)step_config_p->mode; /* Step_Mode */
+            *res_buff_p++ = (uint8_t)step_config_p->channel; /* Step_Channel */
 
             /* Store Step_Data */
             switch (step_config_p->mode)
@@ -1443,9 +1443,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     bool vld = (bool)hadm_meas_p->sync_info[step_mode0_no].valid;
                     /* (Hz*100) / MHz  => 0.01 ppm unit */
                     int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)HADM_CHAN_NUM_TO_MHZ(step_config_p->channel);
-                    *res_buff_p++ = BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
-                    *res_buff_p++ = HADM_SET_RTT_AA_QUALITY(vld); /* Packet_AA_Quality */
-                    *res_buff_p++ = HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */
+                    *res_buff_p++ = (uint8_t)BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
+                    *res_buff_p++ = (uint8_t)HADM_SET_RTT_AA_QUALITY(vld); /* Packet_AA_Quality */
+                    *res_buff_p++ = (uint8_t)HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */
                     *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
                     if (role == HADM_ROLE_INITIATOR)
                     {
@@ -1520,9 +1520,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         {
                             uint32_t nadm_fm_corr_value = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
                             XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, fm_corr_target, fm_corr_div, nadm_metric);
-                            nadm_symb_err = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)
-                                                     >>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
-
+                            nadm_symb_err = (uint8_t)((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
                         }
                     }
                     if (step_config_p->mode == HADM_STEP_MODE1)
@@ -1533,9 +1531,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     {
                         *res_buff_p++ = BLE_HADM_STEP3_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                     }
-                    *res_buff_p++ = ( (nadm_symb_err << 4 & 0xF0) | HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld)); /* Payload_errors[7:4] | Packet_AA_Quality[3:0] (1 byte) */
+                    *res_buff_p++ = (((nadm_symb_err << 4U) & 0xF0U) | (uint8_t)HADM_SET_RTT_AA_QUALITY(rtt_data.rtt_vld)); /* Payload_errors[7:4] | Packet_AA_Quality[3:0] (1 byte) */
                     *res_buff_p++ = nadm_metric; /* Packet_NADM */
-                    *res_buff_p++ = HADM_SET_RTT_RSSI(rtt_data.rtt_vld, rssi_nb); /* Packet_RSSI (1 byte) */
+                    *res_buff_p++ = (uint8_t)HADM_SET_RTT_RSSI(rtt_data.rtt_vld, rssi_nb); /* Packet_RSSI (1 byte) */
                     HADM_SET_RTT_TS_DIFF(rtt_data.rtt_vld, rtt_ts, res_buff_p); /* ToX-ToX time diff (2 bytes) */
                     *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
 
@@ -1555,7 +1553,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     {
                         *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                     }
-                    *res_buff_p++ = step_config_p->ant_perm; /* Antenna_Permutation_Index */
+                    *res_buff_p++ = (uint8_t)step_config_p->ant_perm; /* Antenna_Permutation_Index */
                     /* Store PCT[ap], 3 bytes each 22 significant bits  +  Tone Quality Indicator [ap] (1 byte each) */
                     lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_p, circ_buff_p->curr_step_idx, ant_id_seq);
                     for(ap = 0; ap < (int)hadm_meas_p->n_ap; ap++)
@@ -1727,7 +1725,7 @@ void RSM_INT_IRQHandler(void)
                 }
                 mode0_index++;
             } while ((hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR) && (aa_det == FALSE) && (circ_buff_p->curr_step_idx == 0U)); /* first mode 0 was missed, go to next */
-            circ_buff_p->curr_step_idx = mode0_index;
+            circ_buff_p->curr_step_idx = (uint8_t)mode0_index;
 
             if (circ_buff_p->curr_step_idx == hadm_meas_p->config_p->mode0Nb)
             {

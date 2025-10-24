@@ -120,15 +120,15 @@
         if ((valid)) \
         { \
             /* Clip to 15bits signed max : -100 ppm (0x58F0) to +100 ppm (0x2710)*/ \
-            if (ppm_in > 10000) ppm_in = 10000; \
-            else if (ppm_in < -10000) ppm_in = -10000; \
-            *report_p++ = (ppm_in & 0x000000FF); \
-            *report_p++ = (ppm_in & 0x00007F00) >> 8U; \
+            if ((ppm_in) > 10000) { (ppm_in) = 10000; } \
+            else if ((ppm_in) < -10000) { (ppm_in) = -10000; } \
+            *(report_p)++ = (uint8_t)((ppm_in) & 0x000000FF); \
+            *(report_p)++ = (uint8_t)(((ppm_in) & 0x00007F00) >> 8U); \
         } \
         else \
         { \
-            *report_p++ = 0x00; \
-            *report_p++ = 0xC0; \
+            *(report_p)++ = 0x00U; \
+            *(report_p)++ = 0xC0U; \
         } \
     } while (0)
 
@@ -144,13 +144,13 @@
     { \
         if ((valid)) \
         { \
-            *report_p++ = (ts_diff & 0x00FF); \
-            *report_p++ = (ts_diff & 0xFF00) >> 8U; \
+            *(report_p)++ = (uint8_t)((ts_diff) & 0x00FF); \
+            *(report_p)++ = (uint8_t)(((ts_diff) & 0xFF00) >> 8U); \
         } \
         else \
         { \
-            *report_p++ = 0x00; \
-            *report_p++ = 0x80; \
+            *(report_p)++ = 0x00U; \
+            *(report_p)++ = 0x80U; \
         } \
     } while (0)
 
@@ -160,13 +160,15 @@
  * Note: HW output is :{rx_dft_iq_out_q[10:0], rx_if_mixer_idx[9:5], rx_dft_iq_out_i[10:0], rx_if_mixer_idx[4:0]}
  */
 
-#define HADM_DECODE_HW_RTP_PCT(iq_in) (uint32_t)((iq_in & 0xfff0) >> 4U) | ((iq_in & 0xfff00000) >> 8U)
+#define HADM_DECODE_HW_RTP_PCT(iq_in) (uint32_t)(((iq_in) & 0xfff0U) >> 4U) | (((iq_in) & 0xfff00000U) >> 8U)
+
+/*! report_p SHOULD NOT be a composite expression */
 #define HADM_ENCODE_HCI_RTP_PCT(iq_hci, report_p) \
     do \
     {\
-        *report_p++ = (iq_hci & 0x0000FF); \
-        *report_p++ = (iq_hci & 0x00FF00) >> 8U; \
-        *report_p++ = (iq_hci & 0xFF0000) >> 16U; \
+        *(report_p)++ = (uint8_t)((iq_hci) & 0x0000FF); \
+        *(report_p)++ = (uint8_t)(((iq_hci) & 0x00FF00) >> 8U); \
+        *(report_p)++ = (uint8_t)(((iq_hci) & 0xFF0000) >> 16U); \
     } while (0)
 
 /*! Encode Tone Quality Indicator. report_p SHOULD NOT be a composite expression */
@@ -174,13 +176,13 @@
 #define HADM_SET_RTP_TONE_QUALITY(iq_in, report_p, ext_slot, ext_pres) \
     do \
     { \
-        uint8_t qual_metric = iq_in & 0x3U;\
-        if (ext_slot) \
+        uint8_t qual_metric = (uint8_t)((iq_in) & 0x3U);\
+        if ((ext_slot)) \
         {\
-            if (ext_pres)\
-                qual_metric |= (HADM_TQI_TONE_EXT_PRESENT << 4U);\
+            if ((ext_pres) != 0U)\
+            {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_PRESENT << 4U); }\
             else \
-                qual_metric |= (HADM_TQI_TONE_EXT_NOT_PRESENT << 4U);\
+            {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_NOT_PRESENT << 4U); }\
         } /* else MSBs already set to 0 */\
         *(report_p)++ = qual_metric; \
     } while (0)
