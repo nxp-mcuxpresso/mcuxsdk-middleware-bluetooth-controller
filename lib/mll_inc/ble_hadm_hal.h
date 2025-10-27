@@ -93,8 +93,8 @@
 #define HADM_ANT_PERM_A4_A3_A1_A2  (22U)
 #define HADM_ANT_PERM_A4_A3_A2_A1  (23U)
 
-#define HADM_RTT_ANT_ROUND_ROBIN         (0xFE)
-#define HADM_RTT_ANT_NO_RECOMMENDATION   (0xFF)
+#define HADM_RTT_ANT_ROUND_ROBIN         (0xFEU)
+#define HADM_RTT_ANT_NO_RECOMMENDATION   (0xFFU)
 
 /*!< type flags for a CS subEvent */
 #define HADM_SUBEVT_FIRST  (1U << 0U)  /*!< First SubEvent of CS procedure */
@@ -138,8 +138,8 @@ typedef enum
 typedef enum
 {
     HADM_SUBEVT_MISSION_MODE = 0U,          /*!< Mission mode */
-    HADM_SUBEVT_TEST_MODE,                  /*!< CS Test mode enabled */
-    HADM_SUBEVT_TEST_MODE_PHASE_STAB,       /*!< CS Test mode enabled for phase stability test */
+    HADM_SUBEVT_TEST_MODE = 1U,             /*!< CS Test mode enabled */
+    HADM_SUBEVT_TEST_MODE_PHASE_STAB = 2U,  /*!< CS Test mode enabled for phase stability test */
 } BLE_HADM_subevent_mode_t;
 typedef enum 
 {
@@ -156,7 +156,7 @@ typedef enum
 typedef enum 
 {
     HADM_RTT_PHY_1MBPS = 0U,
-    HADM_RTT_PHY_2MBPS,
+    HADM_RTT_PHY_2MBPS = 1U,
     HADM_RTT_PHY_MAX
 } BLE_HADM_rttPhyMode_t;
 
@@ -292,17 +292,18 @@ typedef enum
 } BLE_HADM_AntennaConfigIndex_t;
 
 /*! Computes the number of antennas and antenna paths based on the role and config index */
+/*! numAnt, nAP SHOULD NOT be a composite expression */
 #define HADM_COMPUTE_NUM_ANTENNA(role, configIdx, numAnt, nAP) \
-    if (configIdx == HADM_ANT_CFG_IDX_0) {numAnt = 0U; nAP = 1U;}\
-    else if (configIdx == HADM_ANT_CFG_IDX_7) {numAnt = 2U; nAP = 4U;}\
+    if ((configIdx) == HADM_ANT_CFG_IDX_0) { (numAnt) = 0U; (nAP) = 1U; }\
+    else if ((configIdx) == HADM_ANT_CFG_IDX_7) { (numAnt) = 2U; (nAP) = 4U; }\
     else { \
-        if (HADM_ROLE_INITIATOR == role) {\
-            if (configIdx <= HADM_ANT_CFG_IDX_3) {numAnt = nAP = configIdx + 1U;}\
-            else {numAnt = 1U;  nAP = configIdx - 2U;}\
+        if (HADM_ROLE_INITIATOR == (role)) {\
+            if ((configIdx) <= HADM_ANT_CFG_IDX_3) { (numAnt) = (nAP) = (configIdx) + 1U; }\
+            else { (numAnt) = 1U;  (nAP) = (configIdx) - 2U; }\
         }\
         else {\
-            if (configIdx <= HADM_ANT_CFG_IDX_3) {numAnt = 1U;  nAP = configIdx + 1U;}\
-            else {numAnt = nAP = configIdx - 2U;}\
+            if ((configIdx) <= HADM_ANT_CFG_IDX_3) { (numAnt) = 1U;  (nAP) = (configIdx) + 1U; }\
+            else { (numAnt) = (nAP) = (configIdx) - 2U; }\
         }\
     }
 
@@ -452,7 +453,7 @@ typedef struct BLE_HADM_HalCapabilities_tag
  *              +   Tone_Quality_Indicator (1 byte, TQI PCT for antenna path #k)
 */
 /*! Step report size based on step mode and number of APs */
-#define BLE_HADM_STEP0_REPORT_SIZE(role)   ((role) == 1 ? 3U : 5U)
+#define BLE_HADM_STEP0_REPORT_SIZE(role)   (((role) == HADM_ROLE_REFLECTOR) ? 3U : 5U)
 #define BLE_HADM_STEP1_REPORT_SIZE      (6U)
 #define BLE_HADM_STEP2_REPORT_SIZE(n_ap)   (1U + 4U * (1U + (n_ap)))
 #define BLE_HADM_STEP3_REPORT_SIZE(n_ap)   (BLE_HADM_STEP2_REPORT_SIZE(n_ap) + BLE_HADM_STEP1_REPORT_SIZE)
