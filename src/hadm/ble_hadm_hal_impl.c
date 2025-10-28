@@ -165,7 +165,7 @@ void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias)
 void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation)
 {
     hadm_device.phase_rotation = *phaseRotation;
-    lcl_hadm_utils_calc_phase_rotation_offset(phaseRotation->offset_table);
+    lcl_hadm_utils_calc_phase_rotation_offset(phaseRotation);
 }
 
 uint32 BLE_HADM_SetPARamping(uint8 paRampingTime, uint8 paRampAntSwitch)

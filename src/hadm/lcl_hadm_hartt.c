@@ -18,8 +18,8 @@
 /* === Macros ============================================================== */
 #define XOR3(A,B,C) (((A) ^ (B)) | ((B) ^ (C)))
 
-#define P_DELTA_FP_FACT (1 << 9U)  /* Fixed-point quantification factor for p_delta: 2^9 */
-#define SIGMA_FP_FACT   (1 << 20U) /* Fixed-point quantification factor for sigma matrix: 2^20. */
+#define P_DELTA_FP_FACT (0x200)    /* Fixed-point quantification factor for p_delta: 2^9 */
+#define SIGMA_FP_FACT   (0x100000) /* Fixed-point quantification factor for sigma matrix: 2^20. */
                                    /* Allows to keep k_coeff_fp on 32bits integers without loosing accuracy */
                                    /* (c_coeff requires 5bits, c_coeff^2 requires 10bits, 1bit for sign) */
 /* === Globals ============================================================= */
@@ -130,7 +130,7 @@ void lcl_hadm_hartt_enable_float(uint8_t en)
 *  int_adj and frac_delay are relative to the radio clock used, hence unit is 1/4MHz or 1/8MHz for BLE 1Mbps or 2Mbps respectively
 *  output is the fractional delay + integer adjustment in nanoseconds
 */
-int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const uint32_t pn_seq, int16_t  p_delta, const int32_t int_adj)
+int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const uint32_t pn_seq, int16_t p_delta, const int32_t int_adj)
 {
     uint32_t c_coeff[6];
     uint32_t k;
@@ -159,9 +159,9 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     }
 
     /* Compute p_delta: p_delta format is sfix10_En9 aka Q9, hence 1 sign bit plus 9 fractional bits */
-    p_delta <<= 6U; /* Align sign bit on MSB */
-    p_delta /= (1 << 6U); /* and divide by 2^6 */
-    
+    p_delta <<= 6;       /* Align sign bit on MSB */
+    p_delta /= 0x40;     /* and divide by 2^6 */
+
     /* Compute c coefficients corresponding to the given PN sequence */
     lcl_hadm_hartt_compute_c_coeff(pn_seq, c_coeff);
 
@@ -181,21 +181,22 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
         /* [k0, k1, k2, k3] = [c010, c011, c111, c010^2, c011^2, c111^2] * SIGMA */
         for (k=0; k<4U; k++)
         {
-            k_coeff_fp[k] = c_coeff[0U]*(*sigma_fp_p)[0U][k] + c_coeff[1U]*(*sigma_fp_p)[1U][k] + c_coeff[2U]*(*sigma_fp_p)[2U][k]
-                          + c_coeff[3U]*(*sigma_fp_p)[3U][k] + c_coeff[4U]*(*sigma_fp_p)[4U][k] + c_coeff[5U]*(*sigma_fp_p)[5U][k];
+            k_coeff_fp[k] = (int32_t)(uint32_t)
+                ( c_coeff[0U]*(uint32_t)(*sigma_fp_p)[0U][k] + c_coeff[1U]*(uint32_t)(*sigma_fp_p)[1U][k] + c_coeff[2U]*(uint32_t)(*sigma_fp_p)[2U][k]
+                + c_coeff[3U]*(uint32_t)(*sigma_fp_p)[3U][k] + c_coeff[4U]*(uint32_t)(*sigma_fp_p)[4U][k] + c_coeff[5U]*(uint32_t)(*sigma_fp_p)[5U][k]);
         }
         
         /* Compute fractional delay corresponding to P_DELTA computed by HW */
         /* frac = [k0, k1, k2, k3] * [1, p_delta, p_delta^2, p_delta^3] */
-        frac_fp  =   k_coeff_fp[0U] * P_DELTA_FP_FACT;
-        frac_fp += ((k_coeff_fp[1U] * p_delta_fp));
+        frac_fp  =   (int64_t)k_coeff_fp[0U] * P_DELTA_FP_FACT;
+        frac_fp += (((int64_t)k_coeff_fp[1U] * p_delta_fp));
         p_delta_fp *= p_delta; // p_delta^2
-        frac_fp += ((k_coeff_fp[2U] * p_delta_fp) / (P_DELTA_FP_FACT));
+        frac_fp += (((int64_t)k_coeff_fp[2U] * p_delta_fp) / P_DELTA_FP_FACT);
         p_delta_fp *= p_delta; // p_delta^3
-        frac_fp += ((k_coeff_fp[3U] * p_delta_fp) / (P_DELTA_FP_FACT * P_DELTA_FP_FACT));
+        frac_fp += (((int64_t)k_coeff_fp[3U] * p_delta_fp) / (P_DELTA_FP_FACT * P_DELTA_FP_FACT));
         
         /* Convert to ns */
-        frac = (int32_t)((frac_fp * Ts) / (SIGMA_FP_FACT * P_DELTA_FP_FACT));
+        frac = (int32_t)((frac_fp * (int64_t)Ts) / (SIGMA_FP_FACT * P_DELTA_FP_FACT));
     }
 #ifdef HARTT_ENABLE_FLOAT
     else
@@ -227,11 +228,11 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     /* Add integer adjustment. int_adj fomat is ufix2En0 and possible values are -1, 0 or 1 */
     if (int_adj == 1)
     {
-        frac += Ts;
+        frac += (int32_t)Ts;
     }
     else if (int_adj == 3)
     {
-        frac -= Ts;
+        frac -= (int32_t)Ts;
     }
     else
     { /* MISRA */ }

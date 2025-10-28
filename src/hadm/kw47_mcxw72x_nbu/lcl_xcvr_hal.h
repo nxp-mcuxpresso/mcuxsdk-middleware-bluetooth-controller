@@ -233,22 +233,22 @@ typedef enum
 /* pkt_ram_w_ptr SHOULD NOT be a composite expression */
 #define LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, pkt_ram_w_ptr, cfo, hpm_cal_val, cs_sync_ant_id, role) \
     {\
-        uint16_t *w_ptr16 = (uint16_t *)(pkt_ram_w_ptr);\
+        uint16_t *w_ptr16 = (uint16_t *)(void *)(pkt_ram_w_ptr);\
         uint16_t mapped_chan_num = (step_config_p)->channel >> 1U; /* divide by 2 to get the normal BLE channel index for format #2 HOP_TBL_CFG_OVRD */    \
         if (((step_config_p)->channel & 0x1U) == 0x1U) /* original HADM channel was an odd number */\
         {\
-            mapped_chan_num = (1U + mapped_chan_num) | (1U << 15U); /* go to next channel up (2MHz higher) to allow -1MHz to hit the target channel */\
+            mapped_chan_num = (1U + mapped_chan_num) | 0x8000U; /* go to next channel up (2MHz higher) to allow -1MHz to hit the target channel, 0x8000U to set bit15 */\
         }\
         *w_ptr16++ = mapped_chan_num; /* CHANNEL_NUM */\
         uint8_t tone_ext; /* See section Tone extension slots". DRBG and RSM bits representation are swapped */\
         if (((role) == HADM_ROLE_INITIATOR) && ((step_config_p)->mode == HADM_STEP_MODE3)) \
         {\
-            tone_ext = (((step_config_p)->pm_ext & 0x1U) << 1U) | (((step_config_p)->pm_ext & 0x2U) >> 1U); /* swap the bits */\
+            tone_ext = (((uint8_t)(step_config_p)->pm_ext & 0x1U) << 1U) | (((uint8_t)(step_config_p)->pm_ext & 0x2U) >> 1U); /* swap the bits */\
         }\
         else\
         {\
             /* Keep the DRBG bit corresponding to our role and force the other one to 1 (forces RSM RX) */\
-            if (((step_config_p)->pm_ext & (0x2U >> (uint8_t)(role))) != 0U) { tone_ext = 0x3U; } \
+            if (((uint8_t)(step_config_p)->pm_ext & (0x2U >> (uint8_t)(role))) != 0U) { tone_ext = 0x3U; } \
             else { tone_ext = (0x2U >> (uint8_t)(role)); } \
         }\
         *w_ptr16++ = (COM_MODE_013_CFG_HDR_STEP_CFG_MODE((step_config_p)->mode) |\
@@ -299,9 +299,9 @@ typedef enum
 
 /* Macro applicable to uint32  header */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
-#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)X_32 & 0x30000000U) >> 28U)
+#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)(X_32) & 0x30000000U) >> 28U)
 #else
-#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)X_32 & 0x300U) >> 8U)
+#define LCL_HAL_GET_PKT_RAM_COM_RES_HDR_TIME_DRIFT(X_32) (((uint32_t)(X_32) & 0x300U) >> 8U)
 #endif
 
 #define HADM_PPM_DIVIDER (100)
@@ -392,7 +392,7 @@ void lcl_hal_xcvr_pll_settings_backup(void);
 void lcl_hal_xcvr_pll_settings_restore(void);
 void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram);
 void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32 nb);
-bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, uint8 rate);
+bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, BLE_HADM_rttPhyMode_t rttPhy);
 void lcl_hal_xcvr_program_time_adjustement(int32_t ppm);
 void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p);
 #ifdef __cplusplus

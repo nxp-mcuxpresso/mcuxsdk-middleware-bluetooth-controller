@@ -96,7 +96,7 @@ void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p)
 {
     assert(hadm_meas_p->iq_avg_win >= 1U);
     /* KW47 HW supports max 16 average window size for TQI (impacted case: 2Mbps & t_pm=40) */
-    uint32_t iq_avg_dpth = (uint32_t)MIN((hadm_meas_p->iq_avg_win - 1U), 4U);
+    uint32_t iq_avg_dpth = MIN(((uint32_t)hadm_meas_p->iq_avg_win - 1U), 4U);
     /* TQI thresholds */
     XCVR_RX_DIG->TQI_THR = XCVR_RX_DIG_TQI_THR_T1(HADM_HAL_TQI_THRESHOLD_MEDIUM) | XCVR_RX_DIG_TQI_THR_T2(HADM_HAL_TQI_THRESHOLD_BAD);
     /* TQI controls */
@@ -107,12 +107,12 @@ void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p)
 
 #define HADM_HAL_MODE0_RTT_VLD  (COM_MODE_013_RES_BODY_RTT_RESULT_RTT_VLD_MASK | COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK)
 
-bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, uint8 rate)
+bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, BLE_HADM_rttPhyMode_t rttPhy)
 {
     uint8_t step_idx;
     bool_t aa_det;
     uint32 temp;
-    int16_t cfo16;
+    // int16_t cfo16;
     int32_t cfo32;
 
     step_idx = (uint8_t)(rsm_read_ptr[0U] & COM_RES_HDR_STEP_ID_STEP_ID_MASK);
@@ -129,17 +129,18 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
 
         /* Decode COMMON_MODE_013_RESULT_BODY */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
-        sync_info_p->rssi = (int8_t)((rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);
+        sync_info_p->rssi = (int8_t)(uint32_t)((rsm_read_ptr[1U] & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >> COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);
 #else
-        sync_info_p->rssi = (int8_t)((rsm_read_ptr[3U] & 0xFF0000U) >> 16U);
+        sync_info_p->rssi = (int8_t)(uint32_t)((rsm_read_ptr[3U] & 0xFF0000U) >> 16U);
 #endif
         temp = rsm_read_ptr[2U];
         sync_info_p->valid = ((temp & HADM_HAL_MODE0_RTT_VLD) == HADM_HAL_MODE0_RTT_VLD) ? 1U : 0U;
 
         /* format is sfix16En15 (15 bits frac, 1 bit sign). CFO=CFO_reg*R/2, where R is the bit rate. */
-        cfo16 = ((int16_t) ((temp & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_MASK) >> COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_SHIFT));
-        cfo32 = (int32_t)cfo16;
-        if (rate == XCVR_RSM_RATE_1MBPS)
+        // cfo16 = ((int16_t) ((temp & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_MASK) >> COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_SHIFT));
+        // cfo32 = (int32_t)cfo16;
+        cfo32 = (int32_t)(int16_t)(uint32_t)((temp & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_MASK) >> COM_MODE_013_RES_BODY_RTT_RESULT_RTT_CFO_SHIFT);
+        if (rttPhy == HADM_RTT_PHY_1MBPS)
         {   cfo32 *= 15; }  /* 1e6 / (2 * 2^15) */
         else
         {   cfo32 *= 30; }  /* 1e6 / 2^15 */
@@ -278,23 +279,24 @@ void lcl_hal_xcvr_set_rxgain2(uint8_t man_agc_idx)
 /*
  * RPL is the opposite of internal RX gain applied on mode0, converted to dBm (+13)
  * RPL(dBm) = rssi_nb_adj(dB) - agc_gain(dB) + 13
+ * agc_idx must be (11U - hadm_proc_p->agc_idx)
  */
 int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx)
 {
-    int32_t *agc_log_gain_table;
+    uint32_t *agc_log_gain_table;
     int16_t lna_gain_db;
     int32_t rssi_adj;
     int32_t rpl;
 
-    rssi_adj = XCVR_RX_DIG->NB_RSSI_CTRL0 & XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_MASK;
+    rssi_adj = (int32_t)(uint32_t)(XCVR_RX_DIG->NB_RSSI_CTRL0 & XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_MASK);
     /* Stored in s5.2 format, left aligned in register, divide to keep sign bits */
-    rssi_adj = rssi_adj / (1 << XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_SHIFT);
+    rssi_adj = rssi_adj / (int32_t)(uint32_t)((uint32_t)1U << XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_ADJ_NB_SHIFT);
 
     /* AGC_IDXN_GAIN_VAL array is sorted from index 11 to 0 */
-    agc_log_gain_table = (int32_t *)(&XCVR_RX_DIG->AGC_IDX11_GAIN_VAL);
-    lna_gain_db = agc_log_gain_table[11-agc_idx] & XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_MASK;
+    agc_log_gain_table = (uint32_t *)(void *)(&XCVR_RX_DIG->AGC_IDX11_GAIN_VAL);
+    lna_gain_db = (int16_t)(uint32_t)(agc_log_gain_table[agc_idx] & XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_MASK);
     /* Stored in s7.2 format, left align then divide to keep signed bits */
-    lna_gain_db = (int16_t)(lna_gain_db << 6) / (1 << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6));
+    lna_gain_db = (int16_t)(lna_gain_db << 6) / (int16_t)((uint16_t)1U << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6U));
 
     /* Convert sX.2 to integer, then to dBm */
     rpl = (rssi_adj - lna_gain_db)/4 + 13;

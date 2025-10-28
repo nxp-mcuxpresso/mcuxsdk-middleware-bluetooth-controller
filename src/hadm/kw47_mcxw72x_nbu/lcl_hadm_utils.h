@@ -110,7 +110,7 @@
 
 /*! Set packet RSSI */
 #define HADM_SET_RTT_RSSI(valid, rssi) \
-    ((valid) ? rssi : 0x7F);
+    ((valid) ? (rssi) : 0x7F);
 
 /*! Translates RSM RTT CFO result to HADM CFO (2 bytes, unit 0.01 ppm, SQ15.0 format)
     ppm_in, report_p SHOULD NOT be a composite expression ! */
@@ -122,8 +122,9 @@
             /* Clip to 15bits signed max : -100 ppm (0x58F0) to +100 ppm (0x2710)*/ \
             if ((ppm_in) > 10000) { (ppm_in) = 10000; } \
             else if ((ppm_in) < -10000) { (ppm_in) = -10000; } \
-            *(report_p)++ = (uint8_t)((ppm_in) & 0x000000FF); \
-            *(report_p)++ = (uint8_t)(((ppm_in) & 0x00007F00) >> 8U); \
+            else { /* MISRA */ } \
+            *(report_p)++ = (uint8_t)((uint32_t)(ppm_in) & 0x000000FFU); \
+            *(report_p)++ = (uint8_t)(((uint32_t)(ppm_in) & 0x00007F00U) >> 8U); \
         } \
         else \
         { \
@@ -133,7 +134,7 @@
     } while (0)
 
 /* Convert timestamps (32Mhz ticks) to ns = ts * 31.25 */
-#define HADM_RTT_TS_TO_NS(ts) (((ts) * 125) >> 2U)
+#define HADM_RTT_TS_TO_NS(ts) (((ts) * 125U) >> 2U)
 /* Convert timestamps (32Mhz ticks) to us = ts / 32 */
 #define HADM_RTT_TS_TO_US(ts) ((ts) >> 5U)
 
@@ -144,8 +145,8 @@
     { \
         if ((valid)) \
         { \
-            *(report_p)++ = (uint8_t)((ts_diff) & 0x00FF); \
-            *(report_p)++ = (uint8_t)(((ts_diff) & 0xFF00) >> 8U); \
+            *(report_p)++ = (uint8_t)((uint32_t)(ts_diff) & 0x000000FFU); \
+            *(report_p)++ = (uint8_t)(((uint32_t)(ts_diff) & 0x0000FF00U) >> 8U); \
         } \
         else \
         { \
@@ -160,15 +161,15 @@
  * Note: HW output is :{rx_dft_iq_out_q[10:0], rx_if_mixer_idx[9:5], rx_dft_iq_out_i[10:0], rx_if_mixer_idx[4:0]}
  */
 
-#define HADM_DECODE_HW_RTP_PCT(iq_in) (uint32_t)(((iq_in) & 0xfff0U) >> 4U) | (((iq_in) & 0xfff00000U) >> 8U)
+#define HADM_DECODE_HW_RTP_PCT(iq_in) (((iq_in) & 0x0000fff0U) >> 4U) | (((iq_in) & 0xfff00000U) >> 8U)
 
 /*! report_p SHOULD NOT be a composite expression */
 #define HADM_ENCODE_HCI_RTP_PCT(iq_hci, report_p) \
     do \
     {\
-        *(report_p)++ = (uint8_t)((iq_hci) & 0x0000FF); \
-        *(report_p)++ = (uint8_t)(((iq_hci) & 0x00FF00) >> 8U); \
-        *(report_p)++ = (uint8_t)(((iq_hci) & 0xFF0000) >> 16U); \
+        *(report_p)++ = (uint8_t)((iq_hci) & 0x000000FFU); \
+        *(report_p)++ = (uint8_t)(((iq_hci) & 0x0000FF00U) >> 8U); \
+        *(report_p)++ = (uint8_t)(((iq_hci) & 0x00FF0000U) >> 16U); \
     } while (0)
 
 /*! Encode Tone Quality Indicator. report_p SHOULD NOT be a composite expression */
@@ -209,14 +210,14 @@ uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo);
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_config_p, hadm_meas_t *hadm_meas_p, uint32_t sample_rate);
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur);
-void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device);
+void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p);
-void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device);
+void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping);
 uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 
-void lcl_hadm_utils_calc_phase_rotation_offset(int32 *phaseRotationOffset);
+void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phaseRotation);
 void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_id);
 void lcl_hadm_init_phase_offset(void);
 void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq);

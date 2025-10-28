@@ -45,7 +45,7 @@ static const uint8_t hadm_ant_perm_to_idx[2][HADM_MAX_NB_ANTENNA_PATHS] =
 };
 
 /*! Antenna permutation index: N_AP=4*/
-const uint8_t hadm_ant_perm_to_ap[24][HADM_MAX_NB_ANTENNA_PATHS] = 
+static const uint8_t hadm_ant_perm_to_ap[24][HADM_MAX_NB_ANTENNA_PATHS] =
 {
     {0U, 1U, 2U, 3U}, // AP1, AP2, AP3, AP4
     {1U, 0U, 2U, 3U}, // AP2, AP1, AP3, AP4
@@ -85,11 +85,11 @@ static int32_t pct_cos_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
 void lcl_hadm_utils_init_buffers(void)
 {
     /* Initialise HAL config & results buffer */
-    for (int i=0; i < (int)HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         configBuffer[i].configBufferUsed = 0;
     }
-    for (int i=0; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
         resultsDataBuffer[i].resultBufferUsed = 0;
         resultsDataBuffer[i].resultBuffer = &gpHadmHalResultBuffer[(uint32_t)i*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
@@ -103,7 +103,7 @@ BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer(void)
 {
     BLE_HADM_SubeventConfig_t *config_p = NULL;
     
-    for (int i=0; i < (int)HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         if (configBuffer[i].configBufferUsed == 0U)
         {
@@ -120,7 +120,7 @@ BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer(void)
 /* Free HAL config buffer(s) belonging to connIdx */
 void lcl_hadm_utils_free_config_buffer(uint8 connIdx)
 {
-    for (int i=0; i < (int)HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
         if ((configBuffer[i].configBufferUsed == 1U) && (configBuffer[i].connIdx == connIdx))
         {
@@ -134,7 +134,7 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 {
     BLE_HADM_SubeventResultsData_t *result_p = NULL;
     
-    for (int i=0; i < (int)HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
         if (resultsDataBuffer[i].resultBufferUsed == 0U)
         {
@@ -159,7 +159,7 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 /* Free HAL config buffer(s) belonging to connIdx */
 void lcl_hadm_utils_free_result_buffer(uint8 connIdx)
 {
-    for (int i=0; i < (int)HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
+    for (uint32_t i=0U; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {
       if ((resultsDataBuffer[i].resultBufferUsed == 1U) && (resultsDataBuffer[i].connIdx == connIdx))
         {
@@ -199,9 +199,12 @@ uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal)
  *      0.008  => 131*2^14
  * Return: half ns unit
  */
-#define HADM_RTT_SCALE_FACTOR (1U<<14)
-#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) (((26 * (_TEMP) + 131) * (_TEMP))/HADM_RTT_SCALE_FACTOR - 1)
-#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) (((26 * (_TEMP) + 131) * (_TEMP))/HADM_RTT_SCALE_FACTOR - 1)
+#define HADM_RTT_SCALE_FACTOR      (0x4000)     /* (1<<14) */
+#define HADM_RTT_SCALE_FACTOR_HALF (HADM_RTT_SCALE_FACTOR / 2)
+#define HADM_RTT_SCALE_FACTOR_4    (0x10)       /* (1<<(5-1)) */
+#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) ((((26 * (_TEMP) + 131) * (_TEMP)) / HADM_RTT_SCALE_FACTOR) - 1)
+#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) ((((26 * (_TEMP) + 131) * (_TEMP)) / HADM_RTT_SCALE_FACTOR) - 1)
+
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device_p)
 {
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_1MBPS] = HADM_CALC_RTT_TEMP_DELAY_1MBPS(temperature);
@@ -215,19 +218,19 @@ void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p)
 
     /* 1Mbps*/
     /* RCCal delay in hns = -0.774*(rccal-17) ns * 2 (0.774 in fixed point s14 = 12681) */
-    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-12681)) / (HADM_RTT_SCALE_FACTOR>>1);
+    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-12681)) / HADM_RTT_SCALE_FACTOR_HALF;
 
     /* CBPF attenuation delay in ns = 14.86(a-6.5). Since a is stored *100 => in hns = 2*14.86(a-6.5)/100. (14.86 in fixed point s5 = 475) */
     hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_1MBPS] = static_delay_hns +
-     (((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] - HADM_CBPF_ATTEN_CENTER_1MBPS) * 475) / (100*(1<<(5-1)));
+       ((((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] - HADM_CBPF_ATTEN_CENTER_1MBPS) * 475) / (100*HADM_RTT_SCALE_FACTOR_4));
 
     /* 2Mbps*/
     /* RCCal delay in hns = -0.339*(rccal-17) ns * 2 (0.339 in fixed point s14 = 5554) */
-    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-5554)) / (HADM_RTT_SCALE_FACTOR>>1);
+    static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-5554)) / HADM_RTT_SCALE_FACTOR_HALF;
 
      /* CBPF attenuation delay in ns = 16.015(a-9). Since a is stored *100 => in hns = 2*16.015(a-9)/100. (16.015 in fixed point s5 = 512) */
     hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS] = static_delay_hns +
-     (((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] - HADM_CBPF_ATTEN_CENTER_2MBPS) * 512) / (100*(1<<(5-1)));
+       ((((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] - HADM_CBPF_ATTEN_CENTER_2MBPS) * 512) / (100*HADM_RTT_SCALE_FACTOR_4));
 }
 
 /* Compute latency that has to be removed from ToA-ToD values (resp. substracted from ToD-ToA) :
@@ -238,7 +241,7 @@ void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p)
 void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device_p)
 {
     const BLE_HADM_SubeventConfig_t *hadm_config_p = hadm_meas_p->config_p;
-    int32_t ts_nominal_delay;
+    uint32_t ts_nominal_delay;
     int32_t ts_hw_delay;
 
     assert(hadm_config_p->rttPhy < HADM_RTT_PHY_MAX);
@@ -248,28 +251,29 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     if (hadm_meas_p->config_p->rttMode == HADM_STEP_MODE3)
     {
         /* T_SY_CENTER_DELTA = TSY + TRD + 2 x TGD + 2 x (TSW + TPM ) x NAP + (TSW + TPM ) + TIP2 if *no* physical transmission is present in the reflector to initiator transmission extension slot. */
-        ts_nominal_delay = (HADM_T_SY(hadm_config_p->rttPhy) + HADM_T_RD + (2U * HADM_T_GD) + 2U * (((uint8_t)hadm_config_p->T_PM_Time + (uint8_t)hadm_config_p->T_SW_Time) * hadm_meas_p->n_ap) 
-                         + ((uint8_t)hadm_config_p->T_PM_Time + (uint8_t)hadm_config_p->T_SW_Time) + (uint8_t)hadm_config_p->T_IP2_Time);
+        ts_nominal_delay = (uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + HADM_T_RD + (2U * HADM_T_GD)
+                           + 2U * (((uint32_t)hadm_config_p->T_PM_Time + (uint32_t)hadm_config_p->T_SW_Time) * hadm_meas_p->n_ap)
+                           + ((uint32_t)hadm_config_p->T_PM_Time + (uint32_t)hadm_config_p->T_SW_Time) + (uint32_t)hadm_config_p->T_IP2_Time;
         
-        hadm_meas_p->ts_extra_delay_hns = ((uint32_t)hadm_meas_p->config_p->T_PM_Time + hadm_meas_p->config_p->T_SW_Time) * 2000U;
+        hadm_meas_p->ts_extra_delay_hns = ((uint32_t)hadm_meas_p->config_p->T_PM_Time + (uint32_t)hadm_meas_p->config_p->T_SW_Time) * 2000U;
     }
     else
     {
         /* T_SY_CENTER_DELTA = TSY + TRD + TIP1 */
-        ts_nominal_delay = (int32_t)((uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + HADM_T_RD + hadm_config_p->T_IP1_Time);
+        ts_nominal_delay = (uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + HADM_T_RD + hadm_config_p->T_IP1_Time;
         hadm_meas_p->ts_extra_delay_hns = 0;
     }
     /* Take payload into account */
-    ts_nominal_delay += (int32_t)((rtt_type_2_payload_size[hadm_config_p->rttTypes] * 32U) >> ((uint8_t)hadm_config_p->rttPhy));
+    ts_nominal_delay += (((uint32_t)rtt_type_2_payload_size[hadm_config_p->rttTypes] * 32U) >> ((uint8_t)hadm_config_p->rttPhy));
     
     /* Convert us to half ns */
-    ts_nominal_delay *= 2000;
+    ts_nominal_delay *= 2000U;
 
     /* Coarse HW contribution:
      * TX: elapsed time between tx_dig_en (TPM trigger on TX) and 1st bit over the air
      * RX: elapsed time between last bit of AA and aa_match_to_ll (TPM trigger on RX) + duration of preamble and AA
      */
-    ts_hw_delay = (int32_t)(HADM_TX_LATENCY_NS + HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_config_p->rttPhy) * 1000U);
+    ts_hw_delay = (int32_t)(uint32_t)(HADM_TX_LATENCY_NS + HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_config_p->rttPhy) * 1000U);
     /* Convert to half ns */
     ts_hw_delay *= 2;
 
@@ -300,14 +304,14 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
         hadm_meas_p->ts_hw_delay_hns = (uint32_t)ts_hw_delay;
     }
 
-    hadm_meas_p->ts_nominal_delay_hns = (uint32_t)ts_nominal_delay;
+    hadm_meas_p->ts_nominal_delay_hns = ts_nominal_delay;
     assert(hadm_meas_p->ts_nominal_delay_hns + hadm_meas_p->ts_hw_delay_hns > 0);
 }
 
 void lcl_hadm_enable_lcl_interrupts(void)
 {
     NVIC_ClearPendingIRQ(RSM_INT_IRQn);
-    EnableIRQ(RSM_INT_IRQn);
+    (void)EnableIRQ(RSM_INT_IRQn);
     NVIC_SetPriority(RSM_INT_IRQn, 1);
 }
 
@@ -438,19 +442,19 @@ void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_c
     nb_samples_per_pm = HADM_NUM_IQ_PER_US((uint32_t)hadm_meas_p->iq_capture_win, (uint32_t)hadm_config_p->rttPhy, hadm_meas_p->iq_avg_win);
     if (hadm_config_p->role == HADM_ROLE_INITIATOR)
     {
-        hadm_meas_p->iq_buff_size_mode0 = nb_samples_per_pm * hadm_config_p->mode0Nb;
+        hadm_meas_p->iq_buff_size_mode0 = (uint16_t)(nb_samples_per_pm * hadm_config_p->mode0Nb);
     }
     else
     {
        hadm_meas_p->iq_buff_size_mode0 = 0;
     }
-    hadm_meas_p->iq_buff_size = (uint16_t)(nb_samples_per_pm * (hadm_meas_p->n_ap + 1U) * (hadm_config_p->stepsNb - hadm_config_p->mode0Nb));
+    hadm_meas_p->iq_buff_size = (uint16_t)(nb_samples_per_pm * ((uint32_t)hadm_meas_p->n_ap + 1U) * (hadm_config_p->stepsNb - hadm_config_p->mode0Nb));
 }
 
 /* Compute HADM step duration in us for all modes */
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur)
 {
-    mode_dur[0U] = (uint16_t)(hadm_config_p->T_FCS_Time + 2U*HADM_T_SY(hadm_config_p->rttPhy) + 2U*HADM_T_RD + hadm_config_p->T_IP1_Time + HADM_T_FM + HADM_T_GD); /* T_FCS + 2*T_SY + 2*T_RD + T_IP1 + T_GD + T_FM */
+    mode_dur[0U] = (uint16_t)((uint32_t)hadm_config_p->T_FCS_Time + 2U*HADM_T_SY(hadm_config_p->rttPhy) + 2U*HADM_T_RD + (uint32_t)hadm_config_p->T_IP1_Time + HADM_T_FM + HADM_T_GD); /* T_FCS + 2*T_SY + 2*T_RD + T_IP1 + T_GD + T_FM */
     /* not used */
     mode_dur[1U] = 0;
     mode_dur[2U] = 0;
@@ -548,6 +552,7 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
     i = i | (i & 0x800 ? 0xfffff000 : 0);
     q = q | (q & 0x800 ? 0xfffff000 : 0);
 
+
     i_out = ((i * pct_cos_phase_offset[ant_id][ch]) - (q * pct_sin_phase_offset[ant_id][ch])) >> PCT_FIXED_POINT_UNIT; /* phase offset in fixed point 18.14 */
     q_out = ((q * pct_cos_phase_offset[ant_id][ch]) + (i * pct_sin_phase_offset[ant_id][ch])) >> PCT_FIXED_POINT_UNIT; /* phase offset in fixed point 18.14 */
 
@@ -560,10 +565,9 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
  */
 void lcl_hadm_init_phase_offset(void)
 {
-    uint8_t ant;
-    for (ant = 0U; ant < HADM_MAX_NB_ANTENNAS; ant++)
+    for (uint32_t ant = 0U; ant < HADM_MAX_NB_ANTENNAS; ant++)
     {
-        for (uint8_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
+        for (uint32_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
             pct_cos_phase_offset[ant][ch] = (1 << PCT_FIXED_POINT_UNIT);
             pct_sin_phase_offset[ant][ch] = 0;
         }
@@ -587,9 +591,9 @@ static int32_t lcl_utils_sqrt_fixed_point(int32_t x)
     int32_t guess, temp;
     uint8_t msb_pos;
     /* x must be positive */
-    if (x <= 0) return 0; 
+    if (x <= 0) { return 0; }
     /* sqrt(1) = 1 */
-    if (x == (1 << PCT_FIXED_POINT_UNIT)) return (1 << PCT_FIXED_POINT_UNIT);
+    if (x == (1 << PCT_FIXED_POINT_UNIT)) { return (1 << PCT_FIXED_POINT_UNIT); }
     
     /* Find the position of the most significant bit */
     temp = x;
@@ -602,7 +606,7 @@ static int32_t lcl_utils_sqrt_fixed_point(int32_t x)
     
     /* Initial guess based on bit position */
     guess = 1 << (msb_pos >> 1U);
-    if (msb_pos & 1U)
+    if ((msb_pos & 1U) != 0U)
     {
       /* Adjust for odd bit positions */
       guess += guess >> 1; 
@@ -633,7 +637,7 @@ static int32_t lcl_utils_sqrt_fixed_point(int32_t x)
       {
         diff = -diff;
       }
-      if (diff < 2) break; /* Converged */
+      if (diff < 2) { break; } /* Converged */
     }
     return guess;
 }
@@ -644,8 +648,8 @@ static int32_t lcl_utils_normalize_angle(int32_t angle, int32_t *cos_sign, int32
     *sin_sign = 1;
 
     /* Normalize angle to [0, 2*PI] */
-    while (angle >= TWO_PI_FIXED_POINT) angle -= TWO_PI_FIXED_POINT;
-    while (angle < 0) angle += TWO_PI_FIXED_POINT;
+    while (angle >= TWO_PI_FIXED_POINT) { angle -= TWO_PI_FIXED_POINT; }
+    while (angle < 0) { angle += TWO_PI_FIXED_POINT; }
     
     /* Use symmetry to reduce to [0, PI/2] */
     if (angle > PI_FIXED_POINT) {
@@ -686,17 +690,17 @@ static int32_t lcl_utils_compute_cosine_fixed_point(int32_t angle)
     return ((1<<PCT_FIXED_POINT_UNIT) - ((x2 * FACT_2_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) + ((x4 * FACT_4_FIXED_POINT) >> PCT_FIXED_POINT_UNIT) - ((x6 * FACT_6_FIXED_POINT) >> PCT_FIXED_POINT_UNIT));
 }
 
-void lcl_hadm_utils_calc_phase_rotation_offset(int32 *phaseRotationOffset)
+void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phaseRotation)
 { 
-    int32_t angle_fp, norm_angle_fp; 
+    int32_t angle_fp, norm_angle_fp;
     int32_t sine, cos_sign, sin_sign;
-    int8_t ant_id, chn; 
-    for(ant_id=0; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
+
+    for(uint32_t ant_id=0U; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
     {
-        angle_fp = phaseRotationOffset[ant_id];
+        angle_fp = phaseRotation->offset_table[ant_id];
         if(angle_fp != 0)
         {
-            for(chn=0; chn<HADM_MAX_CHANNELS; chn++)
+            for(uint32_t chn=0U; chn<HADM_MAX_CHANNELS; chn++)
             {
                 norm_angle_fp = lcl_utils_normalize_angle((angle_fp * chn), &cos_sign, &sin_sign);
                 if(norm_angle_fp < PI_4_FIXED_POINT)
@@ -720,17 +724,17 @@ void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t st
     if (is_single_antenna_config(hadm_meas_p))
     {
         /* A single antenna configuration requires no permutation, only antenna_id 0 is used */
-        (void)memset(ant_id_seq, 0U, HADM_MAX_NB_ANTENNAS);
+        (void)memset(ant_id_seq, 0, HADM_MAX_NB_ANTENNAS);
     }
     else
     {
         /* Perform antenna permutation index to antenna index mapping */
-        uint8_t role = hadm_meas_p->config_p->role;
-        uint8_t perm_idx = hadm_meas_p->config_p->chModePmAntMap[step_id].ant_perm;
+        uint8_t role = (uint8_t)hadm_meas_p->config_p->role;
+        uint8_t perm_idx = (uint8_t)hadm_meas_p->config_p->chModePmAntMap[step_id].ant_perm;
 
         if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7) 
         {
-            for (uint8_t i = 0U; i < HADM_MAX_NB_ANTENNAS; i++) 
+            for (uint32_t i = 0U; i < HADM_MAX_NB_ANTENNAS; i++)
             {
                 /* Map antenna paths for 2:2 configuration */
                 ant_id_seq[i] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]];
