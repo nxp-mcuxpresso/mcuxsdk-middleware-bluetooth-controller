@@ -356,12 +356,12 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.nbu_xp_hosted_lib)
         DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
     )
 	mcux_add_library(
-        LIBS ../marvell_ll/src/build/kw4x/lib/kw47_nbu_xp_hosted_libbtu2_5x.a
+        LIBS lib/kw47_nbu_xp_hosted_libbtu2_5x.a
         TOOLCHAINS kds armgcc mcux iar
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
     mcux_add_library(
-        LIBS ../marvell_ll/src/build/kw4x/lib/kw47_nbu_xp_hosted_libcommon.a
+        LIBS lib/kw47_nbu_xp_hosted_libcommon.a
         TOOLCHAINS kds armgcc mcux iar
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
