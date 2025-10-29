@@ -17,6 +17,8 @@
 #include "lcl_hadm_utils.h"
 #include "lcl_xcvr_hal.h"
 #include "controller_api_ll.h"
+#include "nxp_xcvr_gfsk_bt_2p0_h_0p5_config.h"
+#include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
 
 #if (NXP_RADIO_GEN < 470)
 #error LCL XCVR HAL is not compatible with radio version
@@ -48,6 +50,13 @@ typedef struct soc_xcvr_settings_tag
 
 /* === Globals ============================================================= */
 static lcl_xcvr_hal_xcvr_settings_t xcvr_settings;
+
+#ifdef HADM_USE_BT2_BACKUP
+/* Use local backup storage (and extra saving time).
+ * It is not needed as we assume we always switch back to default BT0.5 configuration after a subevent.
+ */
+static bt2_reg_backup_t bt2_modulation_backup;
+#endif
 
 /* === Externals =========================================================== */
 
@@ -309,6 +318,31 @@ void lcl_hal_xcvr_hadm_backup(void)
     (void)XCVR_LCL_GetTsmTimings(&xcvr_settings.tsm_regs_backup);
 }
 
+void lcl_enable_BT2p0_modulation(void)
+{
+    xcvrLclStatus_t xcvr_status = gXcvrLclStatusSuccess;
+#ifdef HADM_USE_BT2_BACKUP
+    xcvr_status = XCVR_LCL_BlePhyBT2RegBackUp(&bt2_modulation_backup);
+    assert(xcvr_status == gXcvrLclStatusSuccess);
+    (void)xcvr_status;
+#endif
+    xcvr_status = XCVR_LCL_BlePhyBT2Config(&xcvr_gfsk_bt_2p0_h_0p5_1mbps_full_config);
+    assert(xcvr_status == gXcvrLclStatusSuccess);
+    (void)xcvr_status;
+}
+
+void lcl_restore_prior_modulation(void)
+{
+#ifdef HADM_USE_BT2_BACKUP
+    XCVR_LCL_BlePhyBT2RegRestore(&bt2_modulation_backup);
+#else
+    xcvrLclStatus_t xcvr_status = gXcvrLclStatusSuccess;
+    xcvr_status = XCVR_LCL_BlePhyBT2Config(&xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config);
+    assert(xcvr_status == gXcvrLclStatusSuccess);
+    (void)xcvr_status;
+#endif
+}
+
 void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config)
 {  
     NbuPwrPeakReductionActivityStart();
@@ -338,7 +372,11 @@ void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
     /* Restore all TSM/XCVR modified registers */
     (void)XCVR_LCL_RsmRegRestore(&xcvr_settings.xcvr_regs_backup);
     (void)XCVR_LCL_ReprogramTsmTimings(&xcvr_settings.tsm_regs_backup);
-        
+    /* Restore changed registers due to BT=2 PHY */
+    if (hadm_config->rttPhy == HADM_RTT_PHY_2MBPS_2BT)
+    {
+        lcl_restore_prior_modulation();
+    }
     XCVR_RX_DIG->CTRL1 = xcvr_settings.xcvr_rx_dig_ctrl_1;
     XCVR_RX_DIG->DCOC_CTRL0 = xcvr_settings.xcvr_rx_dig_dcoc_ctrl_0;
     XCVR_RX_DIG->DCOC_CTRL2 = xcvr_settings.xcvr_rx_dig_dcoc_ctrl_2;

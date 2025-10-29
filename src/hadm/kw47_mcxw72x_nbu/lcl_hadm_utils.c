@@ -211,6 +211,8 @@ void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_
 {
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_1MBPS] = HADM_CALC_RTT_TEMP_DELAY_1MBPS(temperature);
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS] = HADM_CALC_RTT_TEMP_DELAY_2MBPS(temperature);
+    // TODO: JVM - verify that 2MBPS 2BT modulation has the same delay as 2MBPS
+    hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS_2BT] = hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS];
 }
 
 /* Compute device-specific constant contributions to RTT delay */

@@ -204,6 +204,7 @@ typedef struct
     BLE_HADM_SubeventResultsData_t *result2_p;  /*!< pointer on 2nd HADM results for sniffer */
     hadm_pkt_ram_desc_t    pkt_ram;             /*!< PKT RAM descriptoprs (circular buffers) */
     hadm_meas_state_t      state;               /*!< HAL meas state */
+    uint16_t               rsm_trigger_delay;   /*!< Budget to setup RSM config */
     bool                   mode0_complete;      /*!< subevent has completed mode0 phase with success */
     uint8_t                debug_flags;         /*!< debug flags, see @HADM debug flags */
     uint8_t                iq_avg_win;          /*!< averging window size (power of 2): valid values: 0 and  [2...8] */

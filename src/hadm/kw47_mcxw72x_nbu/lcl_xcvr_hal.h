@@ -375,6 +375,8 @@ int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx);
 void lcl_hal_xcvr_setup_rssi_continuous(bool_t continuous);
 uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx);
 void lcl_hal_xcvr_hadm_backup(void);
+void lcl_enable_BT2p0_modulation(void);
+void lcl_restore_prior_modulation(void);
 void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config);
 void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16 m_hadmbuffer_size, uint32 m_hadmbuffer_start);

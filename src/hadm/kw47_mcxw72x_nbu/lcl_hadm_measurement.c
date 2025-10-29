@@ -54,15 +54,19 @@
 #define HADM_HAL_RSM_TRIGGER_DELAY_MARGIN (10U)
 
 /* 
- *  Does not need to be exact, should cover RSM SW initialization, includes:
+ * Time spent in the critical path (impacting radio) to set CS context (PLL, RSM, ...).
+ * Does not need to be exact, should cover RSM SW initialization, includes:
  * - time from ISR start to 1st cycle counter capture (10us)
  * - RSM init section (protected by HADM_HAL_RSM_INIT_BUDGET) = between 2 cycle counter captures
  * - Margin to absorb slight ISR drift
+ * Characterisation should be done on initiator as a largest value is needed.
  */
-#define HADM_HAL_RSM_INIT_BUDGET (125U) /* largest value needed on initiator */
-#define HADM_HAL_RSM_TRIGGER_DELAY (10U + HADM_HAL_RSM_INIT_BUDGET + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
+/* For BLE/CS transitions */
+#define HADM_HAL_RSM_INIT_BUDGET (140U)
  /* Optimized version corresponds to CS/CS transition (no register restore/save for BLE config) */
-#define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
+#define HADM_HAL_RSM_INIT_BUDGET_OPTIM (30U)
+/* Additional preparation time for BT=2.0 */
+#define HADM_HAL_RSM_INIT_BUDGET_DELTA_BT2 (30U)
 
 /* 2us between cdt_expiry and RSM FSM start */
 #define HADM_HAL_RSM_TRIGGER_OFFSET (2U)
@@ -101,7 +105,7 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .RTT_Random_Sequence_N      = 10, /* Number of RTT steps to satisfy the precision requirement. */
     .NADM_Sounding_Capability   = 0, /* NADM not supported */
     .NADM_Random_Sequence_Capability = 1, /* NADM supported */
-    .PHYSupported               = 1<<1, /* 2Mbps PHY supported (bit #1) */
+    .PHYSupported               = 1<<1 | 1<<2 , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
     .T_SW_TimeSupported         = 2, /* 2us: OJE TODO confirm OK for ramp-up/down */
     .FAErequired                = 0, /* no FAE */
     .InlinePhaseReturn          = 0U, /* to enable by _LE_HADM_NXP_Config */
@@ -110,7 +114,7 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .T_IP2_TimesSupported       = 0x0048, /* T_IP2=80 or 40us */
     .T_FCS_TimesSupported       = 0x0050, /* T_FCS=80 or 50us */
     .T_PM_TimesSupported        = 0x0002, /* T_PM=20us */
-	.TX_SNR                     = 0x0F    /* 18dB, 21 dB, 24 dB and 27dB supported */
+    .TX_SNR                     = 0x0F    /* 18dB, 21 dB, 24 dB and 27dB supported */
 };
 
 /* Contains data associated to this device */
@@ -245,6 +249,8 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_device.is_rsm_cal_done = false;
 
 #ifndef SIMULATOR
+    /* Calibration sequence for 1Mbps, 2Mbps BT0.5 and BT2.0 */
+
     hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_1MBPS);
     if (hal_status == HADM_HAL_SUCCESS)
     {
@@ -257,6 +263,24 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     if (hal_status == HADM_HAL_SUCCESS)
     {
         hal_status = lcl_hadm_calibrate_pll(HADM_RTT_PHY_2MBPS);
+    }
+    /* Backup modulation related registers and program BT=2 modulation */
+    if (hal_status == HADM_HAL_SUCCESS)
+    {
+        lcl_enable_BT2p0_modulation();
+    }
+    if (hal_status == HADM_HAL_SUCCESS)
+    {
+        hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS_2BT);
+    }
+    if (hal_status == HADM_HAL_SUCCESS)
+    {
+        hal_status = lcl_hadm_calibrate_pll(HADM_RTT_PHY_2MBPS_2BT);
+    }
+    /* Restore prior modulation programming */
+    if (hal_status == HADM_HAL_SUCCESS)
+    {
+        lcl_restore_prior_modulation();
     }
 
     /* Read CBPF filter data from IFR - needed to compute internal RTT delay */
@@ -283,7 +307,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     }
 
     if (hal_status == HADM_HAL_SUCCESS)
-#endif
+#endif // SIMULATOR
     {
         hadm_device.is_rsm_cal_done = true;
     }
@@ -351,11 +375,12 @@ void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate)
 {   
     xcvrLclStatus_t status;
+    XCVR_RSM_SQTE_RATE_T xcvr_rate = (XCVR_RSM_SQTE_RATE_T)rate;
     
     DEBUG_PIN0_SET
 
     /* trigger calibration */
-    XCVR_LCL_CalibrateDcocStart((XCVR_RSM_SQTE_RATE_T)rate);
+    XCVR_LCL_CalibrateDcocStart(xcvr_rate);
     /* wait for results */
     status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rate]);
 
@@ -419,14 +444,44 @@ const BLE_HADM_HalProperties_t *lcl_hadm_get_properties(void)
     return &hadm_hal_properties;
 }
 
+/* Because the time needed to program CS in the XCVR (RSM, TSM etc ...) is significant, we have to 
+ * estimate its duration as precisely as possible in order to adjust the time lost between scheduler trigger
+ * and actual over the air activity. Adjustement can be determined from the configuration.
+ * Main contributors identified today:
+ * - BT2.0 programming
+ * - whether or not a BLE/CS transition will occur
+ */
+static uint16_t lcl_hadm_compute_rsm_trigger_delay(const BLE_HADM_SubeventConfig_t *hadm_config_p)
+{
+    uint16_t rsm_trigger_delay;
+
+    if ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p)) ||
+        (hadm_config_p->subeventIdx == 0U))
+    {
+        rsm_trigger_delay = HADM_HAL_RSM_INIT_BUDGET + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN;
+    }
+    else
+    {
+        rsm_trigger_delay = HADM_HAL_RSM_INIT_BUDGET_OPTIM + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN;
+    }
+    if (hadm_config_p->rttPhy == HADM_RTT_PHY_2MBPS_2BT)
+    {
+        rsm_trigger_delay += HADM_HAL_RSM_INIT_BUDGET_DELTA_BT2;
+    }
+
+    return rsm_trigger_delay;
+}
+
 void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_config_p,
                                       uint16_t *prepare_time,
                                       uint16_t *warmup_time,
                                       uint16_t *warmdown_time)
 {
+    uint16_t rsm_trigger_delay = lcl_hadm_compute_rsm_trigger_delay(hadm_config_p);
+
     /* prepare_time */
     *prepare_time = HADM_HAL_PREPARE_US;
- 
+
     /* warmup_time */
     if (hadm_config_p->role == HADM_ROLE_INITIATOR)
     {
@@ -436,15 +491,7 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
     {
         *warmup_time = hadm_hal_properties.rxWarmupUs;
     }
-    if ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p)) ||
-        (hadm_config_p->subeventIdx == 0U))
-    {
-        *warmup_time += HADM_HAL_RSM_TRIGGER_DELAY;
-    }
-    else
-    {
-        *warmup_time += HADM_HAL_RSM_TRIGGER_DELAY_OPTIM;
-    }
+    *warmup_time += rsm_trigger_delay;
 
     /* warmdown_time */
     *warmdown_time = 0;
@@ -548,7 +595,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         hadm_meas_p->iq_avg_win = 0U;
     }
 #ifndef RSM_DBG_IQ
-    else if (hadm_config->rttPhy == HADM_RTT_PHY_2MBPS)
+    else if (hadm_config->rttPhy != HADM_RTT_PHY_1MBPS)
     {
         /* Double IQ averaging window in order to get the same number of final (averaged) samples whatever the data rate */
         hadm_meas_p->iq_avg_win ++;
@@ -561,7 +608,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     /* Compute IQ buffer size */
     if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_IQ_DMA) != 0U)
     {
-        lcl_hadm_utils_compute_iq_buff_size(hadm_config, hadm_meas_p, (hadm_config->rttPhy == HADM_RTT_PHY_2MBPS) ? (RX_SAMPLING_RATE*SAMPLING_RATE_FACTOR_2MBPS):RX_SAMPLING_RATE);
+      lcl_hadm_utils_compute_iq_buff_size(hadm_config, hadm_meas_p, (hadm_config->rttPhy == HADM_RTT_PHY_1MBPS) ? RX_SAMPLING_RATE:(RX_SAMPLING_RATE*SAMPLING_RATE_FACTOR_2MBPS));
     }
     /* Compute step mode durations */
     lcl_hadm_utils_compute_step_duration(hadm_config, hadm_meas_p->n_ap, hadm_meas_p->step_duration);
@@ -614,19 +661,19 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     }
     hadm_meas_p->data_in_flight_w_idx = 0;
     hadm_meas_p->data_in_flight_r_idx = 0;
-
+    hadm_meas_p->rsm_trigger_delay = lcl_hadm_compute_rsm_trigger_delay(hadm_meas_p->config_p);
 
     /* Prepare RSM configuration in RAM */
-    DEBUG_PIN1_SET
-
+    DEBUG_PIN1_SET 
+    
     rsm_config_p->num_steps = hadm_meas_p->config_p->stepsNb;
     rsm_config_p->num_ant_path = hadm_meas_p->n_ap;
-    rsm_config_p->rate = (XCVR_RSM_SQTE_RATE_T)hadm_meas_p->config_p->rttPhy;
+    rsm_config_p->rate = (hadm_meas_p->config_p->rttPhy == HADM_RTT_PHY_1MBPS) ? XCVR_RSM_RATE_1MBPS:XCVR_RSM_RATE_2MBPS;
     rsm_config_p->rsm_dma_dly_fm_ext = (HADM_T_FM - hadm_meas_p->iq_capture_win) >> 1; /* center capture window inside T_FM */
     rsm_config_p->rsm_dma_dur_fm_ext = hadm_meas_p->iq_capture_win;
     rsm_config_p->averaging_win = (hadm_meas_p->iq_avg_win == 0U) ? XCVR_RSM_AVG_WIN_DISABLED : (XCVR_RSM_AVG_WIN_LEN_T)(hadm_meas_p->iq_avg_win - 1U);
     /* RSM trig_delay must cover start API execution time */
-    rsm_config_p->trig_delay = ((HADM_IS_RSM_OPTIM_INACTIVE(hadm_meas_p->config_p)) || (hadm_meas_p->config_p->subeventIdx == 0U)) ? HADM_HAL_RSM_TRIGGER_DELAY : HADM_HAL_RSM_TRIGGER_DELAY_OPTIM;
+    rsm_config_p->trig_delay = hadm_meas_p->rsm_trigger_delay;
     rsm_config_p->t_fc = (uint8_t)hadm_config->T_FCS_Time;
     rsm_config_p->t_ip1 = (uint8_t)hadm_config->T_IP1_Time;
     rsm_config_p->t_ip2 = (uint8_t)hadm_config->T_IP2_Time;
@@ -638,7 +685,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
     rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
-	rsm_config_p->tx_snr_setting = (hadm_config->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_config->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
+    rsm_config_p->tx_snr_setting = (hadm_config->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_config->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
     rsm_config_p->pa_ramp_time = hadm_device.paRampingTime;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
@@ -657,7 +704,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     
     /* Determine and program rx timeout (for reflector devices) = mode 0 duration in order to keep RX channel in sync with initiator */
     /* From HW spec: RSM timeout interval = mode0_timeout + T_FCS + T_RD + TX_DATA_FLUSH_DLY + 1 */
-    mode0_timeout_usec = (uint16_t)((uint32_t)hadm_meas_p->step_duration[0] - ((uint32_t)hadm_config->T_FCS_Time + T_RD + ((hadm_config->rttPhy == HADM_RTT_PHY_2MBPS) ? TX_DATA_FLUSH_DLY_2MBPS:TX_DATA_FLUSH_DLY_1MBPS) + 1U));
+    mode0_timeout_usec = (uint16_t)((uint32_t)hadm_meas_p->step_duration[0] - ((uint32_t)hadm_config->T_FCS_Time + T_RD + ((hadm_config->rttPhy == HADM_RTT_PHY_1MBPS) ? TX_DATA_FLUSH_DLY_1MBPS:TX_DATA_FLUSH_DLY_2MBPS) + 1U));
     assert(mode0_timeout_usec > HADM_T_SY(hadm_config->rttPhy) + HADM_MODE0_TIMEOUT_MARGIN_US);
     /* If window widening is larger than the mode0 RX window minus packet duration, do not activate rx timeout */
     if ((hadm_meas_p->config_p->mode == HADM_SUBEVT_MISSION_MODE) &&
@@ -671,9 +718,9 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         rsm_config_p->mode0_timeout_usec = 0; /* means no timeout */
     }
 	
-	#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
     rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED, /* Disables the phase compensation by default */
-	#endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
+#endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     
     status = XCVR_LCL_ValidateRsmSettings(rsm_config_p);
     if (gXcvrLclStatusSuccess != status)
@@ -830,6 +877,17 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 
         }
 
+        /* Setup BT=2 modulation if needed */
+        if (hadm_config_p->rttPhy == HADM_RTT_PHY_2MBPS_2BT)
+        {
+            DEBUG_PIN1_TGL
+            lcl_enable_BT2p0_modulation();
+            DEBUG_PIN1_TGL
+        }
+
+        assert(gXcvrLclStatusSuccess == status);
+        (void)status;
+
         LCL_HAL_ENABLE_TONE_OBS
 
         DEBUG_PIN1_PULSE
@@ -845,7 +903,7 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 #ifdef HADM_TRACK_RSM_INIT
         /* compute elapsed time since function entry - wrap is handled */
         elapsed_time = (uint32_t)((int32_t)DWT->CYCCNT - (int32_t)cyccnt_1)/hadm_device.sys_clock_freq;
-        assert(elapsed_time < HADM_HAL_RSM_INIT_BUDGET);
+        assert(elapsed_time < (hadm_meas_p->rsm_trigger_delay - HADM_HAL_RSM_TRIGGER_DELAY_MARGIN));
         (void)elapsed_time;
 #endif /* HADM_TRACK_RSM_INIT */
 
@@ -1508,10 +1566,10 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 if (!synch_done && vld)
                 {
                     /* Compute final value for syncDelayUs which represents time starting from RSM trigger */
-                    /* syncOffsetUs = HADM_HAL_RSM_TRIGGER_DELAY + TPM timestamp - pkt_header_duration - aa_match_delay */
+                    /* syncOffsetUs = RSM_TRIGGER_DELAY + TPM timestamp - pkt_header_duration - aa_match_delay */
                     hadm_meas_p->result_p->syncDelayUs = (uint16_t)HADM_RTT_TS_TO_US(tpm);
-                    assert((HADM_HAL_RSM_TRIGGER_DELAY + hadm_meas_p->result_p->syncDelayUs) > (HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_meas_p->config_p->rttPhy)));
-                    hadm_meas_p->result_p->syncDelayUs = hadm_meas_p->result_p->syncDelayUs + HADM_HAL_RSM_TRIGGER_DELAY - HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_meas_p->config_p->rttPhy);
+                    assert((hadm_meas_p->rsm_trigger_delay + hadm_meas_p->result_p->syncDelayUs) > (HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_meas_p->config_p->rttPhy)));
+                    hadm_meas_p->result_p->syncDelayUs = hadm_meas_p->result_p->syncDelayUs + hadm_meas_p->rsm_trigger_delay - HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_meas_p->config_p->rttPhy);
                     hadm_meas_p->result_p->syncDelayUs -= (step_mode0_no * hadm_meas_p->step_duration[0]); /* cope for missed mode0s */
                     synch_done = TRUE;
                 }
