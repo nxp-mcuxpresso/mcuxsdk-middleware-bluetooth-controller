@@ -90,9 +90,6 @@ typedef struct
 
 union info
 {
-#ifdef BLE_DEBUG_LL
-  DBG_STRUCT_EP   ep;
-#endif /*BLE_DEBUG_LL*/
   DBG_STRUCT_CUST cust;
   uint32 mem[NB_BUF_ENTRIES + 3];
 };
