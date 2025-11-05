@@ -59,6 +59,10 @@ if(DEFINED PLATFORM_COMPILE_OPTIONS)
     target_compile_options(ble_hadm_library PRIVATE ${PLATFORM_COMPILE_OPTIONS})
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(ble_hadm_library PRIVATE DEBUG)
+endif()
+
 # Set library properties
 set_target_properties(ble_hadm_library PROPERTIES
     OUTPUT_NAME "ble_hadm_${PLATFORM_TARGET}"
