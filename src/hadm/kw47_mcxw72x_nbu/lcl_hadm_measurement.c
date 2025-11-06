@@ -704,6 +704,7 @@ config_error:
 BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm_config_p)
 {
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
+    xcvrLclStatus_t status;
     hadm_meas_t *hadm_meas_p = lcl_hadm_get_meas_instance(hadm_config_p);
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_config_p->connIdx];
     xcvr_lcl_rsm_config_t *rsm_config_p;
