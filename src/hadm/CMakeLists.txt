@@ -46,6 +46,9 @@ target_include_directories(ble_hadm_library
         ${SDK_DIR}/components/osa/config
 )
 
+# Warnings as errors
+target_compile_options(ble_hadm_library PRIVATE --warnings_are_errors)
+
 # Apply platform-specific compiler definitions if defined
 if(DEFINED PLATFORM_DEFINES)
     target_compile_definitions(ble_hadm_library PRIVATE ${PLATFORM_DEFINES})

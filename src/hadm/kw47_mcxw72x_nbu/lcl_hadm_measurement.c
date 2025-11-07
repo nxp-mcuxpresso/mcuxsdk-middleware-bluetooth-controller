@@ -693,7 +693,8 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_config_p->connIdx];
     xcvr_lcl_rsm_config_t *rsm_config_p;
     uint32_t rsm_state;
-       
+
+    (void)status;
     DEBUG_PIN0_SET
     if (hadm_meas_p == NULL)
     {
