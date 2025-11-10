@@ -37,10 +37,9 @@ void BOARD_SystemCoreClockUpdate(void);
 uint32_t BOARD_GetSystemCoreClockFreq(void);
 
 /**
- * @brief Returns current system clock frequency
- * (FRO post divider clock select)
+ * @brief Returns current FRO post divider clock select
  *
- * @return uint32_t current system clock frequency in MHz
+ * @return uint32_t FRO post divider clock select
  */
 uint32_t BOARD_GetSystemCoreClockSel(void);
 
