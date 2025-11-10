@@ -13,6 +13,7 @@
 #include "controller_init.h"
 #include "controller_api_ll.h"
 #include "fwk_platform_dbg.h"
+#include "board.h"
 
 /*******************************************************************************
  * Types & defines
@@ -304,4 +305,14 @@ int Controller_DebugEventNotification(ll_dbgEventType_t event_type)
         (void)PLATFORM_Nbu2HostWarningIndication();
     }
     return 0;
+}
+
+uint32 Controller_GetSystemCoreClockSel(void)
+{
+    return BOARD_GetSystemCoreClockSel();
+}
+
+uint32 Controller_GetSystemCoreClockFreq(void)
+{
+    return BOARD_GetSystemCoreClockFreq();
 }
