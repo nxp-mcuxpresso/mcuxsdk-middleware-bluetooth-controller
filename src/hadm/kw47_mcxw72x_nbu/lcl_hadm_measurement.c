@@ -257,11 +257,11 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
             {
                 hadm_device.rccal_manual_override_needed = TRUE;
                 hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values.rf_rtt_tg_trim_rccal;
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = (int16)rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
             }
             if (rtt_trim_values.rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
             {
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = (int16)rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
             }
         }
         else
