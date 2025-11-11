@@ -113,7 +113,7 @@ static void NbuHci_SendPktToHost(unsigned long packetType, void *pPacket, unsign
 #if defined(gUseIpcTransport_d) && (gUseIpcTransport_d == 1)
 static void NbuHdi_SendChannelSwitchCmd(unsigned short channel);
 #endif
-#if defined(HDI_MODE) && (HDI_MODE == 1)
+#if defined(HDI_MODE) && (HDI_MODE == 1) && defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN <= 470)
 static void NBU_SetPhy(unsigned char rate);
 #endif
 static bool_t isHighZ = FALSE; /*For peak power reduction feature.*/
@@ -178,7 +178,7 @@ const nbuIntf_t nbuInterface = {
 #else
     .nbuDbgIoSet = NULL,
 #endif /* gDbg_Enabled_d */
-#if defined(HDI_MODE) && (HDI_MODE == 1)
+#if defined(HDI_MODE) && (HDI_MODE == 1) && defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN <= 470)
     .nbuPhySwitchIntf = NBU_SetPhy,
 #else
     .nbuPhySwitchIntf = NULL,
@@ -338,7 +338,7 @@ void handle_coverage_hci_command(hciPacketType_t type, void* packet)
 }
 #endif /*__COVERAGESCANNER__*/
 
-#if defined(HDI_MODE) && (HDI_MODE == 1)
+#if defined(HDI_MODE) && (HDI_MODE == 1) && defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN <= 470)
 /* Tie phy switch to PTD3 */
 #define PHY_SWITCH_IO (3u)
 static void NBU_InitPhySwitch(void)
@@ -709,7 +709,7 @@ void NBU_Init()
     Ipc_Init(s_IpcRpmsgHandle, &ipcRpmsgConfig, NULL);
 #endif
 
-#if defined(HDI_MODE) && (HDI_MODE == 1)
+#if defined(HDI_MODE) && (HDI_MODE == 1) && defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN <= 470)
     NBU_InitPhySwitch();
 #endif
 
