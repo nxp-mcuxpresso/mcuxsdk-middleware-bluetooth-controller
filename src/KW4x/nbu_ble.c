@@ -11,6 +11,7 @@
 #include "fwk_platform_ics.h"
 #include "fwk_platform_lowpower.h"
 #include "fwk_debug.h"
+#include "fwk_config.h"
 
 /* Keep it for backward compatibility for project that does not define this compile macro */
 #ifndef gUseSfcRf_d
