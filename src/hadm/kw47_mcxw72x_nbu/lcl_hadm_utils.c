@@ -476,9 +476,8 @@ static bool is_single_antenna_config(hadm_meas_t *hadm_meas_p)
   return single_ant;
 }
 
-void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p)
+void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping)
 {
-    bool ena_antsw_pa_ramping = false; /* OJE TODO, for now disable PA ramping */
     uint8_t default_antenna_idx = 0U; /* index of default antenna for 1:1 (A1) */
     xcvrLclStatus_t status;
 

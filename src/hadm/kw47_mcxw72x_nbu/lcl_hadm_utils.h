@@ -212,7 +212,7 @@ void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device);
 void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device);
-void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p);
+void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping);
 uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 

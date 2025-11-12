@@ -168,6 +168,36 @@ void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation)
     lcl_hadm_utils_calc_phase_rotation_offset(phaseRotation->offset_table);
 }
 
+uint32 BLE_HADM_SetPARamping(uint8 paRampingTime, uint8 paRampAntSwitch)
+{
+    uint32 status = 0;
+    switch (paRampingTime) {
+        case 0U:
+            hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_0_USEC;
+            break;
+        case 1U:
+            hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_1_USEC;
+            break;
+        case 2U:
+            hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_2_USEC;
+            break;
+        case 3U:
+            hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_3_USEC;
+            break;
+        case 4U:
+            hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_4_USEC;
+            break;
+        default:
+        status = 1U;
+        break;
+    }
+    if (status == 0U)
+    {
+        hadm_device.paRampingAntSwitchEnabled = (paRampAntSwitch == 1U);
+    }
+    return status;
+}
+
 BLE_HADM_STATUS_t BLE_HADM_SubeventCheckConfig(const BLE_HADM_SubeventConfig_t *config)
 {
     BLE_HADM_STATUS_t status;

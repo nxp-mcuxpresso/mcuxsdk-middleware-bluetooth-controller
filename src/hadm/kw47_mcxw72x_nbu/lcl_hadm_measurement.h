@@ -250,6 +250,8 @@ typedef struct
      /*! Store PLL calibration data for each HADM channel */
     hadm_pll_cal_data_t    cal_data[HADM_RTT_PHY_MAX][HADM_MAX_CHANNELS];
 #endif
+    xcvr_dc_cal_results_t dcoc_cal_results[HADM_RTT_PHY_MAX];
+
     /* Device characterisation data obtained from IFR */
     BLE_HADM_RttBiasParameters_t rtt_static_comp;
     /*! Store zero distance compensation information */
@@ -260,12 +262,16 @@ typedef struct
     /*! Constant device-specific RTT compensation delay (obtained from characterisation) */
     int32_t rtt_static_comp_hns[HADM_RTT_PHY_MAX];
     bool    rccal_manual_override_needed; /*!< Set to TRUE if RCCAL/CPBF IFR values are trimmed to freeze rccal */
-
-    uint16_t dma_debug_buff_size;
-    uint32_t dma_debug_buff_address;
-    xcvr_dc_cal_results_t dcoc_cal_results[HADM_RTT_PHY_MAX];
     /*! Phase rotation compensation */
     BLE_HADM_PCTPhaseRotation_t phase_rotation;
+    /* PA Ramping settings */
+    XCVR_RSM_PA_RAMP_TIME_T paRampingTime;
+    bool paRampingAntSwitchEnabled;
+
+    /* Debug buffer */
+    uint16_t dma_debug_buff_size;
+    uint32_t dma_debug_buff_address;
+
 } hadm_device_t;
 
 /* === Externals ============================================================ */

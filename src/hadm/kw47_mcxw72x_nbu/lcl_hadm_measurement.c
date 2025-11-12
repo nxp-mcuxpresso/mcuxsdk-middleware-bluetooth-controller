@@ -203,7 +203,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         hadm_meas[i].rsm_config.rsm_dma_dly_pm = 0U,
         hadm_meas[i].rsm_config.rsm_dma_dur_pm = 0U,
         hadm_meas[i].rsm_config.pct_averaging_win = XCVR_RSM_PCT_AVG_WIN_4_SMPL;
-        hadm_meas[i].rsm_config.pa_ramp_time = XCVR_RSM_PA_RAMP_0_USEC; /* OJE TODO */
+        hadm_meas[i].rsm_config.pa_ramp_time = XCVR_RSM_PA_RAMP_0_USEC;
         hadm_meas[i].rsm_config.disable_rx_sync = false;
         hadm_meas[i].rsm_config.iq_out_sel = XCVR_RSM_IQ_OUT_FRAC_CORR;
 
@@ -228,6 +228,9 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_device.rtt_static_comp.rttRCcal = HADM_RCCAL_CENTER;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = HADM_CBPF_ATTEN_CENTER_1MBPS;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = HADM_CBPF_ATTEN_CENTER_2MBPS;
+
+    hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_0_USEC;
+    hadm_device.paRampingAntSwitchEnabled = false;
 
     /* Perform initial calibration */
     hadm_device.is_rsm_cal_done = false;
@@ -623,6 +626,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
 	rsm_config_p->tx_snr_setting = (hadm_config->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_config->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
+    rsm_config_p->pa_ramp_time = hadm_device.paRampingTime;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
     {
@@ -745,7 +749,7 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     DEBUG_PIN1_PULSE
     
     /* Configure Antenna switching */
-    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p);
+    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
     /* Configure TQI and start LCL if needed */
     if (rsm_config_p->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE)
     {
