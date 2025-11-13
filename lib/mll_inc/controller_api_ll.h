@@ -256,8 +256,8 @@ extern int PLATFORM_NotifySecurityEvents(uint32 securityEventBitmask);
 void NbuHosted_Config(const nbuIntf_t* nbuIf);
 void NbuHci_SendPktToController(unsigned long packetType, void *pPacket, unsigned short packetSize);
 
-extern uint32 BOARD_GetSystemCoreClockSel(void);
-extern uint32 BOARD_GetSystemCoreClockFreq(void);
+extern uint32 Controller_GetSystemCoreClockSel(void);
+extern uint32 Controller_GetSystemCoreClockFreq(void);
 #define MAX_FREQ_CONSTRAINT    4U  // max frequency selection
 extern void   PLATFORM_SetFrequencyConstraintFromController(uint8 freq_constraint);
 void LL_API_ClockUpdated(void);

@@ -317,7 +317,7 @@ typedef struct BLE_HADM_ZeroDistanceCompensationData_tag
 typedef struct BLE_HADM_RttBiasParameters_tag
 {
     uint8 rttRCcal;                           /* RTT RCCal value */
-    int16 rttCbpfAtt[HADM_RTT_PHY_MAX];       /* RTT CBPF filter attenuation - positive value, dB * 100 */
+    uint16 rttCbpfAtt[HADM_RTT_PHY_MAX];      /* RTT CBPF filter attenuation - positive value, dB * 100 */
 } BLE_HADM_RttBiasParameters_t;
 
 /*! Allow to set the phase rotation offset */
@@ -516,6 +516,13 @@ void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias);
  * This API allows to set the phase rotation offset.
  */
 void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation);
+
+/*!
+ * Abstract function that needs to be implemented by the HW-specific HAL implementation.
+ * This API allows to set the PA ramping scheme.
+ * Return 0 if success
+ */
+uint32 BLE_HADM_SetPARamping(uint8 paRampingTime, uint8 paRampAntSwitch);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
