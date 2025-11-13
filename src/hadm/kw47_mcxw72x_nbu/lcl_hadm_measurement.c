@@ -698,143 +698,145 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     xcvr_lcl_rsm_config_t *rsm_config_p;
     uint32_t rsm_state;
 
-    (void)status;
     DEBUG_PIN0_SET
-    if (hadm_meas_p == NULL)
+    do
     {
-        assert(false);
-        return HADM_HAL_INVALID_ARGS;
-    }
-    rsm_config_p = &hadm_meas_p->rsm_config;
-      
+        if (hadm_meas_p == NULL)
+        {
+            assert(false);
+            return HADM_HAL_INVALID_ARGS;
+        }
+        rsm_config_p = &hadm_meas_p->rsm_config;
+
 #ifdef UT_HADM_TRIGGER
-    /* RSM should have started on NBU trigger and be in DELAY state */
-    rsm_state = LCL_HAL_XCVR_GET_RSM_STATE;
-    assert(rsm_state != LCL_HAL_XCVR_RSM_STATE_IDLE);
+        /* RSM should have started on NBU trigger and be in DELAY state */
+        rsm_state = LCL_HAL_XCVR_GET_RSM_STATE();
+        assert(rsm_state != LCL_HAL_XCVR_RSM_STATE_IDLE);
 #endif
 
-    /* At this point, the config must be valid and the procedure must have been initialized */
-    if ((hadm_meas_p->state != HADM_HAL_MEAS_STATE_CONFIGURED) || (!hadm_proc->is_proc_init_done))
-    {
-        assert(false);
-        return HADM_HAL_INVALID_ARGS;
-    }
-    
-    /* Alloc result buffer */
-    hadm_meas_p->result_p = lcl_hadm_utils_get_result_buffer();
-    if (hadm_meas_p->result_p == NULL)
-    {
-#ifdef HAL_ENABLE_ASSERT_ON_STRESS
-        assert(false);
-#endif
-        return HADM_HAL_MEMORY_FULL;
-    }
-    
-    DEBUG_PIN1_SET
-      
-    hadm_device.active_meas_p = hadm_meas_p; /* becomes active measurement */
-    hadm_meas_p->state = HADM_HAL_MEAS_STATE_RUNNING;
+        /* At this point, the config must be valid and the procedure must have been initialized */
+        if ((hadm_meas_p->state != HADM_HAL_MEAS_STATE_CONFIGURED) || (!hadm_proc->is_proc_init_done))
+        {
+            assert(false);
+            return HADM_HAL_INVALID_ARGS;
+        }
         
-    hadm_meas_p->result_p->connIdx = hadm_config_p->connIdx;
-    hadm_meas_p->result_p->subeventIdx = hadm_config_p->subeventIdx; /* echo subeventIdx */
-    hadm_meas_p->result_p->syncDelayUs = 0;
-
-    DEBUG_PIN1_PULSE
-
-    if ((hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE) || (hadm_meas_p->result_p->subeventIdx == 0U))
-    {
-        lcl_hadm_measurement_setup(hadm_proc, hadm_meas_p, hadm_config_p);
-    }
-    
-    DEBUG_PIN1_PULSE
-    
-    /* Configure Antenna switching */
-    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
-    /* Configure TQI and start LCL if needed */
-    if (rsm_config_p->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE)
-    {
-       if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_AVG_OFF) == 0U)
-       {
-            lcl_hal_xcvr_program_tqi(hadm_meas_p);
-       }
-       LCL_HAL_START_LCL;
-    }
-    
-    DEBUG_PIN1_PULSE
-
-    /* Start DMA if needed */
-#ifndef RSM_DBG_IQ
-    if (((hadm_meas_p->debug_flags & HADM_DBG_FLG_IQ_DMA) != 0U) && ((hadm_meas_p->iq_buff_size > 0U) || (hadm_meas_p->iq_buff_size_mode0 > 0U)))
-    {
-        lcl_hal_xcvr_configure_dma_capture(LCL_START_DMA_ON_RSM_TRIGGER, 0, hadm_meas_p->iq_buff_size + hadm_meas_p->iq_buff_size_mode0, hadm_device.dma_debug_buff_size, hadm_device.dma_debug_buff_address);
-        LCL_HAL_START_DMA(LCL_DMA_PAGE_RXDIGIQ);
-    }
-#else
-    LCL_HAL_SET_IQ_CAPTURE_POINT(LCL_OUT_CH_FILTER_SEL);
-    LCL_HAL_CLEAR_DMA_MASK_AND_AVG_WIN;
-    lcl_hal_xcvr_configure_dma_capture(LCL_START_DMA_ON_TSM_RX_DIG_EN, 0, 0x2000, hadm_device.dma_debug_buff_size, hadm_device.dma_debug_buff_address);
-    LCL_HAL_START_DMA(LCL_DMA_PAGE_RXDIGIQ);
-#endif
-
-    DEBUG_PIN1_PULSE
-
-    if (HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p) ||
-        (hadm_config_p->subeventIdx == 0U))
-    {
-        /* Configure RSM block. Will start on NBU HW trigger */
-        status = XCVR_LCL_RsmInit(rsm_config_p);
-        assert(gXcvrLclStatusSuccess == status);
-
-        status = XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
-
-        XCVR_LCL_EnaLpmClkSwitch(1U);
-        XCVR_LCL_EnaDividerSync(true);
-        (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
-        assert(gXcvrLclStatusSuccess == status);
-    }
-    else
-    {
-        uint32_t temp;
-        /* For testmode, RSM config does not need to be reapplied, simply set number of steps */
-        temp = XCVR_MISC->RSM_CTRL0 & ~XCVR_MISC_RSM_CTRL0_RSM_STEPS_MASK;
-        temp |= XCVR_MISC_RSM_CTRL0_RSM_STEPS((uint32_t)rsm_config_p->num_steps);
-        temp |= (rsm_config_p->role == XCVR_RSM_TX_MODE ? XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK :
-                                                          XCVR_MISC_RSM_CTRL0_RSM_RX_EN_MASK);
-        XCVR_MISC->RSM_CTRL0 = temp;
-
-    }
-      
-    LCL_HAL_ENABLE_TONE_OBS
-
-    DEBUG_PIN1_PULSE
-
-    /* Configure PKT RAM circular buffers to be used by RSM */
-    lcl_hal_pkt_ram_config_circ_buffers(&hadm_meas_p->pkt_ram);
-    /* make sure PLL_OFFSET_CTRL is cleared before first mode 0 */
-    (void)XCVR_LCL_RsmCompCfo(0);
-    
-#ifdef SIMULATOR
-     status +=  SIMU_LCL_RsmGo(rsm_config_p->role, rsm_config_p);
-#else
-    rsm_state = LCL_HAL_XCVR_GET_RSM_STATE;
+        /* Alloc result buffer */
+        hadm_meas_p->result_p = lcl_hadm_utils_get_result_buffer();
+        if (hadm_meas_p->result_p == NULL)
+        {
 #ifdef HAL_ENABLE_ASSERT_ON_STRESS
-    assert(rsm_state == LCL_HAL_XCVR_RSM_STATE_DELAY);
+            assert(false);
 #endif
-    if (rsm_state != LCL_HAL_XCVR_RSM_STATE_DELAY)
-    {
-        hal_status = HADM_HAL_COLLISION;
-    }
+            return HADM_HAL_MEMORY_FULL;
+        }
+
+        DEBUG_PIN1_SET
+
+        hadm_device.active_meas_p = hadm_meas_p; /* becomes active measurement */
+        hadm_meas_p->state = HADM_HAL_MEAS_STATE_RUNNING;
+
+        hadm_meas_p->result_p->connIdx = hadm_config_p->connIdx;
+        hadm_meas_p->result_p->subeventIdx = hadm_config_p->subeventIdx; /* echo subeventIdx */
+        hadm_meas_p->result_p->syncDelayUs = 0;
+
+        DEBUG_PIN1_PULSE
+
+        if ((hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE) || (hadm_meas_p->result_p->subeventIdx == 0U))
+        {
+            lcl_hadm_measurement_setup(hadm_proc, hadm_meas_p, hadm_config_p);
+        }
+
+        DEBUG_PIN1_PULSE
+
+        /* Configure Antenna switching */
+        lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
+        /* Configure TQI and start LCL if needed */
+        if (rsm_config_p->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE)
+        {
+            if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_AVG_OFF) == 0U)
+            {
+                    lcl_hal_xcvr_program_tqi(hadm_meas_p);
+            }
+            LCL_HAL_START_LCL;
+        }
+
+        DEBUG_PIN1_PULSE
+
+        /* Start DMA if needed */
+#ifndef RSM_DBG_IQ
+        if (((hadm_meas_p->debug_flags & HADM_DBG_FLG_IQ_DMA) != 0U) && ((hadm_meas_p->iq_buff_size > 0U) || (hadm_meas_p->iq_buff_size_mode0 > 0U)))
+        {
+            lcl_hal_xcvr_configure_dma_capture(LCL_START_DMA_ON_RSM_TRIGGER, 0, hadm_meas_p->iq_buff_size + hadm_meas_p->iq_buff_size_mode0, hadm_device.dma_debug_buff_size, hadm_device.dma_debug_buff_address);
+            LCL_HAL_START_DMA(LCL_DMA_PAGE_RXDIGIQ);
+        }
+#else
+        LCL_HAL_SET_IQ_CAPTURE_POINT(LCL_OUT_CH_FILTER_SEL);
+        LCL_HAL_CLEAR_DMA_MASK_AND_AVG_WIN;
+        lcl_hal_xcvr_configure_dma_capture(LCL_START_DMA_ON_TSM_RX_DIG_EN, 0, 0x2000, hadm_device.dma_debug_buff_size, hadm_device.dma_debug_buff_address);
+        LCL_HAL_START_DMA(LCL_DMA_PAGE_RXDIGIQ);
 #endif
 
-    /* End of critical configuration section: past this point, the RSM is supposed to run */
-    DEBUG_PIN0_PULSE
+        DEBUG_PIN1_PULSE
 
-    /* Check that subevent has some main mode steps (may have zero non-mode0 steps if procedure reaches 256 steps) */
-    if (hadm_meas_p->config_p->stepsNb > hadm_meas_p->config_p->mode0Nb)
-    {
-        /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
-        (void)lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
-    }
+        if (HADM_IS_RSM_OPTIM_INACTIVE(hadm_config_p) ||
+            (hadm_config_p->subeventIdx == 0U))
+        {
+            /* Configure RSM block. Will start on NBU HW trigger */
+            status = XCVR_LCL_RsmInit(rsm_config_p);
+            assert(gXcvrLclStatusSuccess == status);
+
+            status = XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
+
+            XCVR_LCL_EnaLpmClkSwitch(1U);
+            XCVR_LCL_EnaDividerSync(true);
+            (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
+            assert(gXcvrLclStatusSuccess == status);
+        }
+        else
+        {
+            uint32_t temp;
+            /* For testmode, RSM config does not need to be reapplied, simply set number of steps */
+            temp = XCVR_MISC->RSM_CTRL0 & ~XCVR_MISC_RSM_CTRL0_RSM_STEPS_MASK;
+            temp |= XCVR_MISC_RSM_CTRL0_RSM_STEPS((uint32_t)rsm_config_p->num_steps);
+            temp |= (rsm_config_p->role == XCVR_RSM_TX_MODE ? XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK :
+                                                            XCVR_MISC_RSM_CTRL0_RSM_RX_EN_MASK);
+            XCVR_MISC->RSM_CTRL0 = temp;
+
+        }
+
+        LCL_HAL_ENABLE_TONE_OBS
+
+        DEBUG_PIN1_PULSE
+
+        /* Configure PKT RAM circular buffers to be used by RSM */
+        lcl_hal_pkt_ram_config_circ_buffers(&hadm_meas_p->pkt_ram);
+        /* make sure PLL_OFFSET_CTRL is cleared before first mode 0 */
+        (void)XCVR_LCL_RsmCompCfo(0);
+
+#ifdef SIMULATOR
+        status +=  SIMU_LCL_RsmGo(rsm_config_p->role, rsm_config_p);
+#else
+        rsm_state = LCL_HAL_XCVR_GET_RSM_STATE();
+#ifdef HAL_ENABLE_ASSERT_ON_STRESS
+        assert(rsm_state == LCL_HAL_XCVR_RSM_STATE_DELAY);
+#endif
+        if (rsm_state != LCL_HAL_XCVR_RSM_STATE_DELAY)
+        {
+            hal_status = HADM_HAL_COLLISION;
+        }
+#endif
+
+        /* End of critical configuration section: past this point, the RSM is supposed to run */
+        DEBUG_PIN0_PULSE
+
+        /* Check that subevent has some main mode steps (may have zero non-mode0 steps if procedure reaches 256 steps) */
+        if (hadm_meas_p->config_p->stepsNb > hadm_meas_p->config_p->mode0Nb)
+        {
+            /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
+            (void)lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
+        }
+    } while (false);
 
     DEBUG_PIN1_CLR
     DEBUG_PIN0_CLR

@@ -155,7 +155,7 @@ typedef enum
 /* RSM states flags */
 #define LCL_HAL_XCVR_RSM_STATE_DELAY    (0x01U)
 #define LCL_HAL_XCVR_RSM_STATE_IDLE     (0x00U)
-#define LCL_HAL_XCVR_GET_RSM_STATE      ((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_STATE_MASK) >> XCVR_MISC_RSM_CSR_RSM_STATE_SHIFT)
+#define LCL_HAL_XCVR_GET_RSM_STATE()    ((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_STATE_MASK) >> XCVR_MISC_RSM_CSR_RSM_STATE_SHIFT)
 
 /* Config flag for RSM calibration (HPM and CTUNE) */
 #define LCL_HAL_XCVR_RSM_CTUNE_CAL_IS_AUTO       (2U)  /* RSM will perform CTUNE calibration automatically */
