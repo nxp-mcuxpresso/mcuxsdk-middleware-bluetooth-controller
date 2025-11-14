@@ -242,6 +242,7 @@ typedef struct
 {
     hadm_meas_t            *active_meas_p;      /*!< pointer on active CS measurement from hadm_meas[]  */
     bool                   is_rsm_cal_done;     /*!< Set to 1 if PLL calibration was successful (done once for all)  */
+    uint16_t               sys_clock_freq;      /*!< Cache system clock frequency for various usages (unit: MHz) */
     uint8_t                ant2gpio[HADM_MAX_NB_ANTENNAS]; /*!< pointer to the LUT performing mapping btw antenna index an GPIOs */
 #ifdef HADM_PLL_CAL_INTERPOLATION
     /*! Store PLL calibration data for channel 40 */

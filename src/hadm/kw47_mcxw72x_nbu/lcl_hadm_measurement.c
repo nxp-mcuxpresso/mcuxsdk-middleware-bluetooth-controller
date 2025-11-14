@@ -26,7 +26,7 @@
 #ifdef SIMULATOR
 #include "lcl_xcvr_simu.h"
 #endif
-
+#include "board.h"
 
 #if !defined(CPU_KW47B42Z83AFTA_cm33_core1) && !defined(CPU_KW47B42ZB7AFTA_cm33_core1) && !defined(CPU_MCXW727CMFTA_cm33_core1) \
     && !defined(CPU_KW43B43ZC7MFPA_NBU) && !defined(CPU_KW43B43ZC7MFTA_NBU)
@@ -53,11 +53,15 @@
 /* In some cases (low power), the SW INT is triggered with up to 9us later than HW trigger */
 #define HADM_HAL_RSM_TRIGGER_DELAY_MARGIN (10U)
 
-/*! Time to be programmed to RSM_TRIGGER_DELAY
- *  Does not need to be exact, should cover RSM SW initialization
- *  Optimized version corresponds to CS/CS transition (no restore/save for BLE registers)
+/* 
+ *  Does not need to be exact, should cover RSM SW initialization, includes:
+ * - time from ISR start to 1st cycle counter capture (10us)
+ * - RSM init section (protected by HADM_HAL_RSM_INIT_BUDGET) = between 2 cycle counter captures
+ * - Margin to absorb slight ISR drift
  */
-#define HADM_HAL_RSM_TRIGGER_DELAY (135U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
+#define HADM_HAL_RSM_INIT_BUDGET (150U) /* larger on initiator */
+#define HADM_HAL_RSM_TRIGGER_DELAY (10U + HADM_HAL_RSM_INIT_BUDGET + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
+ /* Optimized version corresponds to CS/CS transition (no register restore/save for BLE config) */
 #define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
 
 /* 2us between cdt_expiry and RSM FSM start */
@@ -69,6 +73,10 @@
 /* === Types =============================================================== */
 
 /* === Globals ============================================================= */
+
+#if defined(DEBUG) || (defined(gValidationBuildOptions) && (gValidationBuildOptions == 1))
+#define HADM_TRACK_RSM_INIT
+#endif
 
 //#define RTT_DEBUG
 #ifdef RTT_DEBUG
@@ -497,6 +505,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         goto config_error; /* at this point all calibration must have ben performed */
     }
 
+    hadm_device.sys_clock_freq = (uint16_t)(BOARD_GetSystemCoreClockFreq()/1000000U);
+
     hadm_meas_p->config_p = hadm_config; /* save config ptr */
     
     hadm_meas_p->mode0_complete = false;
@@ -695,12 +705,20 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_config_p->connIdx];
     xcvr_lcl_rsm_config_t *rsm_config_p;
     uint32_t rsm_state;
+#ifdef HADM_TRACK_RSM_INIT
+    static uint32_t cyccnt_1;
+    static int32_t elapsed_time;
+#endif
 
     DEBUG_PIN0_SET
 
     /* Enable required RSM interrupts for SW FSM */
     LCL_HAL_RSM_SET_IRQ_ENABLE_MASK(LCL_HAL_RSM_XCVR_IRQ_ENABLE_MASK);
 
+#ifdef HADM_TRACK_RSM_INIT
+    DWT->CTRL |= 1;
+    cyccnt_1 = DWT->CYCCNT;
+#endif
     do
     {
         if (hadm_meas_p == NULL)
@@ -790,13 +808,16 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             /* Configure RSM block. Will start on NBU HW trigger */
             status = XCVR_LCL_RsmInit(rsm_config_p);
             assert(gXcvrLclStatusSuccess == status);
+            (void)status;
 
             status = XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
+            assert(gXcvrLclStatusSuccess == status);
+            (void)status;
 
             XCVR_LCL_EnaLpmClkSwitch(1U);
             XCVR_LCL_EnaDividerSync(true);
             (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
-            assert(gXcvrLclStatusSuccess == status);
+
         }
         else
         {
@@ -819,6 +840,16 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         /* make sure PLL_OFFSET_CTRL is cleared before first mode 0 */
         (void)XCVR_LCL_RsmCompCfo(0);
 
+        /* End of critical configuration section: past this point, the RSM is supposed to exit SM_STATE_DELAY */
+        DEBUG_PIN0_PULSE
+
+#ifdef HADM_TRACK_RSM_INIT
+        /* compute elapsed time since function entry - wrap is handled */
+        elapsed_time = (uint32_t)((int32_t)DWT->CYCCNT - (int32_t)cyccnt_1)/hadm_device.sys_clock_freq;
+        assert(elapsed_time < HADM_HAL_RSM_INIT_BUDGET);
+        (void)elapsed_time;
+#endif /* HADM_TRACK_RSM_INIT */
+
 #ifdef SIMULATOR
         status +=  SIMU_LCL_RsmGo(rsm_config_p->role, rsm_config_p);
 #else
@@ -833,9 +864,6 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         }
 #endif
 
-        /* End of critical configuration section: past this point, the RSM is supposed to run */
-        DEBUG_PIN0_PULSE
-
         /* Check that subevent has some main mode steps (may have zero non-mode0 steps if procedure reaches 256 steps) */
         if (hadm_meas_p->config_p->stepsNb > hadm_meas_p->config_p->mode0Nb)
         {
@@ -843,6 +871,9 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             (void)lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
         }
     } while(false);
+#ifdef HADM_TRACK_RSM_INIT
+    DWT->CTRL &= ~1;
+#endif
 
     if ((hal_status != HADM_HAL_SUCCESS) && (hadm_meas_p != NULL))
     {
