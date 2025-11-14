@@ -203,7 +203,6 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
         hadm_meas[i].rsm_config.rsm_dma_dly_pm = 0U,
         hadm_meas[i].rsm_config.rsm_dma_dur_pm = 0U,
         hadm_meas[i].rsm_config.pct_averaging_win = XCVR_RSM_PCT_AVG_WIN_4_SMPL;
-        hadm_meas[i].rsm_config.pa_ramp_time = XCVR_RSM_PA_RAMP_0_USEC;
         hadm_meas[i].rsm_config.disable_rx_sync = false;
         hadm_meas[i].rsm_config.iq_out_sel = XCVR_RSM_IQ_OUT_FRAC_CORR;
 
@@ -229,7 +228,8 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = HADM_CBPF_ATTEN_CENTER_1MBPS;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = HADM_CBPF_ATTEN_CENTER_2MBPS;
 
-    hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_0_USEC;
+    /* Set default PA ramping duration and antenna switching mode. Can be overwritten via vendor HCI command. */
+    hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_1_USEC;
     hadm_device.paRampingAntSwitchEnabled = false;
 
     /* Perform initial calibration */
