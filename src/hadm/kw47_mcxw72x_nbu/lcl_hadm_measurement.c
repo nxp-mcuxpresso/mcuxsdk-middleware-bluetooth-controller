@@ -59,7 +59,7 @@
  * - RSM init section (protected by HADM_HAL_RSM_INIT_BUDGET) = between 2 cycle counter captures
  * - Margin to absorb slight ISR drift
  */
-#define HADM_HAL_RSM_INIT_BUDGET (150U) /* larger on initiator */
+#define HADM_HAL_RSM_INIT_BUDGET (125U) /* largest value needed on initiator */
 #define HADM_HAL_RSM_TRIGGER_DELAY (10U + HADM_HAL_RSM_INIT_BUDGET + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
  /* Optimized version corresponds to CS/CS transition (no register restore/save for BLE config) */
 #define HADM_HAL_RSM_TRIGGER_DELAY_OPTIM (40U + HADM_HAL_RSM_TRIGGER_DELAY_MARGIN)
@@ -813,11 +813,6 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             status = XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
             assert(gXcvrLclStatusSuccess == status);
             (void)status;
-
-            XCVR_LCL_EnaLpmClkSwitch(1U);
-            XCVR_LCL_EnaDividerSync(true);
-            (void)XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY, false); /* Enable PIC feature if request */
-
         }
         else
         {
