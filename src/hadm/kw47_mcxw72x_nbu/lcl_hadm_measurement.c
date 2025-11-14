@@ -122,6 +122,7 @@ const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 
 
 static void lcl_hadm_consume_drbg(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort_subevent);
+static void lcl_hadm_measurement_cleanup(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
 static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm_meas_t *hadm_meas_p);
 static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr);
@@ -293,9 +294,6 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
 
     /* Backup TSM */
     lcl_hal_xcvr_hadm_backup();
-    
-    /* Enable required RSM interrupts for SW FSM */
-    LCL_HAL_RSM_SET_IRQ_ENABLE_MASK(LCL_HAL_RSM_XCVR_IRQ_ENABLE_MASK);
     
     assert(hadm_device.is_rsm_cal_done == true);
     return hal_status;
@@ -699,12 +697,17 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
     uint32_t rsm_state;
 
     DEBUG_PIN0_SET
+
+    /* Enable required RSM interrupts for SW FSM */
+    LCL_HAL_RSM_SET_IRQ_ENABLE_MASK(LCL_HAL_RSM_XCVR_IRQ_ENABLE_MASK);
+
     do
     {
         if (hadm_meas_p == NULL)
         {
             assert(false);
-            return HADM_HAL_INVALID_ARGS;
+            hal_status = HADM_HAL_INVALID_ARGS;
+            break;
         }
         rsm_config_p = &hadm_meas_p->rsm_config;
 
@@ -718,7 +721,8 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         if ((hadm_meas_p->state != HADM_HAL_MEAS_STATE_CONFIGURED) || (!hadm_proc->is_proc_init_done))
         {
             assert(false);
-            return HADM_HAL_INVALID_ARGS;
+            hal_status = HADM_HAL_INVALID_ARGS;
+            break;
         }
         
         /* Alloc result buffer */
@@ -728,7 +732,8 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 #ifdef HAL_ENABLE_ASSERT_ON_STRESS
             assert(false);
 #endif
-            return HADM_HAL_MEMORY_FULL;
+            hal_status = HADM_HAL_MEMORY_FULL;
+            break;
         }
 
         DEBUG_PIN1_SET
@@ -756,7 +761,7 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         {
             if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_AVG_OFF) == 0U)
             {
-                    lcl_hal_xcvr_program_tqi(hadm_meas_p);
+                lcl_hal_xcvr_program_tqi(hadm_meas_p);
             }
             LCL_HAL_START_LCL;
         }
@@ -824,6 +829,7 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
         if (rsm_state != LCL_HAL_XCVR_RSM_STATE_DELAY)
         {
             hal_status = HADM_HAL_COLLISION;
+            break;
         }
 #endif
 
@@ -836,8 +842,17 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             /* Build first non-mode0 configuration step in PKT RAM while subevent starts */
             (void)lcl_hadm_set_steps_config(HADM_HAL_PKT_RAM_NB_STEPS_CONFIG_INITIAL, hadm_meas_p, TRUE);
         }
-    } while (false);
+    } while(false);
 
+    if ((hal_status != HADM_HAL_SUCCESS) && (hadm_meas_p != NULL))
+    {
+        /* Disable all RSM interrupts - synchronous cleanup */
+        LCL_HAL_RSM_SET_IRQ_ENABLE_MASK(0);
+        lcl_hadm_measurement_shutdown(hadm_meas_p, true);
+        BLE_HADM_ReleaseResultsBuffer(&hadm_meas_p->result_p);
+        ((BLE_HADM_SubeventConfig_t*)hadm_meas_p->config_p)->configBufferUsed = 0U;
+        lcl_hadm_measurement_cleanup(hadm_meas_p);
+    }
     DEBUG_PIN1_CLR
     DEBUG_PIN0_CLR
 
@@ -851,8 +866,8 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
     
     hadm_meas_t *hadm_meas_p = lcl_hadm_get_meas_instance(config);
     assert(hadm_meas_p != NULL);
+    assert(hadm_meas_p->config_p != NULL);
     assert(hadm_meas_p->state != HADM_HAL_MEAS_STATE_IDLE);
-
 
     if (hadm_meas_p->state == HADM_HAL_MEAS_STATE_RUNNING)
     {
@@ -864,18 +879,8 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
     else
     {
         /* No EOS IRQ will be triggered, simply free resources */
-        if (hadm_meas_p->config_p != NULL)
-        {
-            ((BLE_HADM_SubeventConfig_t*)hadm_meas_p->config_p)->configBufferUsed = 0U;
-            hadm_meas_p->config_p = NULL;
-        }
-        lcl_hadm_free_meas_instance(hadm_meas_p);
-    }
-
-    if ((config->typeFlags & HADM_SUBEVT_LAST) != 0U)
-    {
-        /* End of procedure, clean context */
-        hadm_procs[config->connIdx].is_proc_init_done = false;
+        ((BLE_HADM_SubeventConfig_t*)hadm_meas_p->config_p)->configBufferUsed = 0U;
+        lcl_hadm_measurement_cleanup(hadm_meas_p);
     }
 
     DEBUG_PIN0_CLR
@@ -989,6 +994,19 @@ static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
     lcl_hadm_consume_drbg(hadm_meas_p);
 #endif /* SIMULATOR */
+}
+
+/* Release measurement resources and reset device state for next measurement.
+ * If this is the last subevent in a procedure, also clean procedure context.
+ */
+static void lcl_hadm_measurement_cleanup(hadm_meas_t *hadm_meas_p)
+{
+    if ((hadm_meas_p->config_p->typeFlags & HADM_SUBEVT_LAST) != 0U)
+    {
+        /* End of procedure, clean context */
+        hadm_procs[hadm_meas_p->config_p->connIdx].is_proc_init_done = false;
+    }
+    lcl_hadm_free_meas_instance(hadm_meas_p);
 }
 
 /*!
@@ -1869,12 +1887,7 @@ void RSM_INT_IRQHandler(void)
 
     if (type == HADM_EVENT_EOS)
     {
-        if ((hadm_meas_p->config_p->typeFlags & HADM_SUBEVT_LAST) != 0U)
-        {
-            /* End of procedure, clean context */
-            hadm_procs[hadm_meas_p->config_p->connIdx].is_proc_init_done = false;
-        }
-        lcl_hadm_free_meas_instance(hadm_meas_p);
+        lcl_hadm_measurement_cleanup(hadm_meas_p);
         hadm_device.active_meas_p = NULL;
     }
 
