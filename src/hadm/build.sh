@@ -7,6 +7,7 @@ DEFAULT_BUILD_TYPE="MinSizeRel"
 # Initialize variables with defaults
 PLATFORM="$DEFAULT_PLATFORM"
 BUILD_TYPE="$DEFAULT_BUILD_TYPE"
+VAL_BUILD_OPTIONS=False
 
 # Function to display usage
 usage() {
@@ -40,6 +41,10 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage
             exit 0
+            ;;
+        --gValidationBuildOptions)
+            VAL_BUILD_OPTIONS=True
+            shift 1
             ;;
         *)
             echo "Error: Unknown option '$1'"
@@ -82,7 +87,7 @@ echo "Cleaning previous build..."
 rm -rf build
 
 echo "Configuring build..."
-if ! cmake -S./ -B./build -G Ninja -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DPLATFORM_TARGET="$PLATFORM"; then
+if ! cmake -S./ -B./build -G Ninja -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DPLATFORM_TARGET="$PLATFORM" -DVALIDATIONBUILDOPTIONS="$VAL_BUILD_OPTIONS" ; then
     echo "Error: CMake configuration failed"
     exit 1
 fi

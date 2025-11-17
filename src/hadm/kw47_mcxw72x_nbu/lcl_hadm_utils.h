@@ -20,7 +20,7 @@
 
 
 /* === Macros ============================================================== */
-#if defined(DEBUG) || (defined(gValidationBuildOptions) && (gValidationBuildOptions == 1))
+#if (defined(DEBUG)  || defined(VALIDATIONBUILDOPTIONS))
 #define HADM_ENABLE_DEBUG_PINS_SINGLE /* Disable in case of conflicts with PTD2-3 PINs */
 #endif
 

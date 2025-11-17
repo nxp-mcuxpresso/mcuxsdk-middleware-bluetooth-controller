@@ -63,6 +63,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(ble_hadm_library PRIVATE DEBUG)
 endif()
 
+if (VALIDATIONBUILDOPTIONS MATCHES "True")
+    # Add validation build options if needed
+    message("-- + HAL GPIOS enabled")
+    target_compile_definitions(ble_hadm_library PRIVATE VALIDATIONBUILDOPTIONS)
+endif()
+
 # Set library properties
 set_target_properties(ble_hadm_library PROPERTIES
     OUTPUT_NAME "ble_hadm_${PLATFORM_TARGET}"
