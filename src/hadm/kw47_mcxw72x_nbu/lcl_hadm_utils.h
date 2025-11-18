@@ -131,7 +131,7 @@
             *(report_p)++ = 0x00U; \
             *(report_p)++ = 0xC0U; \
         } \
-    } while (0)
+    } while (0 != 0)
 
 /* Convert timestamps (32Mhz ticks) to ns = ts * 31.25 */
 #define HADM_RTT_TS_TO_NS(ts) (((ts) * 125U) >> 2U)
@@ -153,7 +153,7 @@
             *(report_p)++ = 0x00U; \
             *(report_p)++ = 0x80U; \
         } \
-    } while (0)
+    } while (0 != 0)
 
 /*! Translates IQ sample to HADM PCT:
  *    IQ: 2x11bits with sign bit MSB aligned.
@@ -170,24 +170,27 @@
         *(report_p)++ = (uint8_t)((iq_hci) & 0x000000FFU); \
         *(report_p)++ = (uint8_t)(((iq_hci) & 0x0000FF00U) >> 8U); \
         *(report_p)++ = (uint8_t)(((iq_hci) & 0x00FF0000U) >> 16U); \
-    } while (0)
+    } while (0 != 0)
 
 /*! Encode Tone Quality Indicator. report_p SHOULD NOT be a composite expression */
 /*! report_p SHOULD NOT be a composite expression */
-#define HADM_SET_RTP_TONE_QUALITY(iq_in, report_p, ext_slot, ext_pres) \
+#define HADM_SET_RTP_TONE_QUALITY(iq_in, report_p, ext_pres) \
     do \
     { \
         uint8_t qual_metric = (uint8_t)((iq_in) & 0x3U);\
-        if ((ext_slot)) \
-        {\
-            if ((ext_pres) != 0U)\
-            {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_PRESENT << 4U); }\
-            else \
-            {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_NOT_PRESENT << 4U); }\
-        } /* else MSBs already set to 0 */\
         *(report_p)++ = qual_metric; \
-    } while (0)
+    } while (0 != 0)
 
+#define HADM_SET_RTP_TONE_QUALITY_WITH_EXT_SLOT(iq_in, report_p, ext_pres) \
+    do \
+    { \
+        uint8_t qual_metric = (uint8_t)((iq_in) & 0x3U);\
+        if ((ext_pres) != 0U)\
+        {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_PRESENT << 4U); }\
+        else \
+        {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_NOT_PRESENT << 4U); }\
+        *(report_p)++ = qual_metric; \
+    } while (0 != 0)
 /* === Globals ============================================================= */
 
 /* === Externals =========================================================== */

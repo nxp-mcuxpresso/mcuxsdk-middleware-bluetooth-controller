@@ -159,7 +159,7 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     }
 
     /* Compute p_delta: p_delta format is sfix10_En9 aka Q9, hence 1 sign bit plus 9 fractional bits */
-    p_delta <<= 6;       /* Align sign bit on MSB */
+    p_delta *= 0x40;      /* Align sign bit on MSB */
     p_delta /= 0x40;     /* and divide by 2^6 */
 
     /* Compute c coefficients corresponding to the given PN sequence */

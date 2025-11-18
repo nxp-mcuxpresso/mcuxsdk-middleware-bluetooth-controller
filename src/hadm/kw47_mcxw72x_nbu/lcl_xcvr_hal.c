@@ -296,7 +296,7 @@ int32_t lcl_hal_xcvr_compute_rpl(uint8_t agc_idx)
     agc_log_gain_table = (uint32_t *)(void *)(&XCVR_RX_DIG->AGC_IDX11_GAIN_VAL);
     lna_gain_db = (int16_t)(uint32_t)(agc_log_gain_table[agc_idx] & XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_MASK);
     /* Stored in s7.2 format, left align then divide to keep signed bits */
-    lna_gain_db = (int16_t)(lna_gain_db << 6) / (int16_t)((uint16_t)1U << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6U));
+    lna_gain_db = (int16_t)(lna_gain_db * 0x40) / (int16_t)((uint16_t)1U << (XCVR_RX_DIG_AGC_IDX0_GAIN_VAL_LOG_GAIN_0_SHIFT+6U));
 
     /* Convert sX.2 to integer, then to dBm */
     rpl = (rssi_adj - lna_gain_db)/4 + 13;

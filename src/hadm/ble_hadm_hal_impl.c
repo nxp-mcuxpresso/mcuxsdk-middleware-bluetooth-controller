@@ -18,7 +18,8 @@
 #include "lcl_hadm_measurement.h"
 #include "lcl_hadm_utils.h"
 #include "lcl_hadm_aes.h"
-
+#include "controller_api_ll.h"
+   
 /* === Macros =============================================================== */
 
 //#define HADM_UT
@@ -103,9 +104,6 @@ static const uint32_t aa_test_list[HADM_UT_AA_LIST_SIZE] = {
 /* === Types ================================================================ */
 
 /* === Externals ============================================================ */
-/* LTC access protection */
-extern void (* lock_LTC)(void);
-extern void (* unlock_LTC)(void);
 
 /* === Globals ============================================================= */
 
@@ -300,7 +298,7 @@ void BLE_HADM_Drbg_AES_wrapper(uint8 *target, const uint8 *source, uint32 size_b
     else 
     {
 #ifdef HADM_OPT_LTC_DRV
-        lcl_hadm_AES_EncryptEcb_128((const uint32 *)key, (const uint32 *)source, (uint32 *)target);
+        lcl_hadm_AES_EncryptEcb_128((const uint32 *)(const void*)key, (const uint32 *)(const void*)source, (uint32 *)(void*)target);
 #else
         status = LTC_AES_EncryptEcb(LTC0, source, target, size_buff, key, KEY_SIZE);
 #endif

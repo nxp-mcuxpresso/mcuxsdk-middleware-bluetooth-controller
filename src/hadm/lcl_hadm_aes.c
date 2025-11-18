@@ -13,7 +13,7 @@
 #include "fsl_os_abstraction.h"
 #include "EmbeddedTypes.h"
 #include "fsl_ltc.h"
-
+#include "lcl_hadm_aes.h"
 /* === Types =============================================================== */
 
 /* === Macros ============================================================== */
@@ -65,7 +65,7 @@ void lcl_hadm_AES_EncryptEcb_128(const uint32_t *key, const uint32_t *plaintext,
     LTC0->IFIFO = *plaintext++;
 
     /* Wait for first word to be ready, then read all the content of the output FIFO */
-    while ((LTC0->FIFOSTA & LTC_FIFOSTA_OFL_MASK) < 4U);
+    while ((LTC0->FIFOSTA & LTC_FIFOSTA_OFL_MASK) < 4U){}
     *ciphertext++ = LTC0->OFIFO;
     *ciphertext++ = LTC0->OFIFO;
     *ciphertext++ = LTC0->OFIFO;

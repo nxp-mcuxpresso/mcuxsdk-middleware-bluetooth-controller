@@ -243,6 +243,7 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     const BLE_HADM_SubeventConfig_t *hadm_config_p = hadm_meas_p->config_p;
     uint32_t ts_nominal_delay;
     int32_t ts_hw_delay;
+    uint16_t aa_match_dur;
 
     assert(hadm_config_p->rttPhy < HADM_RTT_PHY_MAX);
 
@@ -260,7 +261,7 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     else
     {
         /* T_SY_CENTER_DELTA = TSY + TRD + TIP1 */
-        ts_nominal_delay = (uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + HADM_T_RD + hadm_config_p->T_IP1_Time;
+        ts_nominal_delay = (uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + (uint32_t)HADM_T_RD + (uint32_t)hadm_config_p->T_IP1_Time;
         hadm_meas_p->ts_extra_delay_hns = 0;
     }
     /* Take payload into account */
@@ -273,7 +274,8 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
      * TX: elapsed time between tx_dig_en (TPM trigger on TX) and 1st bit over the air
      * RX: elapsed time between last bit of AA and aa_match_to_ll (TPM trigger on RX) + duration of preamble and AA
      */
-    ts_hw_delay = (int32_t)(uint32_t)(HADM_TX_LATENCY_NS + HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_config_p->rttPhy) * 1000U);
+    aa_match_dur = HADM_1ST_BIT_TO_AA_MATCH_DURATION_US(hadm_config_p->rttPhy);
+    ts_hw_delay = (int32_t)HADM_TX_LATENCY_NS + (int32_t)aa_match_dur * (int32_t)1000;
     /* Convert to half ns */
     ts_hw_delay *= 2;
 
@@ -406,11 +408,6 @@ void lcl_hadm_stop_tpms(void)
     TPM_StopTimer(HADM_TPM);
 }
 
-void lcl_hadm_reset_tpm_count(void)
-{    
-    HADM_TPM->CNT = 0;
-}
-
 void lcl_hadm_tpm_timer_start(uint16_t delay_us)
 {
     TPM_SetupOutputCompare(HADM_TPM, HADM_TPM_TIMER_CHANNEL, kTPM_NoOutputSignal, (delay_us << 5) & HADM_TPM_MODULO); // software compare
@@ -454,7 +451,7 @@ void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_c
 /* Compute HADM step duration in us for all modes */
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur)
 {
-    mode_dur[0U] = (uint16_t)((uint32_t)hadm_config_p->T_FCS_Time + 2U*HADM_T_SY(hadm_config_p->rttPhy) + 2U*HADM_T_RD + (uint32_t)hadm_config_p->T_IP1_Time + HADM_T_FM + HADM_T_GD); /* T_FCS + 2*T_SY + 2*T_RD + T_IP1 + T_GD + T_FM */
+    mode_dur[0U] = (uint16_t)((uint32_t)hadm_config_p->T_FCS_Time + (uint32_t)2U*(uint32_t)HADM_T_SY(hadm_config_p->rttPhy) + (uint32_t)2U*(uint32_t)HADM_T_RD + (uint32_t)hadm_config_p->T_IP1_Time + (uint32_t)HADM_T_FM + (uint32_t)HADM_T_GD); /* T_FCS + 2*T_SY + 2*T_RD + T_IP1 + T_GD + T_FM */
     /* not used */
     mode_dur[1U] = 0;
     mode_dur[2U] = 0;
@@ -542,7 +539,7 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
 }
 
 #define PCT_FIXED_POINT_UNIT  14U
-#define PCT_FIXED_POINT_ONE   0x4000U   /* unsigned 1 << PCT_FIXED_POINT */
+#define PCT_FIXED_POINT_ONE   0x4000U   /* unsigned 1 << PCT_FIXED_POINT_UNIT */
 
 void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_id)
 {
@@ -554,8 +551,8 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
     i = i | (((i & 0x800U) != 0U) ? 0xfffff000U : 0U);
     q = q | (((q & 0x800U) != 0U) ? 0xfffff000U : 0U);
     /* phase offset in fixed point 18.14 */
-    i_out = (((int32_t)i * pct_cos_phase_offset[ant_id][ch]) - ((int32_t)q * pct_sin_phase_offset[ant_id][ch])) >> (int32_t)PCT_FIXED_POINT_UNIT;
-    q_out = (((int32_t)q * pct_cos_phase_offset[ant_id][ch]) + ((int32_t)i * pct_sin_phase_offset[ant_id][ch])) >> (int32_t)PCT_FIXED_POINT_UNIT;
+    i_out = (((int32_t)i * pct_cos_phase_offset[ant_id][ch]) - ((int32_t)q * pct_sin_phase_offset[ant_id][ch])) / (int32_t)PCT_FIXED_POINT_ONE;
+    q_out = (((int32_t)q * pct_cos_phase_offset[ant_id][ch]) + ((int32_t)i * pct_sin_phase_offset[ant_id][ch])) / (int32_t)PCT_FIXED_POINT_ONE;
 
     *iq = ((uint32_t)i_out & 0xfffU) | (((uint32_t)q_out & 0xfffU) << 12U);
 }
@@ -691,7 +688,7 @@ static uint32_t lcl_utils_compute_cosine_fixed_point(uint32_t angle)
     assert(angle <= PI_4_FIXED_POINT);
     if (angle > PI_4_FIXED_POINT) { return 0U; }
    
-    /* Taylor series: sin(x) = x - x^2/2! + x^4/4! -x^6/6! */
+    /* Taylor series: cos(x) = 1 - x^2/2! + x^4/4! -x^6/6! */
     x = angle;
     x2 = (x * x)   >> PCT_FIXED_POINT_UNIT;
     x4 = (x2 * x2) >> PCT_FIXED_POINT_UNIT;
@@ -720,7 +717,7 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
                 }
                 else
                 {
-                    sine = lcl_utils_compute_cosine_fixed_point(norm_angle_fp - PI_2_FIXED_POINT);
+                    sine = lcl_utils_compute_cosine_fixed_point(PI_2_FIXED_POINT - norm_angle_fp);
                 }
                 pct_sin_phase_offset[ant_id][chn] = sin_sign * (int32_t)sine;
                 pct_cos_phase_offset[ant_id][chn] = cos_sign * (int32_t)lcl_utils_sqrt_fixed_point((((uint32_t)1<<(2U*PCT_FIXED_POINT_UNIT)) - (sine*sine)) >> (uint32_t)PCT_FIXED_POINT_UNIT);
