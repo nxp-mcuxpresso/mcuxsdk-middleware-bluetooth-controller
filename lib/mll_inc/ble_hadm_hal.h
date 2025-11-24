@@ -294,15 +294,15 @@ typedef enum
 /*! Computes the number of antennas and antenna paths based on the role and config index */
 /*! numAnt, nAP SHOULD NOT be a composite expression */
 #define HADM_COMPUTE_NUM_ANTENNA(role, configIdx, numAnt, nAP) \
-    if ((configIdx) == HADM_ANT_CFG_IDX_0) { (numAnt) = 0U; (nAP) = 1U; }\
-    else if ((configIdx) == HADM_ANT_CFG_IDX_7) { (numAnt) = 2U; (nAP) = 4U; }\
+    if ((configIdx) == (uint8_t)HADM_ANT_CFG_IDX_0) { (numAnt) = 0U; (nAP) = 1U; }\
+    else if ((configIdx) == (uint8_t)HADM_ANT_CFG_IDX_7) { (numAnt) = 2U; (nAP) = 4U; }\
     else { \
         if (HADM_ROLE_INITIATOR == (role)) {\
-            if ((configIdx) <= HADM_ANT_CFG_IDX_3) { (numAnt) = (nAP) = (configIdx) + 1U; }\
+            if ((configIdx) <= (uint8_t)HADM_ANT_CFG_IDX_3) { (numAnt) = (nAP) = (configIdx) + 1U; }\
             else { (numAnt) = 1U;  (nAP) = (configIdx) - 2U; }\
         }\
         else {\
-            if ((configIdx) <= HADM_ANT_CFG_IDX_3) { (numAnt) = 1U;  (nAP) = (configIdx) + 1U; }\
+            if ((configIdx) <= (uint8_t)HADM_ANT_CFG_IDX_3) { (numAnt) = 1U;  (nAP) = (configIdx) + 1U; }\
             else { (numAnt) = (nAP) = (configIdx) - 2U; }\
         }\
     }

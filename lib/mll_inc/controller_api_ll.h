@@ -60,6 +60,10 @@ typedef enum
 #define  gBleConnNotifDataOnly_c    1U
 #endif
 
+/* LTC access protection */
+extern void (* lock_LTC)(void);
+extern void (* unlock_LTC)(void);
+
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
