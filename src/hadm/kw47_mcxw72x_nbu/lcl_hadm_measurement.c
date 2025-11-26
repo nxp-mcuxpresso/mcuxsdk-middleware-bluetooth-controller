@@ -1730,6 +1730,11 @@ void RSM_INT_IRQHandler(void)
              */
             hal_status = HADM_HAL_ABORTED_SYNC;
         }
+        else if ((abort_reason & XCVR_MISC_RSM_CSR_RSM_UNDR_ERR_MASK) != 0U)
+        {
+            /* May occur in case of heavily loaded system causing IRQ drift (critical section, ...) */
+            hal_status = HADM_HAL_ABORTED;
+        }
         else  /* should not occur */
         {
             assert(FALSE);
