@@ -5,6 +5,8 @@
 rsource "Kconfig_snps"
 
 menu "ble_controller"
+    config MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_asm
+        bool "ble_controller_asm"
     config MCUX_COMPONENT_middleware.wireless.ble_controller_nbu
         bool "ble_controller_main"
         select MCUX_COMPONENT_middleware.wireless.ble_controller_threadx

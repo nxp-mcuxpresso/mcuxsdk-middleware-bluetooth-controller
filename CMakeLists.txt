@@ -50,6 +50,17 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     )
 endif()
 
+if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_asm)
+mcux_add_source(
+        TOOLCHAINS armgcc
+        SOURCES src/KW4x/armgcc/nbu_ble_wrap.s
+    )
+mcux_add_source(
+        TOOLCHAINS iar
+        SOURCES src/KW4x/iar/nbu_ble_wrap.s
+    )
+endif()
+
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu)
     mcux_add_source(
         SOURCES src/KW4x/nbu_ble.c
