@@ -591,6 +591,8 @@ void NBU_Idle(void)
 #endif
 
     NBU_CheckTemperatureChange();
+    
+    PLATFORM_UpdateXtal32MTrim();
 
     // Enable logging timestamps - required LL to be enabled - move it to somewhere else
     BOARD_DBGLOGCOUNTERRUNNING();
