@@ -48,9 +48,9 @@
 
 /* Force disabling lowpower on CM3 - Even if set to 0, CM33 requires to enable Radio domain lowpower
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
-#define gNbuDisableLowpower_d   0
+#define gNbuDisableLowpower_d   1
 
-#if defined(DEBUG)  && 0 
+#if defined(DEBUG)
 /* To avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
 #undef gNbuDisableLowpower_d
 #define gNbuDisableLowpower_d   1
