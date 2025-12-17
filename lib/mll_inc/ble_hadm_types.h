@@ -168,7 +168,7 @@ typedef struct TBleHadmConfigParams_tag
     uint8   ucMode_0_Steps;                         //@CS_Spec #LL_CS_CONFIG_REQ #Mode_0_Steps
     uint8   ucRole;                                 //@CS_Spec #LL_CS_CONFIG_REQ #Role
     uint8   ucRTT_Types;                            //@CS_Spec #LL_CS_CONFIG_REQ #RTT_Type
-    uint8   ucCS_Sync_Phy; /* 1=1Mbps 2=2Mbps */    //@CS_Spec #LL_CS_CONFIG_REQ #CS_SYNC_PHY
+    uint8   ucCS_Sync_Phy;                          //@CS_Spec #LL_CS_CONFIG_REQ #CS_SYNC_PHY (bit field, single bit set)
     uint8   ucT_IP1;                                //@CS_Spec #LL_CS_CONFIG_REQ #T_IP1
     uint8   ucT_IP2;                                //@CS_Spec #LL_CS_CONFIG_REQ #T_IP1
     uint8   ucT_FCS;                                //@CS_Spec #LL_CS_CONFIG_REQ #T_FCS

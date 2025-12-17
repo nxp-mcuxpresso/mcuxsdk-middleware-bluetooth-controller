@@ -157,7 +157,9 @@ typedef enum
 {
     HADM_RTT_PHY_1MBPS = 0U,
     HADM_RTT_PHY_2MBPS = 1U,
-    HADM_RTT_PHY_MAX
+    HADM_RTT_PHY_2MBPS_2BT = 2U,
+    HADM_RTT_PHY_MAX = 3U,
+    HADM_RTT_PHY_INVALID = HADM_RTT_PHY_MAX
 } BLE_HADM_rttPhyMode_t;
 
 typedef enum 
@@ -370,7 +372,7 @@ typedef struct BLE_HADM_SubeventConfig_tag
     int8 txPwrLevel;                   /*! Tx power for the entire SubEvent (dBm) */
     BLE_HADM_rttType_t rttTypes;       /*!< Type of RTT: coarse, frac, frac+soundSeq */
     uint8 rttMode;                     /*!< Mode of RTT steps (1, 3 or none) */
-    BLE_HADM_rttPhyMode_t rttPhy;      /*!< 0=1Mbps, 1=2Mbps */
+    BLE_HADM_rttPhyMode_t rttPhy;      /*!< CS Sync PHY (0=1Mbps, etc ...) */
     BLE_HADM_T_IP_t T_IP1_Time;        /*!< T_IP1 in us */
     BLE_HADM_T_IP_t T_IP2_Time;        /*!< T_IP2 in us */
     BLE_HADM_T_FCS_t T_FCS_Time;       /*!< T_FCS in us */
