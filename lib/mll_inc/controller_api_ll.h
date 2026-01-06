@@ -14,6 +14,10 @@
 #ifndef CONTROLLER_API_H_
 #define CONTROLLER_API_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -346,5 +350,9 @@ void LL_API_NotifyWakeUp(void);
  * \return 0 if success
  */
 int Controller_DebugEventNotification(ll_dbgEventType_t event_type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CONTROLLER_API_H_
