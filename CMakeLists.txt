@@ -50,7 +50,19 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_threadx)
     )
 endif()
 
-if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_asm)
+if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_nbu_example)
+mcux_add_source(
+        SOURCES src/KW4x/nbu_version.c
+                src/KW4x/sw_version.h
+                src/KW4x/controller_init.c
+                src/KW4x/controller_api_ll.c
+                src/KW4x/ll_types.h
+                interface/controller_init.h
+                lib/mll_inc/controller_api_ll.h
+                src/hybrid_gfsk/hybrid_gfsk_hal.c
+                lib/mll_inc/hybrid_gfsk_hal.h
+                lib/mll_inc/ble_debug_struct.h
+    )
 mcux_add_source(
         TOOLCHAINS armgcc
         SOURCES src/KW4x/armgcc/nbu_ble_wrap.s
