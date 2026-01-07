@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 NXP
+ * Copyright 2020-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -87,8 +87,8 @@ typedef struct hci_pkt_info_tag
 #endif /*defined(HDI_MODE) && (HDI_MODE == 1)*/
 
 #if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
-#define CS_HANDOFF_ENABLED           0U // 0: no, 1: event, 2: procedure
-#endif /*defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)*/
+#define CS_HANDOFF_ENABLED           0U /* 0: no, 1: event, 2: procedure */
+#endif /* defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)  */
 
 #if defined(CS_HANDOFF_ENABLED) && (CS_HANDOFF_ENABLED != 0)
 
@@ -460,7 +460,7 @@ static void  NBU_HADM_CopyConfig(void)
     uint32_t clock;
     uint16_t qus;
     LL_API_GetBleTiming(&clock, &qus);
-    uint64_t tstmr = *(uint64_t *)TSTMR0;
+    uint64_t tstmr = PLATFORM_TSTMR_ReadTimeStamp(TSTMR_1MHZ_ID);
 
     uint64_t current = ((uint64_t)clock*625*2 + (uint64_t)qus) / 4;
     uint64_t start   = (uint64_t)ulStartTimeHSlot*625*2/4 + (uint64_t)ulStartTimeOffsetUs;
@@ -557,11 +557,11 @@ void generate_synchro_swo(void) {
   uint64_t current_timer_value = 0;
 
   if (NBU_Idle_cpt == 0) {
-    initial_timer_value = *(uint64_t *)TSTMR0;
+    initial_timer_value =  PLATFORM_TSTMR_ReadTimeStamp(TSTMR_1MHZ_ID);
     NBU_Idle_cpt += 1;
   }
 
-  current_timer_value = *(uint64_t *)TSTMR0;
+  current_timer_value =  PLATFORM_TSTMR_ReadTimeStamp(TSTMR_1MHZ_ID);
   if ((current_timer_value - initial_timer_value) > timeInterval) {
     OSA_DisableIRQGlobal();
     DBG_SWO_PrintDoubleWord(0xDEADBEEF, 0);

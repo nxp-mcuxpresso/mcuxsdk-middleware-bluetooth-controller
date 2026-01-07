@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 NXP
+ * Copyright 2020-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,6 +14,7 @@
 #include "controller_api_ll.h"
 #include "fwk_platform_dbg.h"
 #include "board.h"
+#include "fwk_platform_mcu_nbu_common.h"
 
 /*******************************************************************************
  * Types & defines
@@ -183,8 +184,11 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
               /* LL_API_GetBleTimingNoNativeClockCheck() not implemented in FPGA lib */
                 uint32_t hslot;
                 uint16_t qus;
-                uint32_t tstmr_h = 0UL;
-                uint32_t tstmr_l = 0UL;
+                union {
+                    uint64_t u64;
+                    uint32_t u32[2];
+                } tstmr_val;
+                tstmr_val.u64 = 0ULL;
 
                 // workaround for native clock value after wakeup
                 LL_API_WaitForClkUpdtFromLowPwr();
@@ -192,13 +196,10 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 // use atomic section to have LL timing and TSTMR0 at the same time
                 OSA_DisableIRQGlobal();
                 LL_API_GetBleTimingNoNativeClockCheck(&hslot, &qus);
-#if defined(TSTMR0)
-                 /* A complete read operation should include both TSTMR LOW and HIGH reads. */
-                tstmr_l = TSTMR0->L;
-                __DMB();
-                tstmr_h = TSTMR0->H;
+#if defined(TSTMR_1MHZ_ID)
+                tstmr_val.u64 = PLATFORM_TSTMR_ReadTimeStamp(TSTMR_1MHZ_ID);
 #else
-#warning TSTMR0 is not available, need to get some value else where
+#warning TSTMR0 is not available, need to get some value elsewhere
 #endif
                 OSA_EnableIRQGlobal();
                 /* If the number of half-slots is odd, converting to slots
@@ -211,8 +212,8 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 }
                 _PUT32(api_return+4U,  hslot >> 1U);    /* convert to number of slots */
                 _PUT32(api_return+8U,  qus >> 2U);      /* convert to usec : number if a 14 bit value */
-                _PUT32(api_return+12U, tstmr_l);
-                _PUT32(api_return+16U, tstmr_h);
+                _PUT32(api_return+12U, tstmr_val.u32[0]);
+                _PUT32(api_return+16U, tstmr_val.u32[1]);
                 nb_returns += 16U;
                 break;
             }
