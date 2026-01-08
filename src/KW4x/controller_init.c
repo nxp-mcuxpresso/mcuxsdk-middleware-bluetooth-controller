@@ -20,6 +20,7 @@
 #include "controller_init.h"
 #include "ll_types.h"
 #include "controller_api_ll.h"
+#include "fwk_debug_struct.h"
 
 #if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
 #include "fsl_adapter_flash.h"
@@ -41,7 +42,6 @@
 #if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
 #include "hdi.h"
 #endif
-#include "ble_debug_struct.h"
 
 /*******************************************************************************
  * Definitions
