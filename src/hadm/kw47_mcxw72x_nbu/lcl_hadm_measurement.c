@@ -113,7 +113,7 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .T_IP1_TimesSupported       = 0x0048, /* T_IP1=80 or 40us */
     .T_IP2_TimesSupported       = 0x0048, /* T_IP2=80 or 40us */
     .T_FCS_TimesSupported       = 0x0050, /* T_FCS=80 or 50us */
-    .T_PM_TimesSupported        = 0x0002, /* T_PM=20us */
+    .T_PM_TimesSupported        = 0x0003, /* T_PM=20us or 10us */
     .TX_SNR                     = 0x0F    /* 18dB, 21 dB, 24 dB and 27dB supported */
 };
 
