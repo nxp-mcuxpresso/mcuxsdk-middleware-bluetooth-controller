@@ -27,12 +27,22 @@ menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
             osource "middleware/wireless/snps_ll_private/Kconfig"
         endchoice
 
+        config MCUX_COMPONENT_middleware.wireless.snps_ll_libraries
+        bool "snps_ll_libraries"
+        default y
+        depends on MCUX_COMPONENT_middleware.wireless.snps_ll_os ||\
+                   MCUX_COMPONENT_middleware.wireless.snps_ll_os_uart ||\
+                   MCUX_COMPONENT_middleware.wireless.snps_ll_bm ||\
+                   MCUX_COMPONENT_middleware.wireless.snps_ll_bm_uart
+        help
+          Link SNPS Linker Layer libraries as part of the build.
+
         if MCUX_COMPONENT_middleware.wireless.ble_host
             config MCUX_COMPONENT_middleware.wireless.snps_ll_nxp_hoststack_adapter
-            bool "nxp_hoststack_adapter" 
-            default y 
+            bool "nxp_hoststack_adapter"
+            default y
         endif
 
         config MCUX_COMPONENT_middleware.wireless.snps_ll_controller_api
-        bool "controller_api" 
+        bool "controller_api"
     endif
