@@ -14,10 +14,6 @@
 #ifndef CONTROLLER_API_H_
 #define CONTROLLER_API_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -269,8 +265,9 @@ extern uint32 Controller_GetSystemCoreClockFreq(void);
 #define MAX_FREQ_CONSTRAINT    4U  // max frequency selection
 extern void   PLATFORM_SetFrequencyConstraintFromController(uint8 freq_constraint);
 void LL_API_ClockUpdated(void);
-
+#ifdef EP_MEAS_CRITICAL_SECTION
 extern void GetCriticalSectionStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
+#endif
 extern void GetNbuIrqStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
 
 // workaround for too late native clock update after wakeup
@@ -350,9 +347,5 @@ void LL_API_NotifyWakeUp(void);
  * \return 0 if success
  */
 int Controller_DebugEventNotification(ll_dbgEventType_t event_type);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // CONTROLLER_API_H_

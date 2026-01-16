@@ -14,10 +14,6 @@
 #ifndef __HYBRID_GFSK_HAL_H__
 #define __HYBRID_GFSK_HAL_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* RX packet status bitmap */
 #define HYBRID_GFSK_STATUS_CRC_ERROR         0x01U
 #define HYBRID_GFSK_STATUS_LENGTH_ERROR      0x02U
@@ -67,9 +63,5 @@ uint32 hybrid_gfsk_get_rx_pkt_min_dur_us(void);
  * \return uint32 API status 0 success, others failure
 */
 uint32 hybrid_gfsk_hal_continuous_tx(uint8 test, uint8 generic_channel, uint8 param, uint8 power_level_nslice);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // __HYBRID_GFSK_HAL_H__

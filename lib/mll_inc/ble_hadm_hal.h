@@ -15,10 +15,6 @@
 #ifndef _BLE_HADM_HAL_H_
 #define _BLE_HADM_HAL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)) ||\
     (defined(KWXX) && (KWXX>=KW47))
 #define HADM_HAL_VERSION 2 /* For KW47/KW43 architecture */
@@ -632,9 +628,5 @@ BLE_HADM_SubeventConfig_t* BLE_HADM_GetConfigBuffer(void);
  * API Used by LL to release HAL config buffer
  */
 void BLE_HADM_ReleaseConfigBuffer(BLE_HADM_SubeventConfig_t **config_p);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _BLE_HADM_HAL_H_ */
