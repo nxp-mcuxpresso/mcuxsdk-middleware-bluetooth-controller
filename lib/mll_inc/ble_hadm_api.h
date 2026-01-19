@@ -24,6 +24,10 @@
 
 #include "ble_hadm_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* === Variables  =========================================================== */
 
 
@@ -52,5 +56,9 @@ BLE_HADM_STATUS_t BLE_HADM_SubeventContinue(BLE_HADM_SubeventConfig_t *pConfig, 
  * \return    HADM_HAL_SUCCESS indicates LL continuing the procedure, HADM_HAL_ABORTED otherwise 
  */
 BLE_HADM_STATUS_t BLE_HADM_ProcedureContinue(const TBleHadmConnection_t *pProc, uint32 startTimeHSlot, uint32 startTimeOffsetUs);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // #ifndef __HADM_API_H_
