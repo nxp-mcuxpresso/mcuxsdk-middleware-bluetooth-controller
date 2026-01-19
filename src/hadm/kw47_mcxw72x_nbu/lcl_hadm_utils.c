@@ -192,8 +192,8 @@ uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal)
  * Curve is positioned on Y axis (hence the -1) so that there's no delay at 25 degrees C which is the recommended
  * temperature to perform zero distance calibration.
  * This will also guarantee normal behavior at 25 degrees C if the host does not transmit temperature information (hcibb).
- * For 1MBPS: delay (half ns) = 0.0014x^2 + 0.15x – 3.097
- * For 2MBPS: delay (half ns) = 0.0016x^2 + 0.1462x – 8.028
+ * For 1MBPS: delay (half ns) = 0.0014x^2 + 0.15x
+ * For 2MBPS: delay (half ns) = 0.0016x^2 + 0.1462x
  * Fixed point conversions:
  *      0.0014 => 22.9*2^14
  *      0.0016 => 26.2*2^14
@@ -204,8 +204,8 @@ uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal)
 #define HADM_RTT_SCALE_FACTOR      (0x4000)     /* (1<<14) */
 #define HADM_RTT_SCALE_FACTOR_HALF (HADM_RTT_SCALE_FACTOR / 2)
 #define HADM_RTT_SCALE_FACTOR_4    (0x10)       /* (1<<(5-1)) */
-#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) ((((23 * (_TEMP) + 2457) * (_TEMP)) / HADM_RTT_SCALE_FACTOR) - 3)
-#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) ((((26 * (_TEMP) + 2395) * (_TEMP)) / HADM_RTT_SCALE_FACTOR) - 8)
+#define HADM_CALC_RTT_TEMP_DELAY_1MBPS(_TEMP) ((((23 * (_TEMP) + 2457) * (_TEMP)) / HADM_RTT_SCALE_FACTOR))
+#define HADM_CALC_RTT_TEMP_DELAY_2MBPS(_TEMP) ((((26 * (_TEMP) + 2395) * (_TEMP)) / HADM_RTT_SCALE_FACTOR))
 
 void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_t *hadm_device_p)
 {
