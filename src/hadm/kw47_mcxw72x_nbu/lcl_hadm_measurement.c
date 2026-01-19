@@ -183,7 +183,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
      * Note: FCS phase in the RSM does not include ramp down which occurs at the very end of a step in the TSM sequence.
      * Typical value is 25us (for both roles).
      */
-    hadm_hal_properties.txWarmupUs = 14U + 2U; /* 14us RSM WU state duration + 2us digital latency for 1st bit to reach the air */
+    hadm_hal_properties.txWarmupUs = 21U + 2U; /* 21us RSM WU state duration + 2us digital latency for 1st bit to reach the air */
     hadm_hal_properties.txWarmupUs += (uint16_t)((xcvr_lcl_tsm_generic_config.WU_LATENCY & XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_MASK) >> XCVR_TSM_WU_LATENCY_TX_DATAPATH_LATENCY_SHIFT);
     hadm_hal_properties.txWarmupUs += HADM_HAL_RSM_TRIGGER_OFFSET;
 
