@@ -27,6 +27,7 @@
 #include "lcl_xcvr_simu.h"
 #endif
 #include "board.h"
+#include "nxp_xcvr_ext_ctrl.h"
 
 #if !defined(CPU_KW47B42Z83AFTA_cm33_core1) && !defined(CPU_KW47B42ZB7AFTA_cm33_core1) && !defined(CPU_MCXW727CMFTA_cm33_core1) \
     && !defined(CPU_KW43B43ZC7MFPA_NBU) && !defined(CPU_KW43B43ZC7MFTA_NBU)
@@ -127,6 +128,14 @@ static hadm_proc_t hadm_procs[HADM_MAX_NB_CONNECTIONS];
 static hadm_meas_t hadm_meas[HADM_MAX_NB_SIMULT_SUBEVENTS];
 
 const uint8_t rtt_type_2_payload_size[7U] = {0U, 1U, 3U, 1U, 2U, 3U, 4U}; /* in 32 bits words */
+
+static uint8_t fem_active = 0U;               /* 0U / 1U for FEM inactive (default) / active (by application) */
+static xcvr_pa_fem_config_t pa_fem_config =   /* the default FEM config */
+{
+    XCVR_ANTX_DUAL_MODE, 0U, 1U, 0U, 0U,
+    XCVR_FAD_TSM_GPIO, XCVR_FAD_TSM_GPIO, XCVR_FAD_TSM_GPIO, XCVR_FAD_TSM_GPIO,
+    0U, 0U, 0U, 0U, XCVR_FAD_ACTIVE_HIGH, XCVR_FAD_ACTIVE_HIGH
+};
 
 /* === Externals =========================================================== */
 
@@ -364,6 +373,36 @@ BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable)
     }
     
     return hal_status;
+}
+
+BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len)
+{
+    /* check for consistency of parameter number w.r.t XCVR */
+    if ((fem_config_ptr != NULL) && (config_len == sizeof(xcvr_pa_fem_config_t)))
+    {
+        pa_fem_config.op_mode                  = (XCVR_ANTX_MODE_T)fem_config_ptr[0];
+        pa_fem_config.ant_sel_pins_enable      = fem_config_ptr[1];
+        pa_fem_config.tx_rx_switch_pins_enable = fem_config_ptr[2];
+        pa_fem_config.high_z_enable            = fem_config_ptr[3];
+        pa_fem_config.use_fad_state_machine    = fem_config_ptr[4];
+        pa_fem_config.ant_a_pad_control        = (XCVR_FAD_NOT_GPIO_MODE_T)fem_config_ptr[5];
+        pa_fem_config.ant_b_pad_control        = (XCVR_FAD_NOT_GPIO_MODE_T)fem_config_ptr[6];
+        pa_fem_config.tx_switch_pad_control    = (XCVR_FAD_NOT_GPIO_MODE_T)fem_config_ptr[7];
+        pa_fem_config.rx_switch_pad_control    = (XCVR_FAD_NOT_GPIO_MODE_T)fem_config_ptr[8];
+        pa_fem_config.pa_tx_wu                 = fem_config_ptr[9];
+        pa_fem_config.pa_tx_wd                 = fem_config_ptr[10];
+        pa_fem_config.lna_rx_wu                = fem_config_ptr[11];
+        pa_fem_config.lna_rx_wd                = fem_config_ptr[12];
+        pa_fem_config.tx_switch_pol_control    = (XCVR_RX_TX_POLARITY_MODE_T)fem_config_ptr[13];
+        pa_fem_config.rx_switch_pol_control    = (XCVR_RX_TX_POLARITY_MODE_T)fem_config_ptr[14];
+
+        fem_active = 1U;
+        return HADM_HAL_SUCCESS;
+    }
+    else
+    {
+        return HADM_HAL_INVALID_ARGS;
+    }
 }
 
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address)
@@ -864,6 +903,15 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
             status = XCVR_LCL_Set_TSM_FastStart(rsm_config_p->role, rsm_config_p);
             assert(gXcvrLclStatusSuccess == status);
             (void)status;
+
+            if (fem_active == 1U)
+            {
+                /* FEM is active, apply to XCVR. Backup & restore of BLE's TIMING07, TIMING08 are done.
+                   XCVR_ANALOG->LDO_1 & XCVR_MISC->FAD_CTRL are not changed */
+                xcvrStatus_t xcvr_status = XCVR_ExternalFadPaFemInit(&pa_fem_config);
+                assert(xcvr_status == gXcvrSuccess_c);
+                (void)xcvr_status;
+            }
         }
         else
         {

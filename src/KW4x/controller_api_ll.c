@@ -15,6 +15,9 @@
 #include "fwk_platform_dbg.h"
 #include "board.h"
 #include "fwk_platform_mcu_nbu_common.h"
+#if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
+#include "lcl_hadm_measurement.h"
+#endif
 
 /*******************************************************************************
  * Types & defines
@@ -63,7 +66,7 @@ typedef enum
     API_Controller_SetChannelSelectionAlgo2,
     API_Controller_GetTimestamp,
     API_Controller_GetTimestampEx,
-    API_Controller_Reserve_1, /* place holding for new entry */
+    API_Controller_SetFemConfig,
     API_Controller_GetEncryptionParam,
     API_Controller_Reserve_2, /* place holding for new entry */
     API_Controller_SetRxMode,
@@ -91,7 +94,7 @@ static const uint8_t api_param_lenth[] =
     1U,   /* Controller_SetChannelSelectionAlgo2 */
     1U,   /* Controller_GetTimestamp */
     0U,   /* Controller_GetTimestampEx */
-    0U,   /* place holding for new entry */
+    15U,  /* Controller_SetFemConfig */
     3U,   /* Controller_GetEncryptionParam */
     0U,   /* place holding for new entry */
     2U,   /* Controller_SetRxMode */
@@ -217,6 +220,13 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 nb_returns += 16U;
                 break;
             }
+#if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
+            case API_Controller_SetFemConfig:
+            {
+                api_status = (uint32)lcl_hadm_set_fem_config(&data[2], data_len);
+                break;
+            }
+#endif
             case API_Controller_GetEncryptionParam:
             {
                 api_status = LL_API_GetEncryptionParam(_GET16(&data[2]), data[4],

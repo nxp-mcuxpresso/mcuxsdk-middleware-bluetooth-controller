@@ -45,7 +45,7 @@ typedef enum
     API_Controller_SetChannelSelectionAlgo2,
     API_Controller_GetTimestamp,
     API_Controller_GetTimestampEx,
-    API_Controller_Reserve_1, /* place holding for new entry */
+    API_Controller_SetFemConfig,
     API_Controller_GetEncryptionParam,
     API_Controller_Reserve_2, /* place holding for new entry */
     API_Controller_SetRxMode,
@@ -269,6 +269,42 @@ osa_status_t Controller_GetTimestampEx(uint32_t* ll_timing_slot, uint16_t* ll_ti
       api_status = KOSA_StatusError;
     }
     return api_status;
+}
+
+#define XCVR_PA_FEM_SIZE (15U + 2U) /* 15 is sizeof(xcvr_pa_fem_config_t), 2 is margin */
+
+osa_status_t Controller_SetFemConfig(const uint8_t* fem_config_ptr, uint8_t config_len)
+{
+    osa_status_t api_return    = KOSA_StatusSuccess;
+    int32_t      ret           = 0;
+    uint32_t tab[XCVR_PA_FEM_SIZE];
+    uint8_t fmt[XCVR_PA_FEM_SIZE + 1]; /* +1 for end of string */
+    bool rpmsg_status;
+
+    if ((fem_config_ptr != NULL) &&
+        (config_len <= XCVR_PA_FEM_SIZE)) /* detect array size issue */
+    {
+        for (uint8_t i=0U; i<config_len; i++)
+        {
+            tab[i] = (uint32_t)(*(fem_config_ptr + i));
+        }
+        (void)memset(fmt, 0x01, config_len); /* all parameters are of type uint8 */
+        fmt[config_len] = 0x00U;             /* add end of string */
+        rpmsg_status = PLATFORM_NbuApiReq((uint8_t*)&ret, API_Controller_SetFemConfig,
+                                          (const uint8_t*)fmt, tab, 4U);
+        assert(rpmsg_status);
+        (void)rpmsg_status;
+
+        if ( ret!=0 )
+        {
+            api_return = KOSA_StatusError;
+        }
+    }
+    else
+    {
+        api_return = KOSA_StatusError;
+    }
+    return api_return;
 }
 
 osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle,

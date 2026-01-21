@@ -291,6 +291,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void);
 BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx);
 void lcl_hadm_handle_temperature_change(int32_t temperature);
 BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable);
+BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len);
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate);

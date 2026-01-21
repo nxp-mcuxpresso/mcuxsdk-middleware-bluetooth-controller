@@ -227,6 +227,18 @@ osa_status_t Controller_GetTimestamp(uint32_t* timestamp);
 osa_status_t Controller_GetTimestampEx(uint32_t* ll_timing_slot, uint16_t* ll_timing_us, uint64_t *tstmr);
 
 /*! *********************************************************************************
+ * \brief  Send FEM configuration to NBU.
+ * \param[in]  fem_config_ptr  pointer to the config array.
+ * \param[in]  config_len      length in bytes.
+ *
+ * \return KOSA_StatusSuccess or KOSA_StatusError.
+ *
+ * \remarks
+ * - Caller has to check config_len value. API uses it solely for message size handling.
+ ********************************************************************************** */
+osa_status_t Controller_SetFemConfig(const uint8_t* fem_config_ptr, uint8_t config_len);
+
+/*! *********************************************************************************
  * \brief  Retrieve the encryption parameters of the connection.
  * \param[in]  conn_handle         connection handle
  * \param[in]  sk_or_skd_req       session key (0) or session key diversifier (1) required
