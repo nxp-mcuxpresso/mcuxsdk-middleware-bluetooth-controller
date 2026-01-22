@@ -100,22 +100,27 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .stepModeSupported          = 1U, /* step mode 3 is supported */
     .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
     .nNumAPSupported            = HADM_MAX_NB_ANTENNA_PATHS,
-    .RTT_Capability             = 0x5, /* RTT_Coarse_N field refers to the 10ns precision requirement (AA only and random seq) */
+    .RTT_Capability             = 0x2D, /* AA only and random sequence for 1Mbps and 2Mbps */
     .RTT_Coarse_N               = 10, /* Number of RTT steps to satisfy the precision requirement. */ 
     .RTT_Sounding_N             = 0, /* not supported */
     .RTT_Random_Sequence_N      = 10, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Coarse_N            = 7, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Sounding_N          = 0, /* not supported */
+    .RTT_2M_Random_Sequence_N   = 7, /* Number of RTT steps to satisfy the precision requirement. */
     .NADM_Sounding_Capability   = 0, /* NADM not supported */
     .NADM_Random_Sequence_Capability = 1, /* NADM supported */
     .PHYSupported               = 1<<1 | 1<<2 , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
     .T_SW_TimeSupported         = 2, /* 2us: OJE TODO confirm OK for ramp-up/down */
     .FAErequired                = 0, /* no FAE */
-    .InlinePhaseReturn          = 0U, /* to enable by _LE_HADM_NXP_Config */
+    .InlinePhaseReturn          = 1U,
     /* note: mandatory timings are not included in capabilities */
     .T_IP1_TimesSupported       = 0x0048, /* T_IP1=80 or 40us */
     .T_IP2_TimesSupported       = 0x0048, /* T_IP2=80 or 40us */
     .T_FCS_TimesSupported       = 0x0050, /* T_FCS=80 or 50us */
     .T_PM_TimesSupported        = 0x0003, /* T_PM=20us or 10us */
-    .TX_SNR                     = 0x0F    /* 18dB, 21 dB, 24 dB and 27dB supported */
+    .TX_SNR                     = 0x0F, /* 18dB, 21 dB, 24 dB and 27dB supported */
+    .T_IP2_IPT_TimesSupported   = 0x0040, /* T_IP2_IPT=80us (dummy) */
+    .T_SW_IPT_TimeSupported     = 4, /* 4us (dummy)*/
 };
 
 /* Contains data associated to this device */
@@ -1711,11 +1716,12 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                     }
                     *res_buff_p++ = (uint8_t)step_config_p->ant_perm; /* Antenna_Permutation_Index */
+                    bool_t inpr_refl = (hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR);
                     /* Store PCT[ap], 3 bytes each 22 significant bits  +  Tone Quality Indicator [ap] (1 byte each) */
                     lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_p, circ_buff_p->curr_step_idx, ant_id_seq);
                     for(ap = 0; ap < (int)hadm_meas_p->n_ap; ap++)
                     {
-                        curr_iq = HADM_DECODE_HW_RTP_PCT(iq[ap]);
+                        HADM_DECODE_HW_RTP_PCT(iq[ap], inpr_refl, curr_iq);
                         lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, 0U/*NA*/);
@@ -1723,7 +1729,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     /* Determine if N_AP+1 PCT has been received or not */
                     if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1U) != 0U))
                     {
-                        curr_iq = HADM_DECODE_HW_RTP_PCT(iq[ap]);
+                        HADM_DECODE_HW_RTP_PCT(iq[ap], inpr_refl, curr_iq);
                         lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY_WITH_EXT_SLOT(iq[ap], res_buff_p, t_pm_ext);

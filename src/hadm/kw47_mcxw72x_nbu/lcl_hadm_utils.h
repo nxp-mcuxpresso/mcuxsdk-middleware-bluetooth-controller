@@ -159,9 +159,26 @@
  *    IQ: 2x11bits with sign bit MSB aligned.
  *    Phase Correction Term (22 bits containing 11 least significant bits to indicate I sample and 11 most significant bits to indicate Q sample)
  * Note: HW output is :{rx_dft_iq_out_q[10:0], rx_if_mixer_idx[9:5], rx_dft_iq_out_i[10:0], rx_if_mixer_idx[4:0]}
+ * store rx_dft_iq_out_i in LSB and rx_dft_iq_out_q in MSB (packed in 2x12bits)
+ * If IPT is enabled:
+ * - Q sample shall be set to 0 on the reflector.
+ * - I sample should reflect magnitude of PCT and be non-negative (reverse two's complement).
  */
+#define HADM_DECODE_HW_RTP_PCT(iq_in, inpr_refl, iq_out) \
+    do \
+    {\
+        if (inpr_refl) \
+        {\
+            uint16_t mask = (uint16_t) (((iq_in) & 0xfff0U) >> 15U); \
+            uint16_t neg_mask = (uint16_t)(~(mask) + 1U); \
+            iq_out = ((((((iq_in) & 0xfff0U) - (mask)) ^ (neg_mask)) & 0xfff0U) >> 4U); \
+        }\
+        else \
+        {\
+            iq_out = (((iq_in) & 0x0000fff0U) >> 4U) | (((iq_in) & 0xfff00000U) >> 8U); \
+        }\
+    } while (0 != 0)
 
-#define HADM_DECODE_HW_RTP_PCT(iq_in) (((iq_in) & 0x0000fff0U) >> 4U) | (((iq_in) & 0xfff00000U) >> 8U)
 
 /*! report_p SHOULD NOT be a composite expression */
 #define HADM_ENCODE_HCI_RTP_PCT(iq_hci, report_p) \
@@ -191,6 +208,7 @@
         {   qual_metric |= ((uint8_t)HADM_TQI_TONE_EXT_NOT_PRESENT << 4U); }\
         *(report_p)++ = qual_metric; \
     } while (0 != 0)
+
 /* === Globals ============================================================= */
 
 /* === Externals =========================================================== */
