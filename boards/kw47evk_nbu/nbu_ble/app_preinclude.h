@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 NXP
+ * Copyright 2021-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -35,13 +35,6 @@
 #define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 
 #endif
-
-/* Enable dump of debug info into NBU RAM log if fwk_fault_handlers.c is added to the project (internal use only)
- * To add fwk_fault_handlers.c into NBU project, add the following Kconfig to project prj.conf file
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private=y
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg=y
- *  CONFIG_MCUX_COMPONENT_middleware.wireless.framework_private.dbg.fault_handlers=y */
-//#define gDBG_LogInLinkLayerDebugStructEnabled_d 1
 
 /* Force disabling lowpower on CM3 - Even if set to 0, CM33 requires to enable Radio domain lowpower
     by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
