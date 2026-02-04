@@ -211,7 +211,7 @@ void lcl_hadm_utils_calc_rtt_temperature_delay(int32_t temperature, hadm_device_
 {
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_1MBPS] = HADM_CALC_RTT_TEMP_DELAY_1MBPS(temperature);
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS] = HADM_CALC_RTT_TEMP_DELAY_2MBPS(temperature);
-    // TODO: JVM - verify that 2MBPS 2BT modulation has the same delay as 2MBPS
+    /* It is assumed that 2MBPS BT2.0 modulation has the same delay as 2MBPS BT0.5 */
     hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS_2BT] = hadm_device_p->rtt_temperature_comp_hns[HADM_RTT_PHY_2MBPS];
 }
 
@@ -232,9 +232,12 @@ void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p)
     /* RCCal delay in hns = -0.339*(rccal-17) ns * 2 (0.339 in fixed point s14 = 5554) */
     static_delay_hns = (((int32_t)hadm_device_p->rtt_static_comp.rttRCcal - HADM_RCCAL_CENTER) * (-5554)) / HADM_RTT_SCALE_FACTOR_HALF;
 
-     /* CBPF attenuation delay in ns = 16.015(a-9). Since a is stored *100 => in hns = 2*16.015(a-9)/100. (16.015 in fixed point s5 = 512) */
+    /* CBPF attenuation delay in ns = 16.015(a-9). Since a is stored *100 => in hns = 2*16.015(a-9)/100. (16.015 in fixed point s5 = 512) */
     hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS] = static_delay_hns +
        ((((int32_t)hadm_device_p->rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] - HADM_CBPF_ATTEN_CENTER_2MBPS) * 512) / (100*HADM_RTT_SCALE_FACTOR_4));
+
+    /* 2Mbps BT2 uses sames compensation as BT0.5 */
+    hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS_2BT] = hadm_device_p->rtt_static_comp_hns[HADM_RTT_PHY_2MBPS];
 }
 
 /* Compute latency that has to be removed from ToA-ToD values (resp. substracted from ToD-ToA) :

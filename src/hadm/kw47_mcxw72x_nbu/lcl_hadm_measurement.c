@@ -254,6 +254,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     hadm_device.rtt_static_comp.rttRCcal = HADM_RCCAL_CENTER;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = HADM_CBPF_ATTEN_CENTER_1MBPS;
     hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = HADM_CBPF_ATTEN_CENTER_2MBPS;
+    hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS_2BT] = HADM_CBPF_ATTEN_CENTER_2MBPS;
 
     /* Set default PA ramping duration and antenna switching mode. Can be overwritten via vendor HCI command. */
     hadm_device.paRampingTime = XCVR_RSM_PA_RAMP_1_USEC;
@@ -312,6 +313,8 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
             if (rtt_trim_values.rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
             {
                 hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
+                /* BT2 trim values are not populated. It is assumed that 2Mbps BT0.5 and BT2.0 need same values */
+                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS_2BT] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
             }
         }
         else
