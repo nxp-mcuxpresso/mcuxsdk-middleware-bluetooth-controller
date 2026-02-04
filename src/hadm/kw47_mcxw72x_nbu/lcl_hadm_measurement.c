@@ -99,28 +99,56 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .stepModeSupported          = 1U, /* step mode 3 is supported */
     .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
     .nNumAPSupported            = HADM_MAX_NB_ANTENNA_PATHS,
-    .RTT_Capability             = 0x2D, /* AA only and random sequence for 1Mbps and 2Mbps */
-    .RTT_Coarse_N               = 10, /* Number of RTT steps to satisfy the precision requirement. */ 
-    .RTT_Sounding_N             = 0, /* not supported */
-    .RTT_Random_Sequence_N      = 10, /* Number of RTT steps to satisfy the precision requirement. */
-    .RTT_2M_Coarse_N            = 7, /* Number of RTT steps to satisfy the precision requirement. */
-    .RTT_2M_Sounding_N          = 0, /* not supported */
-    .RTT_2M_Random_Sequence_N   = 7, /* Number of RTT steps to satisfy the precision requirement. */
-    .NADM_Sounding_Capability   = 0, /* NADM not supported */
-    .NADM_Random_Sequence_Capability = 1, /* NADM supported */
-    .PHYSupported               = 1<<1 | 1<<2 , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
-    .T_SW_TimeSupported         = 2, /* 2us: OJE TODO confirm OK for ramp-up/down */
-    .FAErequired                = 0, /* no FAE */
+    .RTT_Capability             = 0x5U, /* AA only and random sequence for 1Mbps and 2Mbps */
+    .RTT_Coarse_N               = 10U, /* Number of RTT steps to satisfy the precision requirement. */ 
+    .RTT_Sounding_N             = 0U, /* not supported */
+    .RTT_Random_Sequence_N      = 10U, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Coarse_N            = 7U, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Sounding_N          = 0U, /* not supported */
+    .RTT_2M_Random_Sequence_N   = 7U, /* Number of RTT steps to satisfy the precision requirement. */
+    .NADM_Sounding_Capability   = 0U, /* NADM not supported */
+    .NADM_Random_Sequence_Capability = 1U, /* NADM supported */
+    .PHYSupported               = 1U<<1U, /* 2Mbps PHY supported (bit #1) */
+    .T_SW_TimeSupported         = 2U, /* 2us: OJE TODO confirm OK for ramp-up/down */
+    .FAErequired                = 0U, /* no FAE */
+    .InlinePhaseReturn          = 0U,
+    /* note: mandatory timings are not included in capabilities */
+    .T_IP1_TimesSupported       = 0x0048U, /* T_IP1=80 or 40us */
+    .T_IP2_TimesSupported       = 0x0048U, /* T_IP2=80 or 40us */
+    .T_FCS_TimesSupported       = 0x0050U, /* T_FCS=80 or 50us */
+    .T_PM_TimesSupported        = 0x0002u, /* T_PM=20us */
+    .TX_SNR                     = 0x00U, /* not supported */
+    .T_IP2_IPT_TimesSupported   = 0x0000U, /* not supported */
+    .T_SW_IPT_TimeSupported     = 0U, /* not supported */
+};
+
+static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities_experimental = {
+    .stepModeSupported          = 1U, /* step mode 3 is supported */
+    .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
+    .nNumAPSupported            = HADM_MAX_NB_ANTENNA_PATHS,
+    .RTT_Capability             = 0x2DU, /* AA only and random sequence for 1Mbps and 2Mbps */
+    .RTT_Coarse_N               = 10U, /* Number of RTT steps to satisfy the precision requirement. */ 
+    .RTT_Sounding_N             = 0U, /* not supported */
+    .RTT_Random_Sequence_N      = 10U, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Coarse_N            = 7U, /* Number of RTT steps to satisfy the precision requirement. */
+    .RTT_2M_Sounding_N          = 0U, /* not supported */
+    .RTT_2M_Random_Sequence_N   = 7U, /* Number of RTT steps to satisfy the precision requirement. */
+    .NADM_Sounding_Capability   = 0U, /* NADM not supported */
+    .NADM_Random_Sequence_Capability = 1U, /* NADM supported */
+    .PHYSupported               = 1U<<1U | 1U<<2U , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
+    .T_SW_TimeSupported         = 2U, /* 2us: OJE TODO confirm OK for ramp-up/down */
+    .FAErequired                = 0U, /* no FAE */
     .InlinePhaseReturn          = 1U,
     /* note: mandatory timings are not included in capabilities */
-    .T_IP1_TimesSupported       = 0x0048, /* T_IP1=80 or 40us */
-    .T_IP2_TimesSupported       = 0x0048, /* T_IP2=80 or 40us */
-    .T_FCS_TimesSupported       = 0x0050, /* T_FCS=80 or 50us */
-    .T_PM_TimesSupported        = 0x0003, /* T_PM=20us or 10us */
-    .TX_SNR                     = 0x0F, /* 18dB, 21 dB, 24 dB and 27dB supported */
-    .T_IP2_IPT_TimesSupported   = 0x0040, /* T_IP2_IPT=80us (dummy) */
-    .T_SW_IPT_TimeSupported     = 4, /* 4us (dummy)*/
+    .T_IP1_TimesSupported       = 0x0048U, /* T_IP1=80 or 40us */
+    .T_IP2_TimesSupported       = 0x0048U, /* T_IP2=80 or 40us */
+    .T_FCS_TimesSupported       = 0x0050U, /* T_FCS=80 or 50us */
+    .T_PM_TimesSupported        = 0x0003U, /* T_PM=20us or 10us */
+    .TX_SNR                     = 0x0FU, /* 18dB, 21 dB, 24 dB and 27dB supported */
+    .T_IP2_IPT_TimesSupported   = 0x0040U, /* T_IP2_IPT=80us (dummy) */
+    .T_SW_IPT_TimeSupported     = 4U, /* 4us (dummy)*/
 };
+
 
 /* Contains data associated to this device */
 hadm_device_t hadm_device;
@@ -543,9 +571,16 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
     *warmdown_time = 0;
 }
 
-const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void)
+const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(uint8 isExperimental)
 {
-    return &hadm_hal_capabilities;
+    if (isExperimental == 0U)
+    {
+        return &hadm_hal_capabilities;
+    }
+    else
+    {
+        return &hadm_hal_capabilities_experimental;
+    }
 }
 
 BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_config)

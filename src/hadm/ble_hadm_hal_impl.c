@@ -263,9 +263,9 @@ void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config
                                       warmdown_time);
 }
 
-const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(void)
+const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental)
 {
-    return lcl_hadm_get_capabilities();
+    return lcl_hadm_get_capabilities(isExperimental);
 }
 
 BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable)

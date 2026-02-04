@@ -300,7 +300,7 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
                                       uint16_t *prepare_time,
                                       uint16_t *warmup_time,
                                       uint16_t *warmdown_time);
-const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(void);
+const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(uint8 isExperimental);
 BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_config);
 BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_config);
 BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm_config_p);
