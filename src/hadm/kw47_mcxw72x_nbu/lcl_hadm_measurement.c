@@ -27,7 +27,6 @@
 #include "lcl_xcvr_simu.h"
 #endif
 #include "board.h"
-#include "nxp_xcvr_ext_ctrl.h"
 
 #if !defined(CPU_KW47B42Z83AFTA_cm33_core1) && !defined(CPU_KW47B42ZB7AFTA_cm33_core1) && !defined(CPU_MCXW727CMFTA_cm33_core1) \
     && !defined(CPU_KW43B43ZC7MFPA_NBU) && !defined(CPU_KW43B43ZC7MFTA_NBU)
