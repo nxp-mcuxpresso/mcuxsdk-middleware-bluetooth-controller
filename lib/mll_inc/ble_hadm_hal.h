@@ -407,6 +407,9 @@ typedef struct BLE_HADM_HalCapabilities_tag
     uint8 RTT_Coarse_N;
     uint8 RTT_Sounding_N;
     uint8 RTT_Random_Sequence_N;
+    uint8 RTT_2M_Coarse_N;
+    uint8 RTT_2M_Sounding_N;
+    uint8 RTT_2M_Random_Sequence_N;
     uint16 NADM_Sounding_Capability;
     uint16 NADM_Random_Sequence_Capability;
     uint8 PHYSupported;
@@ -417,6 +420,8 @@ typedef struct BLE_HADM_HalCapabilities_tag
     uint16 T_IP2_TimesSupported;
     uint16 T_FCS_TimesSupported;
     uint16 T_PM_TimesSupported;
+    uint16 T_IP2_IPT_TimesSupported;
+    uint8  T_SW_IPT_TimeSupported;
     uint8  TX_SNR;
 } BLE_HADM_HalCapabilities_t;
 

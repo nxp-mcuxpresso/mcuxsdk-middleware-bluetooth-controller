@@ -125,7 +125,7 @@ typedef enum TBleHadmConnectionState_tag
 /* LL HADM CAPABILITIES REQ / HADM CAPABILITIES RSP message */
 typedef __PACKED_STRUCT TBleHadmLLCapabilities_tag
 {
-    //@CS_Spec #LL_CS_CAPABILITIES_REQ #LL_CS_CAPABILITIES_RSP
+    //@CS_Spec #LL_CS_CAPABILITIES_REQ #LL_CS_CAPABILITIES_RSP V2
     uint8                 ucModeTypes;                      //@CS_Spec #Mode_Types
     uint8                 ucRTTcapability;                  //@CS_Spec #RTT_Capability
     uint8                 ucRTTaaOnlyN;                     //@CS_Spec #RTT_AA_Only_N
@@ -137,11 +137,7 @@ typedef __PACKED_STRUCT TBleHadmLLCapabilities_tag
     uint8                 ucNumAnt:4;                       //@CS_Spec #Num_Ant
     uint8                 ucMax_Antenna_Path:4;             //@CS_Spec #Max_Ant_Path
     uint8                 ucRole:2;                         //@CS_Spec #Role
-#if defined (SUPPORT_INLINE_PHASE_RETURN)
     uint8                 ucInlinePhaseReturn:1;            //@CS_Spec #InlinePhaseReturn
-#else
-    uint8                 ucRFU0:1;                         //@CS_Spec #RFU
-#endif
     uint8                 ucNoFAE:1;                        //@CS_Spec #No_FAE
     uint8                 ucChannelSel3c:1;                 //@CS_Spec #ChannelSelection #3c
     uint8                 ucSoundingPhaseBasedRanging:1;    //@CS_Spec #Sounding_PCT_Estimate
@@ -155,7 +151,13 @@ typedef __PACKED_STRUCT TBleHadmLLCapabilities_tag
     uint16                uiT_PM_Capability;                //@CS_Spec #T_PM_Capability
     uint8                 ucRFU2:1;                         //@CS_Spec #RFU
     uint8                 ucTX_SNR:7;                       //@CS_Spec #TX_SNR_Capability
-
+    uint16                uiT_IP2_IPT_Capability;           //@CS_Spec #T_IP2_IPT_Capability
+    uint8                 ucT_SW_IPT;                       //@CS_Spec #T_SW_IPT
+    uint8                 ucRTT2MaaOnlyN;                   //@CS_Spec #RTT_2M_AA_Only_N
+    uint8                 ucRTT2MsoundingN;                 //@CS_Spec #RTT_2M_Sounding_N
+    uint8                 ucRTT2MrandomSequenceN;           //@CS_Spec #RTT_2M_Random_Sequence_N
+    /* Starting from there, fields are applciation fields, not PDU fields */
+  //  uint8                 ucVersion;                        // Version of the Request (1 or 2)
 } TBleHadmLLCapabilities_t;
 
 typedef struct TBleHadmConfigParams_tag
@@ -178,8 +180,7 @@ typedef struct TBleHadmConfigParams_tag
     uint8   ucChannel_Selection_Type;               //@CS_Spec #LL_CS_CONFIG_REQ #ChSel
     uint8   ucCh3c_Shape;                           //@CS_Spec #LL_CS_CONFIG_REQ #Ch3cShape
     uint8   ucCh3c_Jump;                            //@CS_Spec #LL_CS_CONFIG_REQ #Ch3cJump
-    uint8   ucReserved;                             //@CS_Spec #LL_CS_CONFIG_REQ #Reserved
-    // uint8   ucRTT_Antenna_Selection;
+    uint8   ucIPT;                                  //@CS_Spec #LL_CS_CONFIG_REQ #IPT
 } TBleHadmConfigParams_t;
 
 //@CS_Spec #LL_CS_CONFIG_REQ
