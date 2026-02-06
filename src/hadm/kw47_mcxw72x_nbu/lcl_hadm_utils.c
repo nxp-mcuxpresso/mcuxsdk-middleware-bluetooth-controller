@@ -73,6 +73,13 @@ static const uint8_t hadm_ant_perm_to_ap[24][HADM_MAX_NB_ANTENNA_PATHS] =
     {1U, 2U, 3U, 0U}, // AP2, AP3, AP4, AP1
 };
 
+static const int16_t hadm_rxtx_fine_latency[HADM_RTT_PHY_MAX] =
+{
+    HADM_RXTX_FINE_LATENCY_1MBPS_HNS,
+    HADM_RXTX_FINE_LATENCY_2MBPS_HNS,
+    HADM_RXTX_FINE_LATENCY_2MBPS_2BT_HNS,
+};
+
 static int32_t pct_sin_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
 static int32_t pct_cos_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
 
@@ -272,7 +279,7 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
         hadm_meas_p->ts_extra_delay_hns = 0;
     }
     /* Take payload into account */
-    ts_nominal_delay += (((uint32_t)rtt_type_2_payload_size[hadm_config_p->rttTypes] * 32U) >> ((uint8_t)hadm_config_p->rttPhy));
+    ts_nominal_delay += (((uint32_t)rtt_type_2_payload_size[hadm_config_p->rttTypes] * 32U) >> (uint8_t)HADM_SYNC_PHY_TO_RATE(hadm_config_p->rttPhy));
     
     /* Convert us to half ns */
     ts_nominal_delay *= 2000U;
@@ -290,7 +297,7 @@ void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_
     ts_hw_delay += hadm_device_p->rtt_static_comp_hns[hadm_config_p->rttPhy];
 
     /* Finer HW compensation based on characterization (EVK boards) */
-    ts_hw_delay += (hadm_config_p->rttPhy == HADM_RTT_PHY_1MBPS) ? HADM_RXTX_FINE_LATENCY_1MBPS_HNS : HADM_RXTX_FINE_LATENCY_2MBPS_HNS;
+    ts_hw_delay += (int32_t)hadm_rxtx_fine_latency[hadm_config_p->rttPhy]; 
 
     /* Perform fine tuning correction (only in normal operation, skipped during distance calibration) */
     if (hadm_config_p->distanceCalMode == HADM_DIST_CAL_MODE_DISABLED)
@@ -443,7 +450,7 @@ void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_c
         assert(((hadm_meas_p->iq_capture_win * sample_rate) &  ((1 << hadm_meas_p->iq_avg_win) - 1)) == 0);
     }
 
-    nb_samples_per_pm = HADM_NUM_IQ_PER_US((uint32_t)hadm_meas_p->iq_capture_win, (uint32_t)hadm_config_p->rttPhy, hadm_meas_p->iq_avg_win);
+    nb_samples_per_pm = HADM_NUM_IQ_PER_US((uint32_t)hadm_meas_p->iq_capture_win, HADM_SYNC_PHY_TO_RATE(hadm_config_p->rttPhy), hadm_meas_p->iq_avg_win);
     if (hadm_config_p->role == HADM_ROLE_INITIATOR)
     {
         hadm_meas_p->iq_buff_size_mode0 = (uint16_t)(nb_samples_per_pm * hadm_config_p->mode0Nb);

@@ -85,6 +85,7 @@
 /* Fine tuning for RTT HW compensation. Measure distance at 0 meters: fine_latency=zero_dist/0.3*2 (hns) */
 #define HADM_RXTX_FINE_LATENCY_1MBPS_HNS     (-1923)
 #define HADM_RXTX_FINE_LATENCY_2MBPS_HNS     (-3452)
+#define HADM_RXTX_FINE_LATENCY_2MBPS_2BT_HNS (-3448)
 
 #define HADM_TX_LATENCY_NS             (2000U)  /* tx_on (RSM DT_TX state to 1st bit over the air). Measured */
 
@@ -107,6 +108,9 @@
 /*! Translates RSM RTT validity results to HADM AA quality */
 #define HADM_SET_RTT_AA_QUALITY(valid) \
     ((valid) ? HADM_AA_QUALITY_SUCCESS : HADM_AA_QUALITY_NOT_FOUND)
+
+/* Convert HAL PHY (0,1,2) to HAL rate (0,1) */
+#define HADM_SYNC_PHY_TO_RATE(sync_phy) (((sync_phy) == HADM_RTT_PHY_1MBPS) ? 0U : 1U)
 
 /*! Set packet RSSI */
 #define HADM_SET_RTT_RSSI(valid, rssi) \
