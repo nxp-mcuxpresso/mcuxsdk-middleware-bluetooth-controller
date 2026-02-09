@@ -169,9 +169,13 @@ typedef enum
 typedef enum 
 {
     HADM_T_FCS_15  = 15U,
+    HADM_T_FCS_20  = 20U,
+    HADM_T_FCS_30  = 30U,
     HADM_T_FCS_40  = 40U,
     HADM_T_FCS_50  = 50U,
+    HADM_T_FCS_60  = 60U,
     HADM_T_FCS_80  = 80U,
+    HADM_T_FCS_100 =100U,
     HADM_T_FCS_150 =150U,
     HADM_T_FCS_INVALID
 } BLE_HADM_T_FCS_t;
@@ -179,7 +183,11 @@ typedef enum
 typedef enum 
 {
     HADM_T_IP_10  = 10U,
+    HADM_T_IP_20  = 20U,
+    HADM_T_IP_30  = 30U,
     HADM_T_IP_40  = 40U,
+    HADM_T_IP_50  = 50U,
+    HADM_T_IP_60  = 60U,
     HADM_T_IP_80  = 80U,
     HADM_T_IP_145 =145U,
     HADM_T_IP_INVALID
@@ -563,8 +571,9 @@ void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
  * This API allows the LL to retrieve HAL-specific capabilities.
+ * The HAL can expose 2 sets of capabilities: experimental or certified.
  */
-const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(void);
+const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.

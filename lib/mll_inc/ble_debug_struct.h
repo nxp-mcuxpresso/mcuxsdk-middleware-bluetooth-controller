@@ -16,7 +16,9 @@
 
 #include "fwk_debug_struct.h"
 
-#define NB_BUF_ENTRIES 23U
+#define NB_BUF_ENTRIES        23U
+#define KEEP_1ST_NBR_ENTRIES   3U
+
 #if defined(NBUDBG_USE_LEGACY_STRUCT)
 typedef struct
 {
@@ -91,7 +93,7 @@ typedef struct
 union info
 {
   DBG_STRUCT_CUST cust;
-  uint32 mem[NB_BUF_ENTRIES + 3];
+  uint32 mem[NB_BUF_ENTRIES + KEEP_1ST_NBR_ENTRIES];
 };
 
   /*30 x 32 bit*/
