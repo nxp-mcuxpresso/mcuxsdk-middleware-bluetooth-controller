@@ -19,13 +19,13 @@
 #define XOR3(A,B,C) (((A) ^ (B)) | ((B) ^ (C)))
 
 #define P_DELTA_FP_FACT (0x200)    /* Fixed-point quantification factor for p_delta: 2^9 */
-#define SIGMA_FP_FACT   (0x100000) /* Fixed-point quantification factor for sigma matrix: 2^20. */
+#define GAMMA_FP_FACT   (0x100000) /* Fixed-point quantification factor for gamma matrix: 2^20. */
                                    /* Allows to keep k_coeff_fp on 32bits integers without loosing accuracy */
                                    /* (c_coeff requires 5bits, c_coeff^2 requires 10bits, 1bit for sign) */
 /* === Globals ============================================================= */
 
 #ifdef HARTT_ENABLE_FLOAT
-const float sigma_1Mbps[6][4] = 
+const float gamma_1Mbps[6][4] =
 {
 { -0.00134209796949550  , 0.110145960558979    ,  -0.0248243797218084     , -0.671259234963662  },
 { 0.00322332545985516   , -0.00132674903483410 ,  0.0107652363631390      , 0.831944160011834   },
@@ -35,7 +35,7 @@ const float sigma_1Mbps[6][4] =
 { 1.77937505944535e-05  , 0.00328528242596985  ,  -0.000867562806380772   ,-0.00861216560743896 }
 };
 
-const float sigma_2Mbps[6][4] = 
+const float gamma_2Mbps[6][4] =
 {
 { -0.00257163622455905	, 0.135756463849064	, -0.0314897209128025	, -0.421652633196281     },
 { 0.00353970455987343	, -0.0392308769887525	, 0.0241947818216294	, 0.708136664403345      },
@@ -46,7 +46,7 @@ const float sigma_2Mbps[6][4] =
 };
 #endif
 
-static const int32_t sigma_1Mbps_fp[6][4] =    /* = sigma_1Mbps * 2^20 */
+static const int32_t gamma_1Mbps_fp[6][4] =    /* = gamma_1Mbps * 2^20 */
 {
 { -1407 ,  115496,  -26030 , -703866 },
 { 3380  ,  -1391 ,   11288 , 872357  },
@@ -56,7 +56,7 @@ static const int32_t sigma_1Mbps_fp[6][4] =    /* = sigma_1Mbps * 2^20 */
 { 19    , 3445   ,  -910   , -9031   }
 };
 
-static const int32_t sigma_2Mbps_fp[6][4] =    /* = sigma_2Mbps * 2^20 */
+static const int32_t gamma_2Mbps_fp[6][4] =    /* = gamma_2Mbps * 2^20 */
 {
 {-2697  ,142351 ,-33019 ,-442135    },
 {3712   ,-41137 ,25370  ,742535     },
@@ -136,26 +136,26 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     uint32_t k;
     int32_t  frac;
     uint32_t  Ts; // (1 / Fs) in ns
-    const int32_t (*sigma_fp_p)[6][4];
+    const int32_t (*gamma_fp_p)[6][4];
 #ifdef HARTT_ENABLE_FLOAT
-    const float (*sigma_p)[6][4];
+    const float (*gamma_p)[6][4];
 #endif
 
     if (data_rate == 0U)
     {
         Ts =  250U; /* Ts = 1/4e6 * 1e9 (Fs = 4MHz @1Mbps) */
 #ifdef HARTT_ENABLE_FLOAT
-        sigma_p = &sigma_1Mbps;
+        gamma_p = &gamma_1Mbps;
 #endif
-        sigma_fp_p = &sigma_1Mbps_fp;
+        gamma_fp_p = &gamma_1Mbps_fp;
     }
     else
     {
         Ts =  125U; /* Ts = 1/8e6 * 1e9 (Fs = 8MHz @2Mbps) */
 #ifdef HARTT_ENABLE_FLOAT
-        sigma_p = &sigma_2Mbps; 
+        gamma_p = &gamma_2Mbps;
 #endif
-        sigma_fp_p = &sigma_2Mbps_fp;
+        gamma_fp_p = &gamma_2Mbps_fp;
     }
 
     /* Compute p_delta: p_delta format is sfix10_En9 aka Q9, hence 1 sign bit plus 9 fractional bits */
@@ -178,12 +178,12 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
         p_delta_fp = (int64_t)p_delta; /* enforce 64bits operations on p_delta */
 
         /* Compute k coefficients  */
-        /* [k0, k1, k2, k3] = [c010, c011, c111, c010^2, c011^2, c111^2] * SIGMA */
+        /* [k0, k1, k2, k3] = [c010, c011, c111, c010^2, c011^2, c111^2] * GAMMA */
         for (k=0; k<4U; k++)
         {
             k_coeff_fp[k] = (int32_t)(uint32_t)
-                ( c_coeff[0U]*(uint32_t)(*sigma_fp_p)[0U][k] + c_coeff[1U]*(uint32_t)(*sigma_fp_p)[1U][k] + c_coeff[2U]*(uint32_t)(*sigma_fp_p)[2U][k]
-                + c_coeff[3U]*(uint32_t)(*sigma_fp_p)[3U][k] + c_coeff[4U]*(uint32_t)(*sigma_fp_p)[4U][k] + c_coeff[5U]*(uint32_t)(*sigma_fp_p)[5U][k]);
+                ( c_coeff[0U]*(uint32_t)(*gamma_fp_p)[0U][k] + c_coeff[1U]*(uint32_t)(*gamma_fp_p)[1U][k] + c_coeff[2U]*(uint32_t)(*gamma_fp_p)[2U][k]
+                + c_coeff[3U]*(uint32_t)(*gamma_fp_p)[3U][k] + c_coeff[4U]*(uint32_t)(*gamma_fp_p)[4U][k] + c_coeff[5U]*(uint32_t)(*gamma_fp_p)[5U][k]);
         }
         
         /* Compute fractional delay corresponding to P_DELTA computed by HW */
@@ -196,7 +196,7 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
         frac_fp += (((int64_t)k_coeff_fp[3U] * p_delta_fp) / (P_DELTA_FP_FACT * P_DELTA_FP_FACT));
         
         /* Convert to ns */
-        frac = (int32_t)((frac_fp * (int64_t)Ts) / (SIGMA_FP_FACT * P_DELTA_FP_FACT));
+        frac = (int32_t)((frac_fp * (int64_t)Ts) / (GAMMA_FP_FACT * P_DELTA_FP_FACT));
     }
 #ifdef HARTT_ENABLE_FLOAT
     else
@@ -209,11 +209,11 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
         p_delta_f = ((float)p_delta) / P_DELTA_FP_FACT;
 
         /* Compute k coefficients  */
-        /* [k0, k1, k2, k3] = [c010, c011, c111, c010^2, c011^2, c111^2] * SIGMA */
+        /* [k0, k1, k2, k3] = [c010, c011, c111, c010^2, c011^2, c111^2] * GAMMA */
         for (k=0; k<4U; k++)
         {
-            k_coeff[k] = c_coeff[0U]*(*sigma_p)[0U][k] + c_coeff[1U]*(*sigma_p)[1U][k] + c_coeff[2U]*(*sigma_p)[2U][k]
-                       + c_coeff[3U]*(*sigma_p)[3U][k] + c_coeff[4U]*(*sigma_p)[4U][k] + c_coeff[5U]*(*sigma_p)[5U][k];
+            k_coeff[k] = c_coeff[0U]*(*gamma_p)[0U][k] + c_coeff[1U]*(*gamma_p)[1U][k] + c_coeff[2U]*(*gamma_p)[2U][k]
+                       + c_coeff[3U]*(*gamma_p)[3U][k] + c_coeff[4U]*(*gamma_p)[4U][k] + c_coeff[5U]*(*gamma_p)[5U][k];
         }
         
         /* Compute fractional delay corresponding to P_DELTA computed by HW */
