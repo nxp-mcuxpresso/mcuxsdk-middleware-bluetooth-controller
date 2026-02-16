@@ -42,7 +42,7 @@ typedef struct
 typedef struct
 {
     uint8_t  num_steps; // num steps in vect_p array
-    uint8_t  data_rate; // 0: 1Mbps,  1:2Mbps
+    LCL_HADM_rttPhy_t  data_rate; // 0: 1Mbps,  1:2Mbps, 3:2Mbps_BT2
     uint8_t  true_dist; // in m
     uint8_t  dummy;
     hartt_test_vect_t *vect_I_p;
@@ -86,7 +86,7 @@ int main()
   
   for (t = 0; t < NUM_TC; t++)
   {
-      uint8_t data_rate = hartt_tc[t].data_rate;
+      LCL_HADM_rttPhy_t data_rate = hartt_tc[t].data_rate;
       printf("------------------------\n");
       printf("Reading Captures/%s true dist = %dm data rate = %d\n", hartt_tc[t].str, hartt_tc[t].true_dist, data_rate);
 
@@ -128,7 +128,7 @@ int main()
           ToF_f = ((RTT_I * 125) >> 2) + fracI_f - ((RTT_R * 125) >> 2) + fracR_f;
           
           /* remove latency to align with Matlab model */
-          if (data_rate == 0)
+          if (data_rate == LCL_HADM_RTT_PHY_1MBPS)
           {
               ToF -= TOF_LATENCY_1MBPS;
               ToF_f -= TOF_LATENCY_1MBPS;

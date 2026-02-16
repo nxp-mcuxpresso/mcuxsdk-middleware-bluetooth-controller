@@ -23,7 +23,15 @@
 extern "C" {
 #endif
 
-int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const uint32_t pn_seq, int16_t  p_delta, const int32_t int_adj);
+typedef enum
+{
+    LCL_HADM_RTT_PHY_1MBPS = 0U,
+    LCL_HADM_RTT_PHY_2MBPS = 1U,
+    LCL_HADM_RTT_PHY_2MBPS_2BT = 2U,
+    LCL_HADM_RTT_PHY_MAX = 3U,
+} LCL_HADM_rttPhy_t;
+
+int32_t lcl_hadm_hartt_compute_fractional_delay(const LCL_HADM_rttPhy_t data_rate, const uint32_t pn_seq, int16_t  p_delta, const int32_t int_adj);
 #ifdef HARTT_ENABLE_FLOAT
 void lcl_hadm_hartt_enable_float(uint8_t en);
 #endif

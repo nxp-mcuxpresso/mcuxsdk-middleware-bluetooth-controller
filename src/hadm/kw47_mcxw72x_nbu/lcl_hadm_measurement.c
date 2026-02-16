@@ -1684,7 +1684,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         int32_t ffo_correction = 0;
                         DEBUG_PIN1_SET
                         /* Compute integer and fractional adjustment in ns */
-                        frac_delay = lcl_hadm_hartt_compute_fractional_delay((uint32_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx,
+                        frac_delay = lcl_hadm_hartt_compute_fractional_delay((LCL_HADM_rttPhy_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx,
                                                                              (int16_t)rtt_data.p_delta, (int32_t)rtt_data.int_adj);
 #ifdef RTT_DEBUG
                         rtt_frac_dbg_buffer[circ_buff_p->curr_step_idx] = frac_delay;

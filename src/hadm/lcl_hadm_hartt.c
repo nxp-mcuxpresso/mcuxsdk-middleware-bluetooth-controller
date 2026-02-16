@@ -44,6 +44,15 @@ const float gamma_2Mbps[6][4] =
 { -7.17413469543641e-05	, 0.00303711773915562	, -0.000916254610883207	, -0.0250148638530733    },
 { 4.22266382204039e-05	, 0.00304994707909277	, -0.000768771158258999	, 0.00163548250807529    }
 };
+
+const float gamma_2MbpsBT20[6][4] = {
+    {-0.002287357406817f, 0.082043530241266f, -0.018947341479876f, -0.298670992910458f},
+    {0.004204245195266f, 0.003729137339242f, 0.006321062303476f, 0.444551335977927f},
+    {0.000305383104905f, 0.089073402275013f, -0.003889642762672f, -0.163205756917235f},
+    {0.000051559391863f, -0.000574273770942f, 0.000617908980835f, 0.006018540060053f},
+    {-0.000073034931823f, 0.001408517162568f, -0.000264806175790f, -0.015821324422869f},
+    {0.000034274578919f, 0.002945693362617f, -0.000893198936705f, -0.002043369931380f}
+};
 #endif
 
 static const int32_t gamma_1Mbps_fp[6][4] =    /* = gamma_1Mbps * 2^20 */
@@ -64,6 +73,16 @@ static const int32_t gamma_2Mbps_fp[6][4] =    /* = gamma_2Mbps * 2^20 */
 {43	,-1365  ,779	,7164       },
 {-75	,3185   ,-961	,-26230     },
 {44	,3198	,-806	,1715       }
+};
+
+static const int32_t gamma_2MbpsBT20_fp[6][4] = /* = gamma_2MbpsBT20 * 2^20 */
+{
+    {-2398, 86029, -19868, -313179},
+    {4408, 3910, 6628, 466146},
+    {320, 93400, -4079, -171134},
+    {54, -602, 648, 6311},
+    {-77, 1477, -278, -16590},
+    {36, 3089, -937, -2143}
 };
 
 /* === Externals =========================================================== */
@@ -130,7 +149,7 @@ void lcl_hadm_hartt_enable_float(uint8_t en)
 *  int_adj and frac_delay are relative to the radio clock used, hence unit is 1/4MHz or 1/8MHz for BLE 1Mbps or 2Mbps respectively
 *  output is the fractional delay + integer adjustment in nanoseconds
 */
-int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const uint32_t pn_seq, int16_t p_delta, const int32_t int_adj)
+int32_t lcl_hadm_hartt_compute_fractional_delay(const LCL_HADM_rttPhy_t data_rate, const uint32_t pn_seq, int16_t p_delta, const int32_t int_adj)
 {
     uint32_t c_coeff[6];
     uint32_t k;
@@ -141,7 +160,7 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
     const float (*gamma_p)[6][4];
 #endif
 
-    if (data_rate == 0U)
+    if (data_rate == LCL_HADM_RTT_PHY_1MBPS)
     {
         Ts =  250U; /* Ts = 1/4e6 * 1e9 (Fs = 4MHz @1Mbps) */
 #ifdef HARTT_ENABLE_FLOAT
@@ -149,13 +168,21 @@ int32_t lcl_hadm_hartt_compute_fractional_delay(const uint32_t data_rate, const 
 #endif
         gamma_fp_p = &gamma_1Mbps_fp;
     }
-    else
+    else if (data_rate == LCL_HADM_RTT_PHY_2MBPS)
     {
         Ts =  125U; /* Ts = 1/8e6 * 1e9 (Fs = 8MHz @2Mbps) */
 #ifdef HARTT_ENABLE_FLOAT
         gamma_p = &gamma_2Mbps;
 #endif
         gamma_fp_p = &gamma_2Mbps_fp;
+    }
+    else
+    {
+        Ts =  125U; /* Ts = 1/8e6 * 1e9 (Fs = 8MHz @2Mbps) */
+#ifdef HARTT_ENABLE_FLOAT
+        gamma_p = &gamma_2MbpsBT20;
+#endif
+        gamma_fp_p = &gamma_2MbpsBT20_fp;
     }
 
     /* Compute p_delta: p_delta format is sfix10_En9 aka Q9, hence 1 sign bit plus 9 fractional bits */
