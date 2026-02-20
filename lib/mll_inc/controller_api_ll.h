@@ -188,7 +188,9 @@ uint32 LL_API_ConfigureIDSSecurityEvent(uint32 securityEventsBitmask);
  * \param[out] pAnchorHSlot         pointer to save the connection event start time half slot (312.5us)
  * \param[out] pAnchorOffsetQUs     pointer to save the connection event start time half slot offset in quater us
  */
+#ifdef SUPPORT_HALF_SLOT_SCHED
 void LL_API_GetConnAnchorTiming(uint16 uiConnHandle, uint16 *pCurrentEvCnt, uint32 *pAnchorHSlot, uint16 *pAnchorOffsetQUs);
+#endif
 #endif
 
 extern unsigned char NbuGetCodedIndicator(void);
