@@ -383,6 +383,16 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.nbu_matter_hosted_lib)
         TOOLCHAINS kds armgcc mcux iar
         DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
     )
+    mcux_add_library(
+        LIBS ../fw_v19_nb/src/build/kw4x/lib/kw45_nbu_matter_hosted_libbtu.a
+        TOOLCHAINS kds armgcc mcux iar
+        DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
+    )
+    mcux_add_library(
+        LIBS ../fw_v19_nb/src/build/kw4x/lib/kw45_nbu_matter_hosted_libcommon.a
+        TOOLCHAINS kds armgcc mcux iar
+        DEVICE_IDS ${KW45_NBU_FAMILY} ${MCXW71_NBU_FAMILY}
+    )
 endif()
 
 if(CONFIG_MCUX_COMPONENT_middleware.wireless.ble_controller_MWS)
