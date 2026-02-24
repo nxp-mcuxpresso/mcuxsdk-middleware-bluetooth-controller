@@ -45,7 +45,6 @@ menu "ble_controller"
         bool "threadx_os_library"
     config MCUX_COMPONENT_middleware.wireless.nbu_hosted_lib
         bool "nbu_hosted_lib"
-        depends on MCUX_HW_BOARD_kw45b41zevk_nbu
     config MCUX_COMPONENT_middleware.wireless.nbu_hadm_hosted_lib
         bool "nbu_hadm_hosted_lib"
         depends on MCUX_HW_BOARD_kw45b41zevk_nbu
