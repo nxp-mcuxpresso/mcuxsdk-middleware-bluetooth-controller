@@ -46,14 +46,21 @@
 #define DBG_SWO_FUNNEL_MUXING DBG_SWO_CORE_NBU_CORE
 #endif
 
-/* Force disabling lowpower on CM3 - Even if set to 0, CM33 requires to enable Radio domain lowpower
-    by gPLATFORM_DisableNbuLowpower_d to 0 on Cm33 project  */
-#define gNbuDisableLowpower_d   1
+/* Force disabling lowpower on NBU (CM33 core#1) - Even if set to 0, CM33 requires to enable Radio domain lowpower
+ * by defining gAppDisableControllerLowPower_d to 0 on Host App (CM33 core#0) project  */
+#define gNbuDisableLowpower_d   0
 
-#if defined(DEBUG)
-/* To avoid issue while debugging (disable Lowpower and WFI execution in idle task) */
+
+#if 0
+/* Beware: On KW43 and MCXW70 platforms,  defining gNbuDisableLowpower_d prevents the update of the
+ * expected NBU wake up time. This may impair the scheduling of NVM write operations
+ * if target is being built with DEBUG, may need to undef gNbuDisableLowpower_d and redefined to 1 to avoid
+ * issue while debugging (disable Lowpower and WFI execution in idle task).
+ */
+#ifdef DEBUG
 #undef gNbuDisableLowpower_d
 #define gNbuDisableLowpower_d   1
+#endif
 #endif
 
 /* Disable clock management on NBU (supposed to be handled on host CPU) */
