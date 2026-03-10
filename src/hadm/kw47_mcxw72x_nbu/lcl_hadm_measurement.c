@@ -34,7 +34,8 @@
 #endif
 
 /* === Macros ============================================================== */
-#define T_SLOT_US  (625U)
+#define T_SLOT_US           (625U)
+#define DCOC_CAL_RETRY_NBR  (2U)
 
 /* The following timings have been measured in debug mode with IAR 9.30.1 */
 /* TODO OJE: Exact HAL timings need to be measured on KW47 */
@@ -208,6 +209,7 @@ BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx)
 BLE_HADM_STATUS_t lcl_hadm_init(void)
 {
     uint32_t i;
+    uint32_t retry_nbr = 0U;
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
 
     lcl_hadm_utils_init_buffers();
@@ -292,11 +294,20 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
 
 #ifndef SIMULATOR
     /* Calibration sequence for 1Mbps, 2Mbps BT0.5 and BT2.0 */
+    do
+    {
+        hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_1MBPS);
+        retry_nbr++;
+    } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
 
-    hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_1MBPS);
     if (hal_status == HADM_HAL_SUCCESS)
     {
-        hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS);
+        retry_nbr = 0U;
+        do
+        {
+            hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS);
+            retry_nbr++;
+        } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
     }
     if (hal_status == HADM_HAL_SUCCESS)
     {
@@ -313,7 +324,12 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     }
     if (hal_status == HADM_HAL_SUCCESS)
     {
-        hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS_2BT);
+        retry_nbr = 0U;
+        do
+        {
+            hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS_2BT);
+            retry_nbr++;
+        } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
     }
     if (hal_status == HADM_HAL_SUCCESS)
     {
