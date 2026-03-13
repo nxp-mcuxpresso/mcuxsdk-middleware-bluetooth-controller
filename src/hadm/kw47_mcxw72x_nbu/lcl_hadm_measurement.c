@@ -2053,9 +2053,6 @@ void RSM_INT_IRQHandler(void)
 
         if (hadm_proc_p->agc_idx > LCL_HAL_XCVR_AGC_INDEX_MAX)
         {   hadm_info_p->flags |= FLAGS_HADM_AGC_NOT_FROZEN; }
-
-        if (hadm_info_p->sync_rssi < -93)
-        {   hadm_info_p->flags |= FLAGS_HADM_NO_SIGNAL; }
         
         if (hal_status == HADM_HAL_ABORTED_SYNC)
         {   hadm_info_p->flags |= FLAGS_HADM_SYNC_ERROR; }

@@ -73,7 +73,6 @@
 #define FLAGS_HADM_ABORT                        ((uint32_t)0x0002)  /*!< HADM sequence was aborted */
 #define FLAGS_HADM_AGC_NOT_FROZEN               ((uint32_t)0x0004)  /*!< Error during AGC lock */
 #define FLAGS_HADM_IQ_CAPTURE_NOT_COMPLETE      ((uint32_t)0x0008)  /*!< Error during IQ capture */
-#define FLAGS_HADM_NO_SIGNAL                    ((uint32_t)0x0010)  /*!< RSSI measured became too low */
 #define FLAGS_HADM_SYNC_ERROR                   ((uint32_t)0x0020)  /*!< Error happened during synchronization phase */
 #define FLAGS_HADM_RTT_TS_ERROR                 ((uint32_t)0x0040)  /*!< Timestamp reading on one or more RTT packets failed */
 #define FLAGS_HADM_SW_SCHED_ERROR               ((uint32_t)0x0080)  /*!< SW scheduler detected a desynchronization with RSM HW scheduler */
