@@ -37,4 +37,23 @@
  */
 void Controller_GetDebugStructData(void **debug_struct_ptr, uint16_t *debug_struct_size);
 
+/*!
+ * Configure the XCVR for RSSI measurement on the frequency configured by the LL
+ * return in case of sucess a positive number equal to the radio warmup time in us
+ *        otherwise failure
+ */
+int32 Controller_RssiMeasStart(void);
+
+/*!
+ * Perform the RSSI measurement after the call to Controller_RssiMeasStart()
+ * return the RSSI measurement in dBm
+ */
+int16 Controller_RssiMeas(void);
+
+/*!
+ * Restore the XCVR settings and warmdown the radio
+ * return true if success, false if failure
+ */
+boolean Controller_RssiMeasStop(void);
+
 #endif // CONTROLLER_HAL_H_

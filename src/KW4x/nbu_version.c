@@ -8,6 +8,7 @@
 #include "EmbeddedTypes.h"
 #include "sw_version.h"
 #include "fwk_platform_ics.h"
+#include "ll_types.h"
 #include "controller_hal.h"
 
 /* NBU build version  */
