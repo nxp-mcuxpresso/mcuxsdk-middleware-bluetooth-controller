@@ -6,8 +6,9 @@
 
 /*${header:start}*/
 #include "board.h"
+#include "fwk_platform_definitions.h"
 
-#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+#if !defined(FWK_KW43_MCXW70_NBU_FAMILIES) || (FWK_KW43_MCXW70_NBU_FAMILIES == 0)
 static const uint32_t froPostDivFreq[] = {
     16000000U, 24000000U, 32000000U, 48000000U, 64000000U
 };
@@ -20,7 +21,7 @@ uint32_t BOARD_GetSystemCoreClockSel(void)
 
 void BOARD_SystemCoreClockUpdate(void)
 {
-#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+#if !defined(FWK_KW43_MCXW70_NBU_FAMILIES) || (FWK_KW43_MCXW70_NBU_FAMILIES == 0)
     uint32_t froPostDivSel = BOARD_GetSystemCoreClockSel();
 
     if (froPostDivSel < (sizeof(froPostDivFreq) / sizeof(froPostDivFreq[0])))
@@ -33,7 +34,7 @@ void BOARD_SystemCoreClockUpdate(void)
 
 uint32_t BOARD_GetSystemCoreClockFreq(void)
 {
-#if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
+#if !defined(FWK_KW43_MCXW70_NBU_FAMILIES) || (FWK_KW43_MCXW70_NBU_FAMILIES == 0)
     BOARD_SystemCoreClockUpdate();
 #endif
     return SystemCoreClock;
