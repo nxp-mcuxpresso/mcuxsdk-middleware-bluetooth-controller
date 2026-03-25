@@ -90,6 +90,7 @@ int32_t rtt_frac_dbg_buffer[HADM_MAX_NB_STEPS];
 int16_t rtt_p_delta_dbg_buffer[HADM_MAX_NB_STEPS];
 int32_t rtt_int_adj_dbg_buffer[HADM_MAX_NB_STEPS];
 int32_t rtt_common_stat_dbg_buffer[HADM_MAX_NB_STEPS];
+uint32_t rtt_nadm_error[HADM_MAX_NB_STEPS];
 #endif
 
 static BLE_HADM_HalProperties_t hadm_hal_properties;
@@ -1638,7 +1639,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                 tpm = *hadm_meas_p->pkt_ram.result_read_ptr++;
 #ifdef RTT_DEBUG
                 rtt_tpm_dbg_buffer[circ_buff_p->curr_step_idx] = tpm;
-                rtt_common_stat_dbg_buffer[circ_buff_p->curr_step_idx] = common_stat & 0x30000000U;
+                rtt_common_stat_dbg_buffer[circ_buff_p->curr_step_idx] = common_stat;
+                rtt_nadm_error[circ_buff_p->curr_step_idx] = nadm_error;
 #endif
             }
 
@@ -1769,21 +1771,29 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
                     }
                     *res_buff_p++ = (uint8_t)step_config_p->ant_perm; /* Antenna_Permutation_Index */
-                    bool_t inpr_refl = (hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR);
+                    bool_t ipt_refl = (hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR);
                     /* Store PCT[ap], 3 bytes each 22 significant bits  +  Tone Quality Indicator [ap] (1 byte each) */
                     lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_p, circ_buff_p->curr_step_idx, ant_id_seq);
                     for(ap = 0; ap < (int)hadm_meas_p->n_ap; ap++)
                     {
-                        HADM_DECODE_HW_RTP_PCT(iq[ap], inpr_refl, curr_iq);
-                        lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
+                        HADM_DECODE_HW_RTP_PCT(iq[ap], ipt_refl, curr_iq);
+                        if (!ipt_refl)
+                        {
+                            /* Do not rotate PCTs as it has no effect on IPT HW implementation and it would corrupt Q=0 */
+                            lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
+                        }
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, 0U/*NA*/);
                     }
                     /* Determine if N_AP+1 PCT has been received or not */
                     if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1U) != 0U))
                     {
-                        HADM_DECODE_HW_RTP_PCT(iq[ap], inpr_refl, curr_iq);
-                        lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
+                        HADM_DECODE_HW_RTP_PCT(iq[ap], ipt_refl, curr_iq);
+                        if (!ipt_refl)
+                        {
+                            /* Do not rotate PCTs as it has no effect on IPT HW implementation and it would corrupt Q=0 */
+                            lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
+                        }
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY_WITH_EXT_SLOT(iq[ap], res_buff_p, t_pm_ext);
                     }
