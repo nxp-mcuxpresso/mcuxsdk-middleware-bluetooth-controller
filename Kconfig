@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 
 # SNPS Controller Kconfig file
@@ -29,6 +29,8 @@ menu "ble_controller"
         bool "ble_controller_dtm"
     config MCUX_COMPONENT_middleware.wireless.controller_api
         bool "controller_api"
+    config MCUX_COMPONENT_middleware.wireless.controller_api_minimal
+        bool "minimal controller_api"
     config MCUX_COMPONENT_middleware.wireless.ble_controller_hadm
         bool "ble_controller_hadm"
         select MCUX_COMPONENT_driver.ltc
