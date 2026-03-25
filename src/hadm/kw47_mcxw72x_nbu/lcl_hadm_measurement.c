@@ -75,6 +75,9 @@
 /* Contengency time to make sure mode 0 AA is caught */
 #define HADM_MODE0_TIMEOUT_MARGIN_US (5U)
 
+/* Enable two sets of capabilities: experimental or regular */
+#define HADM_ENABLE_EXPERIMENTAL_CAPABILITIES
+
 /* === Types =============================================================== */
 
 /* === Globals ============================================================= */
@@ -95,8 +98,6 @@ uint32_t rtt_nadm_error[HADM_MAX_NB_STEPS];
 
 static BLE_HADM_HalProperties_t hadm_hal_properties;
 
-/* This reflects the capabilities of our IC */
-/* CS capabilities might be further refined by the controller based on external elements capabilities (e.g antenna system) */
 static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .stepModeSupported          = 1U, /* step mode 3 is supported */
     .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
@@ -110,20 +111,22 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .RTT_2M_Random_Sequence_N   = 7U, /* Number of RTT steps to satisfy the precision requirement. */
     .NADM_Sounding_Capability   = 0U, /* NADM not supported */
     .NADM_Random_Sequence_Capability = 1U, /* NADM supported */
-    .PHYSupported               = 1U<<1U, /* 2Mbps PHY supported (bit #1) */
-    .T_SW_TimeSupported         = 2U, /* 2us: OJE TODO confirm OK for ramp-up/down */
+    .PHYSupported               = 1U<<1U | 1U<<2U , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
+    .T_SW_TimeSupported         = 2U,
     .FAErequired                = 0U, /* no FAE */
     .InlinePhaseReturn          = 0U,
     /* note: mandatory timings are not included in capabilities */
-    .T_IP1_TimesSupported       = 0x0048U, /* T_IP1=80 or 40us */
-    .T_IP2_TimesSupported       = 0x0048U, /* T_IP2=80 or 40us */
-    .T_FCS_TimesSupported       = 0x0050U, /* T_FCS=80 or 50us */
-    .T_PM_TimesSupported        = 0x0002u, /* T_PM=20us */
-    .TX_SNR                     = 0x00U, /* not supported */
+    .T_IP1_TimesSupported       = 0x007CU, /* T_IP1=80,60,50,40,30 us */
+    .T_IP2_TimesSupported       = 0x007CU, /* T_IP2=80,60,50,40,30 us */
+    .T_FCS_TimesSupported       = 0x01F8, /* T_FCS=120,100,80,60,50,40 us */
+    .T_PM_TimesSupported        = 0x0003U, /* T_PM=20us or 10us */
+    .TX_SNR                     = 0x0FU, /* 18dB, 21 dB, 24 dB and 27dB supported */
     .T_IP2_IPT_TimesSupported   = 0x0000U, /* not supported */
     .T_SW_IPT_TimeSupported     = 0U, /* not supported */
 };
 
+/* Enable when experimental features differ from non-experimental */
+#ifdef HADM_ENABLE_EXPERIMENTAL_CAPABILITIES
 static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities_experimental = {
     .stepModeSupported          = 1U, /* step mode 3 is supported */
     .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
@@ -138,19 +141,19 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities_experimental = {
     .NADM_Sounding_Capability   = 0U, /* NADM not supported */
     .NADM_Random_Sequence_Capability = 1U, /* NADM supported */
     .PHYSupported               = 1U<<1U | 1U<<2U , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
-    .T_SW_TimeSupported         = 2U, /* 2us: OJE TODO confirm OK for ramp-up/down */
+    .T_SW_TimeSupported         = 2U,
     .FAErequired                = 0U, /* no FAE */
     .InlinePhaseReturn          = 1U,
     /* note: mandatory timings are not included in capabilities */
     .T_IP1_TimesSupported       = 0x007CU, /* T_IP1=80,60,50,40,30 us */
     .T_IP2_TimesSupported       = 0x007CU, /* T_IP2=80,60,50,40,30 us */
-    .T_FCS_TimesSupported       = 0x01F8, /* T_FCS=120,100,80,60,50 us */
+    .T_FCS_TimesSupported       = 0x01F8, /* T_FCS=120,100,80,60,50,40 us */
     .T_PM_TimesSupported        = 0x0003U, /* T_PM=20us or 10us */
     .TX_SNR                     = 0x0FU, /* 18dB, 21 dB, 24 dB and 27dB supported */
     .T_IP2_IPT_TimesSupported   = 0x007CU, /* T_IP2_IPT=same as T_IP2 */
     .T_SW_IPT_TimeSupported     = 4U, /* 4us (TBC)*/
 };
-
+#endif
 
 /* Contains data associated to this device */
 hadm_device_t hadm_device;
@@ -590,13 +593,15 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
 
 const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(uint8 isExperimental)
 {
-    if (isExperimental == 0U)
-    {
-        return &hadm_hal_capabilities;
-    }
-    else
+#ifdef HADM_ENABLE_EXPERIMENTAL_CAPABILITIES
+    if (isExperimental != 0U)
     {
         return &hadm_hal_capabilities_experimental;
+    }
+    else
+#endif
+    {
+        return &hadm_hal_capabilities;
     }
 }
 
