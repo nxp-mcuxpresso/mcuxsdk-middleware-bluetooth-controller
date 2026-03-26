@@ -156,8 +156,8 @@ typedef __PACKED_STRUCT TBleHadmLLCapabilities_tag
     uint8                 ucRTT2MaaOnlyN;                   //@CS_Spec #RTT_2M_AA_Only_N
     uint8                 ucRTT2MsoundingN;                 //@CS_Spec #RTT_2M_Sounding_N
     uint8                 ucRTT2MrandomSequenceN;           //@CS_Spec #RTT_2M_Random_Sequence_N
-    /* Starting from there, fields are applciation fields, not PDU fields */
-  //  uint8                 ucVersion;                        // Version of the Request (1 or 2)
+    /* Starting from there, fields are application fields, not PDU fields */
+    uint8                 ucVersion;                        // Version of the PDU Request (1 or 2)
 } TBleHadmLLCapabilities_t;
 
 typedef struct TBleHadmConfigParams_tag
