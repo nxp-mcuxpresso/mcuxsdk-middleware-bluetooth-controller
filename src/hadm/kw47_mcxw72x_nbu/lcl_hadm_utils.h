@@ -20,9 +20,15 @@
 
 
 /* === Macros ============================================================== */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+/* Temporarily disabled for KW43 until GPIO availability is confirmed */
+#undef HADM_ENABLE_DEBUG_PINS
+#undef HADM_ENABLE_DEBUG_PINS_SINGLE
+#else
 #if (defined(DEBUG)  || defined(VALIDATIONBUILDOPTIONS))
 #define HADM_ENABLE_DEBUG_PINS_SINGLE /* Disable in case of conflicts with PTD2-3 PINs */
 #endif
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475) */
 
 /* Control CFO compensation refinment on each step */
 /* TKT0598229: disabled due to HW issue on KW47 A0 */

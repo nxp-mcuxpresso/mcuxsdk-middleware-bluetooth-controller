@@ -347,6 +347,8 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
 
     /* Read CBPF filter data from IFR - needed to compute internal RTT delay */
     {
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN != 475)
+        /* Temporarily disabled for KW43 since the IFR reading causes crash */
         rf_ifr_rtt_trim_t rtt_trim_values;
 
         if (XCVR_TRIM_ReadRttIfr(&rtt_trim_values))
@@ -365,6 +367,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
             }
         }
         else
+#endif /*defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN != 475)*/
         {
             /* Default values will be used */
         }
@@ -655,7 +658,9 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
         goto config_error; /* at this point all calibration must have ben performed */
     }
 
+#ifdef HADM_TRACK_RSM_INIT
     hadm_device.sys_clock_freq = (uint16_t)(BOARD_GetSystemCoreClockFreq()/1000000U);
+#endif /* HADM_TRACK_RSM_INIT */
 
     hadm_meas_p->config_p = hadm_config; /* save config ptr */
     
