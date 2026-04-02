@@ -18,15 +18,23 @@
 #ifndef CONTROLLER_HAL_H_
 #define CONTROLLER_HAL_H_
 
+#include <stdint.h>
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+#ifndef VER_STR_LENGTH
+#define VER_STR_LENGTH 48
+#endif
+#ifndef RC_STR_LENGTH
+#define RC_STR_LENGTH  48
+#endif
 
 /*!
  * The implementation of this API should return the location and size where LL can store its debug data.
  * The area of debug will be extracted by platform-specific mecanism (unknown from the LL), and should just 
  * be considered as a contiguous storage space by the LL.
  */
-void Controller_GetDebugStructData(void **debug_struct_ptr, uint16 *debug_struct_size);
+void Controller_GetDebugStructData(void **debug_struct_ptr, uint16_t *debug_struct_size);
 
 #endif // CONTROLLER_HAL_H_
