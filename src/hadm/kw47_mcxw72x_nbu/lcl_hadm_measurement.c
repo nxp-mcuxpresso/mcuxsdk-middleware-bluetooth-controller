@@ -469,27 +469,27 @@ void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_
     hadm_device.dma_debug_buff_address = dma_debug_buff_address;
 }
 
-BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rate)
+BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rtt_phy)
 {   
     xcvrLclStatus_t status;
-    XCVR_RSM_SQTE_RATE_T xcvr_rate = (XCVR_RSM_SQTE_RATE_T)rate;
+    XCVR_RSM_SQTE_RATE_T xcvr_rate = LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy);
     
     DEBUG_PIN0_SET
 
     /* trigger calibration */
     XCVR_LCL_CalibrateDcocStart(xcvr_rate);
     /* wait for results */
-    status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rate]);
+    status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rtt_phy]);
 
     DEBUG_PIN0_CLR
 
     return (status == gXcvrLclStatusSuccess ? HADM_HAL_SUCCESS : HADM_HAL_FAIL);
 }
 
-BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate)
+BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rtt_phy)
 {   
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    XCVR_RSM_SQTE_RATE_T xcvr_rate = (XCVR_RSM_SQTE_RATE_T)rate;
+    XCVR_RSM_SQTE_RATE_T xcvr_rate = LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy);
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
 
     DEBUG_PIN0_SET
@@ -502,7 +502,7 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate)
     /* Trigger manual calibration on channel 40 */
     (void)XCVR_LCL_MakeChanNumFromHadmIndex(40 /* 2442 MHz */, &chan40_ovrd);
     DEBUG_PIN1_SET
-    status = XCVR_LCL_CalibratePll((const channel_num_t *)&chan40_ovrd, (xcvr_lcl_pll_cal_data_t *)(void*)&hadm_device.cal_ch40[rate], 1U, false, xcvr_rate);
+    status = XCVR_LCL_CalibratePll((const channel_num_t *)&chan40_ovrd, (xcvr_lcl_pll_cal_data_t *)(void*)&hadm_device.cal_ch40[rtt_phy], 1U, false, xcvr_rate);
     DEBUG_PIN1_CLR
 #else
 
@@ -514,7 +514,7 @@ BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rate)
         status += XCVR_LCL_MakeChanNumFromHadmIndex(chan, &fstep_chan_num_ovrd[chan]);
     }
     DEBUG_PIN1_SET
-    status += XCVR_LCL_CalibratePll(fstep_chan_num_ovrd, (xcvr_lcl_pll_cal_data_t *)&hadm_device.cal_data[rate], HADM_MAX_CHANNELS, false, xcvr_rate);
+    status += XCVR_LCL_CalibratePll(fstep_chan_num_ovrd, (xcvr_lcl_pll_cal_data_t *)&hadm_device.cal_data[rtt_phy], HADM_MAX_CHANNELS, false, xcvr_rate);
     DEBUG_PIN1_CLR
 #endif
     
@@ -776,7 +776,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     
     rsm_config_p->num_steps = hadm_meas_p->config_p->stepsNb;
     rsm_config_p->num_ant_path = hadm_meas_p->n_ap;
-    rsm_config_p->rate = (hadm_meas_p->config_p->rttPhy == HADM_RTT_PHY_1MBPS) ? XCVR_RSM_RATE_1MBPS:XCVR_RSM_RATE_2MBPS;
+    rsm_config_p->rate = LCL_HAL_PHY_TO_XCVR_RATE(hadm_meas_p->config_p->rttPhy);
     rsm_config_p->rsm_dma_dly_fm_ext = (HADM_T_FM - hadm_meas_p->iq_capture_win) >> 1; /* center capture window inside T_FM */
     rsm_config_p->rsm_dma_dur_fm_ext = hadm_meas_p->iq_capture_win;
     rsm_config_p->averaging_win = (hadm_meas_p->iq_avg_win == 0U) ? XCVR_RSM_AVG_WIN_DISABLED : (XCVR_RSM_AVG_WIN_LEN_T)(hadm_meas_p->iq_avg_win - 1U);

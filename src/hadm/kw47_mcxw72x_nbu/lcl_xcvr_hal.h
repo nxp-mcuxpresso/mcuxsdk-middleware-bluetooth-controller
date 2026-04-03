@@ -191,7 +191,9 @@ typedef enum
 #define LCL_HAL_DISABLE_DMA          \
                                      DSB0->CSR |= DSB_CSR_SFTRST_MASK; /* Reset DSB */\
                                      XCVR_MISC->DMA_CTRL = 0 /* Disable DMA */
-                                       
+
+#define LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy) (((rtt_phy) == HADM_RTT_PHY_1MBPS) ? XCVR_RSM_RATE_1MBPS:XCVR_RSM_RATE_2MBPS)
+
 #define LCL_HAL_SET_IQ_CAPTURE_POINT(out_sel) \
 { \
     uint32_t temp = XCVR_RX_DIG->DFT_CTRL;\
@@ -379,12 +381,12 @@ void lcl_enable_BT2p0_modulation(void);
 void lcl_restore_prior_modulation(void);
 void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config);
-void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16 m_hadmbuffer_size, uint32 m_hadmbuffer_start);
+void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16_t m_hadmbuffer_size, uint32_t m_hadmbuffer_start);
 bool_t lcl_hal_xcvr_is_dma_capture_finished(void);
 void lcl_hal_xcvr_pll_settings_backup(void);
 void lcl_hal_xcvr_pll_settings_restore(void);
 void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram);
-void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32 nb);
+void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32_t nb);
 bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *rsm_read_ptr, BLE_HADM_rttPhyMode_t rttPhy);
 void lcl_hal_xcvr_program_time_adjustement(int32_t ppm);
 void lcl_hal_xcvr_program_tqi(hadm_meas_t *hadm_meas_p);

@@ -88,7 +88,7 @@ void lcl_hal_pkt_ram_config_circ_buffers(hadm_pkt_ram_desc_t *pkt_ram)
                                 XCVR_MISC_RSM_RESULT_PTR_RSM_BUFFER_ABORT_EN_MASK; /* enable abort on underrun / overflow */
 }
 
-void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32 nb)
+void lcl_hal_pkt_ram_config_rsm_int_nbstep(uint32_t nb)
 {
     uint32_t temp = (uint32_t) XCVR_MISC->RSM_CONFIG_BUFF & ~XCVR_MISC_RSM_CONFIG_BUFF_RSM_INT_NBSTEP_MASK;
     temp |= XCVR_MISC_RSM_CONFIG_BUFF_RSM_INT_NBSTEP(nb); /* step IRQ */
@@ -120,7 +120,7 @@ bool_t lcl_hal_xcvr_decode_mode0_step(hadm_sync_info_t *sync_info_p, uint32_t *r
 {
     uint8_t step_idx;
     bool_t aa_det;
-    uint32 temp;
+    uint32_t temp;
     // int16_t cfo16;
     int32_t cfo32;
 
@@ -198,7 +198,7 @@ static uint32_t lcl_hal_xcvr_dtest_set_page(uint32_t page)
 
 static inline void lcl_hal_xcvr_setup_agc(void)
 {
-    uint32 temp;
+    uint32_t temp;
 
     xcvr_settings.xcvr_rx_dig_agc_ovrd = XCVR_RX_DIG->AGC_OVRD;
 
@@ -220,8 +220,8 @@ static inline void lcl_hal_xcvr_setup_agc(void)
 
 static inline void lcl_hal_xcvr_setup_rssi(BLE_HADM_rttPhyMode_t rttPhy)
 {
-    uint32 temp;
-    uint32_t win_n = 4U + (uint32_t)rttPhy;
+    uint32_t temp;
+    uint32_t win_n;
     
     xcvr_settings.xcvr_rx_dig_rssi_global_ctrl = XCVR_RX_DIG->RSSI_GLOBAL_CTRL;
     /* WB and NB RSSI are enabled by default XCVR settings in XCVR_RX_DIG->RSSI_GLOBAL_CTRL */
@@ -234,6 +234,7 @@ static inline void lcl_hal_xcvr_setup_rssi(BLE_HADM_rttPhyMode_t rttPhy)
     /* Configure WT time (= 2^6 in samples) to be 16us for 1Mbps and 8 us for 2Mbps */
     /* Configure RSSI averaging window to be 64 samples (16us) for 1Mbps and 128 samples (16us) for 2Mbps */
     /* RSSI window = 2^M * 2^N samples. N averages in magnitude, M in dB */
+    win_n = (uint32_t)4U + ((rttPhy == HADM_RTT_PHY_1MBPS) ? 0U:1U);
     temp &= ~(XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_IIR_WAIT_NB_MASK | XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_IIR_WT_NB_MASK |
               XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_M_WINDOW_NB_MASK | XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_N_WINDOW_NB_MASK);
     temp |= XCVR_RX_DIG_NB_RSSI_CTRL0_RSSI_IIR_WAIT_NB(6) |
@@ -438,11 +439,11 @@ uint8_t lcl_hal_xcvr_tof_get_agc_delay(uint8_t agc_idx)
 
 /* ******************************* DMA  ************************************/
 
-void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16 m_hadmbuffer_size, uint32 m_hadmbuffer_start)
+void lcl_hal_xcvr_configure_dma_capture(t_hadm_trigger_t start_trigger, uint32_t delay, uint32_t nb_words, uint16_t m_hadmbuffer_size, uint32_t m_hadmbuffer_start)
 {
   if(m_hadmbuffer_start != 0U)
   {
-    uint32 temp;
+    uint32_t temp;
     /* Initialize DSB */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 475)
     MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(1U);
