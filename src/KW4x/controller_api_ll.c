@@ -73,6 +73,7 @@ typedef enum
     API_Controller_ConfigureSCA,
     API_Controller_ConfigureIDSSecurityEvent,
     API_Controller_ReadMemory,
+    API_Controller_SuspendResume,
     API_Last
 } PLATFORM_NbuApiId;
 
@@ -101,6 +102,7 @@ static const uint8_t api_param_lenth[] =
     1U,   /* Controller_ConfigureSCA */
     1U,   /* Controller_ConfigureIDSSecurityEvent */
     8U,   /* Controller_ReadMemory */
+    1U,   /* Controller_SuspendResume */
 };
 
 enum { assert_api_param_lenth = 1/(API_Last==sizeof(api_param_lenth)?1:0) };
@@ -284,6 +286,13 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 }
                 break;
             }
+#if (defined(FWK_KW43_MCXW70_NBU_FAMILIES) && (FWK_KW43_MCXW70_NBU_FAMILIES > 0))
+            case API_Controller_SuspendResume:
+            {
+                api_status = LL_API_SchedSuspendResume(data[2]);
+                break;
+            }
+#endif
             default:
                 /* invalid api id */
                 nb_returns = 0U;

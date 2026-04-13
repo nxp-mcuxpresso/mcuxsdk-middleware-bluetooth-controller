@@ -217,6 +217,13 @@ uint32 LL_API_SCHED_GetSleepTime(void);
 /* Get number of pending HCI commands */
 uint8 LL_API_BLE_HCI_GetNofPendingCommand(void);
 
+/*!
+ * \brief Suspend or resume LL activities
+ * \param[in]  suspend 1 for suspend and 0 for resume
+ * \return uint32 API status 0 success, others failure
+ */
+uint32 LL_API_SchedSuspendResume(uint32 suspend);
+
 /*! API used to set the LL scheduler activity priority order. 
     The priority identifier can be:
       - 0x0000 to 0x0EFF: 1 connection, other connections, CS, advertising, scanning.
