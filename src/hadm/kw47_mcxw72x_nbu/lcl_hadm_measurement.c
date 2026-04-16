@@ -1772,10 +1772,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
 
                 if (step_config_p->mode != HADM_STEP_MODE1)    /* MODE2 and MODE3 */
                 {
+                    int pm_ext_ap_ind = 0;
                     uint32_t curr_iq;
                     uint8_t ant_id_seq[HADM_MAX_NB_ANTENNA_PATHS];
-                    /* Keep pm extension bit corresponding to peer device role */
-                    uint8_t t_pm_ext = ((uint8_t)step_config_p->pm_ext >> (uint8_t)role) & 0x1U;
                     if (step_config_p->mode == HADM_STEP_MODE2)
                     {
                         *res_buff_p++ = BLE_HADM_STEP2_REPORT_SIZE(hadm_meas_p->n_ap); /* Step_Data_Length */
@@ -1794,15 +1793,18 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         }
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, 0U/*NA*/);
+                        pm_ext_ap_ind = ap;
                     }
                     /* Determine if N_AP+1 PCT has been received or not */
                     if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1U) != 0U))
                     {
+                        /* Keep pm extension bit corresponding to peer device role */
+                        uint8_t t_pm_ext = ((uint8_t)step_config_p->pm_ext >> (uint8_t)role) & 0x1U;
                         HADM_DECODE_HW_RTP_PCT(iq[ap], ipt_refl, curr_iq);
                         if (!ipt_refl)
                         {
                             /* Do not rotate PCTs as it has no effect on IPT HW implementation and it would corrupt Q=0 */
-                            lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
+                            lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[pm_ext_ap_ind]);
                         }
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY_WITH_EXT_SLOT(iq[ap], res_buff_p, t_pm_ext);
