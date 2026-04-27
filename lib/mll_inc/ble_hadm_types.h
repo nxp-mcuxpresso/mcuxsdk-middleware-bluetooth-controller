@@ -149,7 +149,7 @@ typedef __PACKED_STRUCT TBleHadmLLCapabilities_tag
     uint16                uiT_IP2_Capability;               //@CS_Spec #T_IP2_Capability
     uint16                uiT_FCS_Capability;               //@CS_Spec #T_FCS_Capability
     uint16                uiT_PM_Capability;                //@CS_Spec #T_PM_Capability
-    uint8                 ucRFU2:1;                         //@CS_Spec #RFU
+    uint8                 ucRttPhy:1;                       //@CS_Spec #RTT Phy
     uint8                 ucTX_SNR:7;                       //@CS_Spec #TX_SNR_Capability
     uint16                uiT_IP2_IPT_Capability;           //@CS_Spec #T_IP2_IPT_Capability
     uint8                 ucT_SW_IPT;                       //@CS_Spec #T_SW_IPT
