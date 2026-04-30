@@ -29,7 +29,7 @@ set(PLATFORM_INCLUDES
 
 # Platform-specific configuration for kw47_mcxw72x_nbu
 set(PLATFORM_DEFINES
-    CPU_KW43B43ZC7MFP_NBU
+    CPU_KW43B43ZC7MFT_NBU
 )
 
 set(PLATFORM_COMPILE_OPTIONS
