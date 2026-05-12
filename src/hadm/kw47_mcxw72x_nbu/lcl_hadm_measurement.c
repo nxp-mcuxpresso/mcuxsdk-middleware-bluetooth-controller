@@ -776,7 +776,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     
     rsm_config_p->num_steps = hadm_meas_p->config_p->stepsNb;
     rsm_config_p->num_ant_path = hadm_meas_p->n_ap;
-    rsm_config_p->rate = LCL_HAL_PHY_TO_XCVR_RATE(hadm_meas_p->config_p->rttPhy);
+    rsm_config_p->phy = (XCVR_RSM_PHY_T)hadm_meas_p->config_p->rttPhy;
     rsm_config_p->rsm_dma_dly_fm_ext = (HADM_T_FM - hadm_meas_p->iq_capture_win) >> 1; /* center capture window inside T_FM */
     rsm_config_p->rsm_dma_dur_fm_ext = hadm_meas_p->iq_capture_win;
     rsm_config_p->averaging_win = (hadm_meas_p->iq_avg_win == 0U) ? XCVR_RSM_AVG_WIN_DISABLED : (XCVR_RSM_AVG_WIN_LEN_T)(hadm_meas_p->iq_avg_win - 1U);
