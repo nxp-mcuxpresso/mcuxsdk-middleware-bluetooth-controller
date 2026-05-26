@@ -20,14 +20,20 @@
 #define gNbuModuleId_c   0x11
 /*! \endcond */
 
+#define gNbuVerString_c "NBU BLE v" \
+                        QUH(gNbuVerMajor_c) "." \
+                        QUH(gNbuVerMinor_c) "." \
+                        QUH(gNbuVerPatch_c)
+
 /* =============================================================================
- * Version String
+ * Revision Control String
  * =============================================================================
  * RC_STR is constructed from individual components defined by the build system.
  * Format: "RC: <commit>, <user>, <date>, <time>"
  * Example: "RC: 8db3b63c, unknown, 2026/04/01, 10:28:21"
  * =============================================================================
  */
+
 #ifndef COMMIT_INFO
 #define COMMIT_INFO ""
 #endif
@@ -44,12 +50,11 @@
 #define BUILD_TIME ""
 #endif
 
-#define RC_STR "RC: " COMMIT_INFO ", " BUILD_USER ", " BUILD_DATE ", " BUILD_TIME
+#ifndef RC_STR_LENGTH
+#define RC_STR_LENGTH 48
+#endif
 
-#define gNbuVerString_c "NBU BLE v" \
-                        QUH(gNbuVerMajor_c) "." \
-                        QUH(gNbuVerMinor_c) "." \
-                        QUH(gNbuVerPatch_c)
+#define RC_STR "RC: " COMMIT_INFO ", " BUILD_USER ", " BUILD_DATE ", " BUILD_TIME
 
 /*! \cond DOXY_SKIP_TAG */
 
@@ -95,8 +100,8 @@
 
 RegisterNbuInfo(gNbuVerMajor_c, gNbuVerMinor_c, gNbuVerPatch_c, gNbuVerBuildNo_c); /* DO NOT MODIFY */
 
-/* Strings made in the build process */
-const char revCtrlStr[RC_STR_LENGTH] = RC_STR;
+/* Revision control string */
+static const char revCtrlStr[RC_STR_LENGTH] = RC_STR;
 
 void NbuGetVersion(uint8_t *output)
 {
@@ -104,4 +109,14 @@ void NbuGetVersion(uint8_t *output)
   output[1] = nbu_version.versionNumber[1];
   output[2] = nbu_version.versionNumber[2];
   output[3] = nbu_version.versionBuildNo;
+}
+
+/*!
+ * Get the revision control string address and length.
+ * Called by Controller_GetRevCtrlStr as a simple wrapper.
+ */
+void NbuGetRevCtrlStr(uint32_t *str_addr, uint32_t *str_len)
+{
+    *str_addr = (uint32_t)(const void *)revCtrlStr;
+    *str_len = RC_STR_LENGTH;
 }

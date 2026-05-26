@@ -33,6 +33,7 @@
 #include "ll_types.h"
 #include "controller_hal.h"
 #include "fwk_debug_struct.h"
+#include "fwk_platform.h"
 #include "nxp2p4_xcvr.h"
 
 /*******************************************************************************
@@ -40,8 +41,9 @@
  ******************************************************************************/
 
 /*******************************************************************************
- * Variables
+ * Prototypes
  ******************************************************************************/
+extern void NbuGetRevCtrlStr(uint32_t *str_addr, uint32_t *str_len);
 
 /*******************************************************************************
  * Functions
@@ -54,6 +56,30 @@ void Controller_GetDebugStructData(void **debug_struct_ptr, uint16 *debug_struct
 {
     *debug_struct_ptr = (void *)NBUDBG_BLE_STRUCT;
     *debug_struct_size = NBUDBG_BLE_STRUCT_SIZE;
+}
+
+/*!
+ * return the DMEM base address and size.
+ */
+void Controller_GetDMemConfig(uint32_t *mem_start, uint32_t *mem_sz)
+{
+    PLATFORM_GetDMemConfig(mem_start, mem_sz);
+}
+
+/*!
+ * return the Shared Memory (SMU) base address and size.
+ */
+void Controller_GetSharedMemConfig(uint32_t *mem_start, uint32_t *mem_sz)
+{
+    PLATFORM_GetSharedMemConfig(mem_start, mem_sz);
+}
+
+/*!
+ * return the start address and size of the controller revision control string.
+ */
+void Controller_GetRevCtrlStr(uint32_t *str_addr, uint32_t *str_sz)
+{
+    NbuGetRevCtrlStr(str_addr, str_sz);
 }
 
 /*!
@@ -90,4 +116,3 @@ boolean Controller_RssiMeasStop(void)
     status = XCVR_RssiEstimate(false);
     return status == gXcvrSuccess_c ? true:false;
 }
-
