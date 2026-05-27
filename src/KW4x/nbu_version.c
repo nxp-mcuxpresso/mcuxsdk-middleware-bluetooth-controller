@@ -15,7 +15,7 @@
 #define gNbuVerMajor_c   1
 #define gNbuVerMinor_c   9
 #define gNbuVerPatch_c   32
-#define gNbuVerBuildNo_c 0
+#define gNbuVerBuildNo_c 1
 #define gNbuModuleId_c   0x11
 /*! \endcond */
 
