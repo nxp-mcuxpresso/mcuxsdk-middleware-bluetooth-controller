@@ -24,6 +24,10 @@ extern "C" {
 #define HADM_HAL_VERSION 2 /* For KW47/KW43 architecture */
 #endif
 
+#if defined(AW822)
+#define HADM_HAL_VERSION 3 /* For Kibo/WCS architectures */
+#endif
+
 #ifndef HADM_HAL_VERSION
 #error "HADM_HAL_VERSION is not defined"
 #endif
@@ -244,6 +248,7 @@ typedef enum
     HADM_HAL_TIME_PASSED        = 7U, /* HADM start time has passed */
     HADM_HAL_MEMORY_FULL        = 8U, /* HADM HAL could not allocate memory */
     HADM_HAL_ABORTED_SYNC_TIMEOUT = 9U, /* One mode0 expected (window widening) but missed */
+    HADM_HAL_SCHED_ABORTED      = 10U, /* aborted by the scheduler through SIG_ABORT */
     HADM_HAL_INVALID            = 0xFFU
 } BLE_HADM_STATUS_t;
 
