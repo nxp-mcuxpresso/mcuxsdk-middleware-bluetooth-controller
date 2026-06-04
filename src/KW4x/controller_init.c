@@ -22,10 +22,6 @@
 #include "controller_api_ll.h"
 #include "fwk_debug_struct.h"
 
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-#include "fsl_adapter_flash.h"
-#endif
-
 #include "nxp2p4_xcvr.h"
 #include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
 #include "nxp_xcvr_coding_config.h"
@@ -62,11 +58,6 @@
 *************************************************************************************
 ************************************************************************************/
 
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-static void Controller_SaveXcvrDcocDacTrimToFlash(xcvr_DcocDacTrim_t *xcvrDacTrim);
-static uint32_t Controller_RestoreXcvrDcocDacTrimFromFlash(xcvr_DcocDacTrim_t *xcvrDacTrim);
-#endif
-
 /************************************************************************************
 *************************************************************************************
 * Private memory declarations
@@ -84,34 +75,6 @@ uint8_t g_ldo_ant_trim = (XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK >>
 * Private functions
 *************************************************************************************
 ************************************************************************************/
-
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-static void  Controller_SaveXcvrDcocDacTrimToFlash(xcvr_DcocDacTrim_t *xcvrDacTrim)
-{
-    NV_Init();
-	hardwareParameters_t *pHWParams = NULL;
-	(void) NV_ReadHWParameters(&pHWParams);
-    FLib_MemCpy(&pHWParams->xcvrCal, xcvrDacTrim, sizeof(xcvr_DcocDacTrim_t));
-    (void)NV_WriteHWParameters();
-}
-
-static uint32_t Controller_RestoreXcvrDcocDacTrimFromFlash(xcvr_DcocDacTrim_t *xcvrDacTrim)
-{
-    uint32_t status;
-
-    if (FLib_MemCmpToVal(&pHWParams->xcvrCal, 0xFF, sizeof(xcvr_DcocDacTrim_t)))
-    {
-        status = 1;
-    }
-    else
-    {
-        status = 0;
-        FLib_MemCpy(xcvrDacTrim, &pHWParams->xcvrCal, sizeof(xcvr_DcocDacTrim_t));
-    }
-
-    return status;
-}
-#endif
 
 void Controller_RestoreLdoAntTrim(void)
 {
@@ -146,48 +109,9 @@ uint32_t Controller_RadioInit(void)
 {
     xcvrStatus_t status = gXcvrSuccess_c;
 
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-    uint32_t count = 0;
-#endif
-
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-    xcvr_DcocDacTrim_t  mXcvrDacTrim;
-    uint32_t            trim_invalid;
-#endif
-
     const xcvr_config_t *xcvrConfig         = &xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
     const xcvr_coding_config_t *rbmeConfig  = &xcvr_ble_coded_s8_config;
 
-#if defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d
-	hardwareParameters_t *pHWParams = NULL;
-	(void)NV_ReadHWParameters(&pHWParams);
-    /* check if reserved memory in HW parameters is at least sizeof xcvr_DcocDacTrim_t */
-    assert(sizeof(pHWParams->xcvrCal) >= sizeof(xcvr_DcocDacTrim_t) );
-
-    /* Check if XCVR Trim value is valid */
-    trim_invalid = Controller_RestoreXcvrDcocDacTrimFromFlash(&mXcvrDacTrim);
-
-    /* Initialize Radio without trim */
-    status = XCVR_InitNoDacTrim(&xcvrConfig, &rbmeConfig);
-    assert( status == gXcvrSuccess_c );
-
-    if(trim_invalid != 0U)
-    {
-        /* XCVR Trim value is not valid. Calculate now. */
-        do {
-            count++;
-            status = XCVR_CalculateDcocDacTrims(&mXcvrDacTrim);
-        } while ((gXcvrSuccess_c != status) && (count < gControllerXcvrInitRetryCount_c));
-
-        /* store calculated XCVR Trim value */
-        (void)Controller_SaveXcvrDcocDacTrimToFlash(&mXcvrDacTrim);
-    }
-    else
-    {
-        /* XCVR Trim value is valid. Restore it. */
-        status = XCVR_SetDcocDacTrims(&mXcvrDacTrim);
-    }
-#else
 #ifndef SIMULATOR
     status = XCVR_Init(&xcvrConfig, &rbmeConfig);
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
@@ -209,7 +133,6 @@ uint32_t Controller_RadioInit(void)
       XCVR_RX_DIG->NB_RSSI_CTRL0 = read_rssi_ctrl;
     }
 #endif
-#endif /* defined(gControllerPreserveXcvrDacTrimValue_d) && gControllerPreserveXcvrDacTrimValue_d */
 
     return (uint32_t)status;
 }
