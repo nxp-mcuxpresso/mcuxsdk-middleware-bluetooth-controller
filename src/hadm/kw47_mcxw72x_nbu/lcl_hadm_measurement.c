@@ -793,7 +793,6 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
     rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
-    rsm_config_p->tx_snr_setting = (hadm_config->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_config->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
     rsm_config_p->pa_ramp_time = hadm_device.paRampingTime;
 
     if (hadm_meas_p->config_p->mode != HADM_SUBEVT_TEST_MODE_PHASE_STAB)
@@ -1461,7 +1460,13 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
         XCVR_LCL_OverrideDcoc(XCVR_LCL_CombineCoarseFineDc(&hadm_device.dcoc_cal_results[hadm_meas_p->config_p->rttPhy], hadm_proc->agc_idx), true);
 
         /* fallback to one shot RSSI */
-        lcl_hal_xcvr_setup_rssi_continuous(false); 
+        lcl_hal_xcvr_setup_rssi_continuous(false);
+
+        /* Enable TxSNR which applies to "the transmission of CS_SYNC packets used in mode-1 and mode-3 steps".*/
+        {
+            XCVR_RSM_TX_SNR_T tx_snr_setting = (hadm_meas_p->config_p->Tx_Snr < (uint8)XCVR_RSM_TX_SNR_DISABLED)?(XCVR_RSM_TX_SNR_T)hadm_meas_p->config_p->Tx_Snr:XCVR_RSM_TX_SNR_DISABLED;
+            (void)XCVR_LCL_ConfigureTxSnr(tx_snr_setting, (XCVR_RSM_PHY_T)hadm_meas_p->config_p->rttPhy);
+        }
 
         /* Compute CFO & time grid adjustment */
         if (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR)
