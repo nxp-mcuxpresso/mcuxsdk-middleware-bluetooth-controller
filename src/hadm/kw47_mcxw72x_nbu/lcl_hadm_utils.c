@@ -577,13 +577,12 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
  */
 void lcl_hadm_init_phase_offset(void)
 {
-    for (uint32_t ant = 0U; ant < HADM_MAX_NB_ANTENNAS; ant++)
-    {
-        for (uint32_t ch = 0U; ch < HADM_MAX_CHANNELS; ch++) {
-            pct_cos_phase_offset[ant][ch] = (int32_t)PCT_FIXED_POINT_ONE;
-            pct_sin_phase_offset[ant][ch] = 0;
-        }
-    }
+    BLE_HADM_PCTPhaseRotation_t defaultPCTRotation;
+    defaultPCTRotation.offset_table[0] = 0;
+    defaultPCTRotation.offset_table[1] = 0;
+    defaultPCTRotation.offset_table[2] = 0;
+    defaultPCTRotation.offset_table[3] = 0;
+    lcl_hadm_utils_calc_phase_rotation_offset(&defaultPCTRotation);
 }
 
 #define PI_4_FIXED_POINT      12868U  /* PI/4    * 2^14 */
@@ -719,7 +718,7 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
 
     for (uint32_t ant_id=0U; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
     {
-        angle_fp = phaseRotation->offset_table[ant_id];
+        angle_fp = phaseRotation->offset_table[ant_id] + HADM_DEFAULT_PCT_ROTATION;
         if(angle_fp != 0)
         {
             for (uint32_t chn=0U; chn<HADM_MAX_CHANNELS; chn++)

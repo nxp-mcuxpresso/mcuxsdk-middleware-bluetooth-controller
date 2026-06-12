@@ -93,6 +93,9 @@
 #define HADM_RXTX_FINE_LATENCY_2MBPS_HNS     (-3452)
 #define HADM_RXTX_FINE_LATENCY_2MBPS_2BT_HNS (-3448)
 
+/* Default PCT rotation to compensate internal delays */
+#define HADM_DEFAULT_PCT_ROTATION      (0x96) /* 1.46*2π*2^14/10^3 */
+
 #define HADM_TX_LATENCY_NS             (2000U)  /* tx_on (RSM DT_TX state to 1st bit over the air). Measured */
 
 #define HADM_AA_MATCH_DMA_LATENCY      (3U) /* 3us latency btw AA match trigger and last AA bit. Measured...*/
