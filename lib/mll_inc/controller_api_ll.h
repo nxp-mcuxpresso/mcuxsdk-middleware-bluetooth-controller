@@ -248,7 +248,7 @@ uint32 LL_API_SchedSuspendResume(uint32 suspend);
 #define LL_SCHED_PRIO_ADVT      0xFF10U  // CS, advertising, connections, scanning
 #define LL_SCHED_PRIO_SCAN      0xFF20U  // CS, scanning, connections, advertising
 #define LL_SCHED_PRIO_DEFAULT   0xFFFFU  // CS, connections, advertising, scan (default)
-uint8 LL_API_SchedSetPriority(uint16 priority_identifier, uint8 source_prio_remap);
+uint8 LL_API_SchedSetPriority(uint16 priority_identifier);
 
 typedef void (*TIMER_APP_CALLBACK)(uint32 ulUserData);
 /* API for NBU wakeup or delayed callback
