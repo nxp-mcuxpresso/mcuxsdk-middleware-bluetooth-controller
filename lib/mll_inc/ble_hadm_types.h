@@ -298,6 +298,8 @@ typedef struct TBleHadmConnection_tag
     uint16  ulRepIdx;                           /* Index of procedure for repeat count down */
     uint8   ucSubeventIdx;                      /* Index of current subevent within the procedure */
     uint8   ucSubeventFlipIdx;                  /* Flip/flop index for subeventPool (subevent being processed by Scheduler) */
+    uint8   priority;
+    uint8   ucNbSubevtSuccess;
     int16  iProcCountTerminateDiff;             /* Peer ProcCount minus Local ProcCount stored during termination procedure */
     uint16  uiStartCSProcCount;                 /* StartCSProcCount, the starting CSProcCount value used for the first instance of the CS procedure series */
     TBleHadmEvent subeventPool[2U];             /* Active/Prepared subevent data */
