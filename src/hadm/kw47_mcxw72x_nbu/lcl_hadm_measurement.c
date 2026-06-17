@@ -102,7 +102,7 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .stepModeSupported          = 1U, /* step mode 3 is supported */
     .numAntennasSupported       = HADM_MAX_NB_ANTENNAS,
     .nNumAPSupported            = HADM_MAX_NB_ANTENNA_PATHS,
-    .RTT_Capability             = 0x5U, /* AA only and random sequence for 1Mbps and 2Mbps */
+    .RTT_Capability             = 0x2DU, /* AA only and random sequence for 1Mbps and 2Mbps */
     .RTT_Coarse_N               = 10U, /* Number of RTT steps to satisfy the precision requirement. */ 
     .RTT_Sounding_N             = 0U, /* not supported */
     .RTT_Random_Sequence_N      = 10U, /* Number of RTT steps to satisfy the precision requirement. */
@@ -111,17 +111,17 @@ static const BLE_HADM_HalCapabilities_t hadm_hal_capabilities = {
     .RTT_2M_Random_Sequence_N   = 7U, /* Number of RTT steps to satisfy the precision requirement. */
     .NADM_Sounding_Capability   = 0U, /* NADM not supported */
     .NADM_Random_Sequence_Capability = 1U, /* NADM supported */
-    .PHYSupported               = 1U<<1U, /* 2Mbps PHY supported (bit #1) */
+    .PHYSupported               = 1U<<1U | 1U<<2U , /* 2Mbps PHY supported (bit #1) & 2Mbps 2BT PHY supported (bit #2) */
     .T_SW_TimeSupported         = 2U,
     .FAErequired                = 0U, /* no FAE */
-    .InlinePhaseReturn          = 0U,
+    .InlinePhaseReturn          = 0U, /* not supported */
     /* note: mandatory timings are not included in capabilities */
-    .T_IP1_TimesSupported       = 0x0048U, /* T_IP1=80 or 40us */
-    .T_IP2_TimesSupported       = 0x0048U, /* T_IP2=80 or 40us */
-    .T_FCS_TimesSupported       = 0x0050U, /* T_FCS=80 or 50us */
-    .T_PM_TimesSupported        = 0x0002u, /* T_PM=20us */
-    .TX_SNR                     = 0x00U, /* not supported */
-    .T_IP2_IPT_TimesSupported   = 0x0000U, /* not supported */
+    .T_IP1_TimesSupported       = 0x007CU, /* T_IP1=80,60,50,40,30 us */
+    .T_IP2_TimesSupported       = 0x007CU, /* T_IP2=80,60,50,40,30 us */
+    .T_FCS_TimesSupported       = 0x01F8, /* T_FCS=120,100,80,60,50,40 us */
+    .T_PM_TimesSupported        = 0x0003U, /* T_PM=20us or 10us */
+    .TX_SNR                     = 0x0FU, /* 18dB, 21 dB, 24 dB and 27dB supported */
+    .T_IP2_IPT_TimesSupported   = 0x0000U,  /* not supported */
     .T_SW_IPT_TimeSupported     = 0U, /* not supported */
 };
 
