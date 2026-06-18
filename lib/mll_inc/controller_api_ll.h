@@ -277,7 +277,9 @@ void LL_API_ClockUpdated(void);
 #ifdef EP_MEAS_CRITICAL_SECTION
 extern void GetCriticalSectionStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
 #endif
+#ifdef EP_MEAS_IRQ_PROC_TIME
 extern void GetNbuIrqStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
+#endif
 
 // workaround for too late native clock update after wakeup
 void LL_API_UpdateLastNativeClkBeforeSleep(void);
