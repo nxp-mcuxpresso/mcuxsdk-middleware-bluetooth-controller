@@ -1102,7 +1102,6 @@ void lcl_hadm_stop_procedure(uint8 connIdx)
         if (hadm_meas_p->config_p->connIdx == connIdx)
         {
             lcl_hadm_stop_measurement(hadm_meas_p->config_p);
-            hadm_meas_p->state = HADM_HAL_MEAS_STATE_ABORTING;
         }
     }
     else
