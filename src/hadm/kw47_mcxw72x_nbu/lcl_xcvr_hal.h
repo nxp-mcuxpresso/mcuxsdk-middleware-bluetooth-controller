@@ -242,15 +242,21 @@ typedef enum
             mapped_chan_num = (1U + mapped_chan_num) | 0x8000U; /* go to next channel up (2MHz higher) to allow -1MHz to hit the target channel, 0x8000U to set bit15 */\
         }\
         *w_ptr16++ = mapped_chan_num; /* CHANNEL_NUM */\
-        uint8_t tone_ext; /* See section Tone extension slots". DRBG and RSM bits representation are swapped */\
-        if (((role) == HADM_ROLE_INITIATOR) && ((step_config_p)->mode == HADM_STEP_MODE3)) \
+        uint8_t tone_ext; /* See section Tone extension slots". DRBG and RSM bits representation are swapped */ \
+        /* DRBG representation is: */ \
+        /* 00 → neither initiator nor reflector transmits in the extension slot */ \
+        /* 01 → Reflector transmits, the other does not */ \
+        /* 10 → Initiator transmits, the other does not */ \
+        /* 11 → both initiator and reflector transmit in their extension slotsIR */ \
+        if (((role) != HADM_ROLE_REFLECTOR) && ((step_config_p)->mode == HADM_STEP_MODE3)) \
         {\
             tone_ext = (((uint8_t)(step_config_p)->pm_ext & 0x1U) << 1U) | (((uint8_t)(step_config_p)->pm_ext & 0x2U) >> 1U); /* swap the bits */\
         }\
         else\
         {\
             /* Keep the DRBG bit corresponding to our role and force the other one to 1 (forces RSM RX) */\
-            if (((uint8_t)(step_config_p)->pm_ext & (0x2U >> (uint8_t)(role))) != 0U) { tone_ext = 0x3U; } \
+            if ((role) == HADM_ROLE_SNIFFER) { tone_ext = 0x3U; } \
+            else if (((uint8_t)(step_config_p)->pm_ext & (0x2U >> (uint8_t)(role))) != 0U) { tone_ext = 0x3U; } \
             else { tone_ext = (0x2U >> (uint8_t)(role)); } \
         }\
         *w_ptr16++ = (COM_MODE_013_CFG_HDR_STEP_CFG_MODE((step_config_p)->mode) |\
