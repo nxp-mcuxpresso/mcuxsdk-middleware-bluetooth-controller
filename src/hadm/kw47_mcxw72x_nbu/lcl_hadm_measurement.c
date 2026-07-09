@@ -1583,10 +1583,10 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     DEBUG_PIN1_SET
 
     /* Prepare for NADM metric calculations */
-    BLE_HADM_rttPhyMode_t rate = hadm_meas_p->config_p->rttPhy;
+    BLE_HADM_rttPhyMode_t rtt_phy = hadm_meas_p->config_p->rttPhy;
     uint8_t fm_corr_target;
     uint8_t fm_corr_div;
-    XCVR_LCL_GetNadmMetricCalFactors((XCVR_RSM_SQTE_RATE_T)rate, (XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, fm_corr_target, fm_corr_div);
+    XCVR_LCL_GetNadmMetricCalFactors((XCVR_RSM_PHY_T)rtt_phy, (XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, fm_corr_target, fm_corr_div);
 
     /* Copy CFO into frequencyCompensation from procedure if initiator (already set to fixed value otherwise) */
     if (role == HADM_ROLE_INITIATOR)
@@ -1710,13 +1710,13 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     uint8_t nadm_metric = 0xFF; /* NADM not available by default */
                     uint8_t nadm_symb_err = 0x0U; 
                     rtt_pkt_no++;
-                    (void)XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)(void *)&rtt_data_raw, &rtt_data, (XCVR_RSM_SQTE_RATE_T)rate); /* OJE TODO: optimize...*/
+                    (void)XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)(void *)&rtt_data_raw, &rtt_data, LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy));
                     if (rtt_data.rtt_vld && rtt_data.rtt_found)
                     {
                         int32_t ffo_correction = 0;
                         DEBUG_PIN1_SET
                         /* Compute integer and fractional adjustment in ns */
-                        frac_delay = lcl_hadm_hartt_compute_fractional_delay((LCL_HADM_rttPhy_t)rate, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx,
+                        frac_delay = lcl_hadm_hartt_compute_fractional_delay((LCL_HADM_rttPhy_t)rtt_phy, hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].aa_rx,
                                                                              (int16_t)rtt_data.p_delta, (int32_t)rtt_data.int_adj);
 #ifdef RTT_DEBUG
                         rtt_frac_dbg_buffer[circ_buff_p->curr_step_idx] = frac_delay;
@@ -1755,6 +1755,7 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
                         {
                             uint32_t nadm_fm_corr_value = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
+                            XCVR_LCL_NormalizeNadmRawMetric((XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, nadm_fm_corr_value, (int16_t)fm_corr_target);
                             XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, (int16_t)fm_corr_target, (int16_t)fm_corr_div, nadm_metric);
                             nadm_symb_err = (uint8_t)((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
                         }
