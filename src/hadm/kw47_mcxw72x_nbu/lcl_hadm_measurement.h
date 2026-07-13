@@ -307,6 +307,7 @@ void lcl_hadm_handle_temperature_change(int32_t temperature);
 BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_ant_supported);
 BLE_HADM_STATUS_t lcl_hadm_set_sniffer_config(BLE_HADM_SniffAntSwitchMode_t antSwitchCfgMode);
 BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len);
+BLE_HADM_STATUS_t lcl_hadm_set_rtt_trim(uint8 *rtt_trim_ptr, uint8_t rtt_trim_size);
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rtt_phy);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rtt_phy);

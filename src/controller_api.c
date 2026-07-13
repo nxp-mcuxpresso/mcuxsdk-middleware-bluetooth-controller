@@ -50,7 +50,7 @@ typedef enum
     API_Controller_GetTimestampEx,
     API_Controller_SetFemConfig,
     API_Controller_GetEncryptionParam,
-    API_Controller_Reserve_2, /* place holding for new entry */
+    API_Controller_SetRTTTrim,
     API_Controller_SetRxMode,
     API_Controller_ConfigureSCA,
     API_Controller_ConfigureIDSSecurityEvent,
@@ -342,6 +342,44 @@ osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle,
       api_status = KOSA_StatusError;
     }
     return api_status;
+}
+
+
+
+#define XCVR_RTT_TRIM_SIZE 10U /* sizeof(rf_ifr_rtt_trim_t) */
+
+osa_status_t Controller_SetRTTTrim(const uint8_t* rtt_trim_ptr, uint8_t rtt_trim_size)
+{
+    osa_status_t api_return    = KOSA_StatusSuccess;
+    int32_t      ret           = 0;
+    uint32_t tab[XCVR_RTT_TRIM_SIZE];
+    uint8_t fmt[XCVR_RTT_TRIM_SIZE + 1]; /* +1 for end of string */
+    bool rpmsg_status;
+
+    /* detect null pointer or array size issue. Real size is checked in NBU */
+    if ((rtt_trim_ptr != NULL) && (rtt_trim_size == XCVR_RTT_TRIM_SIZE))
+    {
+        for (uint8_t i=0U; i<rtt_trim_size; i++)
+        {
+            tab[i] = (uint32_t)(*(rtt_trim_ptr + i));
+        }
+        (void)memset(fmt, 0x01, rtt_trim_size); /* all parameters are of type uint8 */
+        fmt[rtt_trim_size] = 0x00U;             /* add end of string */
+        rpmsg_status = PLATFORM_NbuApiReq((uint8_t*)&ret, API_Controller_SetRTTTrim,
+                                          (const uint8_t*)fmt, tab, 4U);
+        assert(rpmsg_status);
+        (void)rpmsg_status;
+
+        if ( ret!=0 )
+        {
+            api_return = KOSA_StatusError;
+        }
+    }
+    else
+    {
+        api_return = KOSA_StatusError;
+    }
+    return api_return;
 }
 
 #if !defined(FPGA_TARGET) || (FPGA_TARGET!=0)

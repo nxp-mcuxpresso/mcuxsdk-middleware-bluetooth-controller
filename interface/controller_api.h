@@ -261,6 +261,17 @@ osa_status_t Controller_GetEncryptionParam(uint16_t conn_handle, uint8_t sk_or_s
                                            uint8_t  payload_counter_rx[5]);
 
 /*! *********************************************************************************
+ * \brief  Send RTT Trim data to NBU.
+ * \param[in]  rtt_trim_ptr   pointer to the rf_ifr_rtt_trim_t structure.
+ * \param[in]  rtt_trim_size  length in bytes.
+ *
+ * \return KOSA_StatusSuccess or KOSA_StatusError.
+ *
+ * \remarks
+ ********************************************************************************** */
+osa_status_t Controller_SetRTTTrim(const uint8_t* rtt_trim_ptr, uint8_t rtt_trim_size);
+
+/*! *********************************************************************************
  * \brief  request Link layer to enter low power.
  *      @Warning API shall be called with OS scheduler disabled or interrupts masked
  *

@@ -174,6 +174,11 @@ static xcvr_pa_fem_config_t pa_fem_config =   /* the default FEM config */
     0U, 0U, 0U, 0U, XCVR_FAD_ACTIVE_HIGH, XCVR_FAD_ACTIVE_HIGH
 };
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+static uint8_t rtt_trim_saved = 0U;           /* 0 default, 1 if trim values from Core0 have been saved */
+static rf_ifr_rtt_trim_t rtt_trim_values;     /* RTT Trim value storage from Core0 */
+#endif
+
 /* === Externals =========================================================== */
 
 /* === Prototypes ========================================================== */
@@ -208,6 +213,22 @@ BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx)
     hadm_proc->is_proc_init_done = true;
 
     return HADM_HAL_SUCCESS;
+}
+
+static void lcl_hadm_init_rtt_static_comp(const rf_ifr_rtt_trim_t *rtt_trim_values)
+{
+    if (rtt_trim_values->rf_rtt_tg_trim_rccal != RTT_TRIM_TG_RCCAL_WIDTH_MASK)
+    {
+        hadm_device.rccal_manual_override_needed = TRUE;
+        hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values->rf_rtt_tg_trim_rccal;
+        hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values->rf_rtt_tg_attenuation_1mbps;
+    }
+    if (rtt_trim_values->rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
+    {
+        hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values->rf_rtt_tg_attenuation_2mbps;
+        /* BT2 trim values are not populated. It is assumed that 2Mbps BT0.5 and BT2.0 need same values */
+        hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS_2BT] = rtt_trim_values->rf_rtt_tg_attenuation_2mbps;
+    }
 }
 
 BLE_HADM_STATUS_t lcl_hadm_init(void)
@@ -344,41 +365,27 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     if (hal_status == HADM_HAL_SUCCESS)
     {
         lcl_restore_prior_modulation();
+
+        hadm_device.is_rsm_cal_done = true;
     }
 
     /* Read CBPF filter data from IFR - needed to compute internal RTT delay */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+    /* KW43: cannot read IFR in Core1 so trim values will be sent by inter-core message */
+    if (rtt_trim_saved == 1U)
+#else
+    /* KW47: cannot read IFR in Core0 if NBU is not in reset */
+    rf_ifr_rtt_trim_t rtt_trim_values;
+
+    if (XCVR_TRIM_ReadRttIfr(&rtt_trim_values))
+#endif
     {
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN != 475)
-        /* Temporarily disabled for KW43 since the IFR reading causes crash */
-        rf_ifr_rtt_trim_t rtt_trim_values;
-
-        if (XCVR_TRIM_ReadRttIfr(&rtt_trim_values))
-        {
-            if (rtt_trim_values.rf_rtt_tg_trim_rccal != RTT_TRIM_TG_RCCAL_WIDTH_MASK)
-            {
-                hadm_device.rccal_manual_override_needed = TRUE;
-                hadm_device.rtt_static_comp.rttRCcal = rtt_trim_values.rf_rtt_tg_trim_rccal;
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_1MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_1mbps;
-            }
-            if (rtt_trim_values.rf_rtt_tg_attenuation_2mbps != RTT_TRIM_TG_ATTEN_WIDTH_MASK)
-            {
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
-                /* BT2 trim values are not populated. It is assumed that 2Mbps BT0.5 and BT2.0 need same values */
-                hadm_device.rtt_static_comp.rttCbpfAtt[HADM_RTT_PHY_2MBPS_2BT] = rtt_trim_values.rf_rtt_tg_attenuation_2mbps;
-            }
-        }
-        else
-#endif /*defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN != 475)*/
-        {
-            /* Default values will be used */
-        }
+        lcl_hadm_init_rtt_static_comp((const rf_ifr_rtt_trim_t *)&rtt_trim_values);
     }
-
-    if (hal_status == HADM_HAL_SUCCESS)
+    /* else: default values will be used */
+#else // SIMULATOR
+    hadm_device.is_rsm_cal_done = true;
 #endif // SIMULATOR
-    {
-        hadm_device.is_rsm_cal_done = true;
-    }
 
     /* Initialize RTT compensation for device contributors */
     lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
@@ -494,6 +501,38 @@ BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_
     {
         return HADM_HAL_INVALID_ARGS;
     }
+}
+
+/* Apply RF RTT Trim values sent from Core0 through inter-core message */
+BLE_HADM_STATUS_t lcl_hadm_set_rtt_trim(uint8 *rtt_trim_ptr, uint8_t rtt_trim_size)
+{
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+    /* check for consistency of parameter number w.r.t XCVR */
+    if ((rtt_trim_ptr != NULL) && (rtt_trim_size == sizeof(rf_ifr_rtt_trim_t)))
+    {
+        rtt_trim_saved = 1U;
+
+        rtt_trim_values.rf_rtt_trim_localisation_1mbps = rtt_trim_ptr[0];
+        rtt_trim_values.rf_rtt_trim_localisation_2mbps = rtt_trim_ptr[1];
+        rtt_trim_values.rf_rtt_trim_localisation_2mbps_2BT = rtt_trim_ptr[2];
+        rtt_trim_values.rf_rtt_tg_trim_rccal = rtt_trim_ptr[3];
+        rtt_trim_values.rf_rtt_tg_attenuation_1mbps = ((uint16_t)rtt_trim_ptr[4] | ((uint16_t)rtt_trim_ptr[5] << 8U));
+        rtt_trim_values.rf_rtt_tg_attenuation_2mbps = ((uint16_t)rtt_trim_ptr[6] | ((uint16_t)rtt_trim_ptr[7] << 8U));
+        rtt_trim_values.rf_rtt_tg_attenuation_2mbps_2BT = ((uint16_t)rtt_trim_ptr[8] | ((uint16_t)rtt_trim_ptr[9] << 8U));
+
+        lcl_hadm_init_rtt_static_comp((const rf_ifr_rtt_trim_t *)&rtt_trim_values);
+        /* Initialize RTT compensation for device contributors */
+        lcl_hadm_utils_calc_rtt_static_delay(&hadm_device);
+
+        return HADM_HAL_SUCCESS;
+    }
+    else
+    {
+        return HADM_HAL_INVALID_ARGS;
+    }
+#else
+    return HADM_HAL_SUCCESS;
+#endif
 }
 
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address)

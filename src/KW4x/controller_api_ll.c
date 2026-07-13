@@ -69,7 +69,7 @@ typedef enum
     API_Controller_GetTimestampEx,
     API_Controller_SetFemConfig,
     API_Controller_GetEncryptionParam,
-    API_Controller_Reserve_2, /* place holding for new entry */
+    API_Controller_SetRTTTrim,
     API_Controller_SetRxMode,
     API_Controller_ConfigureSCA,
     API_Controller_ConfigureIDSSecurityEvent,
@@ -99,7 +99,7 @@ static const uint8_t api_param_lenth[] =
     0U,   /* Controller_GetTimestampEx */
     15U,  /* Controller_SetFemConfig */
     3U,   /* Controller_GetEncryptionParam */
-    0U,   /* place holding for new entry */
+    10U,  /* API_Controller_SetRTTTrim */
     2U,   /* Controller_SetRxMode */
     1U,   /* Controller_ConfigureSCA */
     1U,   /* Controller_ConfigureIDSSecurityEvent */
@@ -242,6 +242,13 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 nb_returns = 4U+16U+8U+5U+5U;
                 break;
             }
+#if defined(gNbu_Hadm_d) && (gNbu_Hadm_d==1)
+            case API_Controller_SetRTTTrim:
+            {
+                api_status = (uint32)lcl_hadm_set_rtt_trim(&data[2], data_len);
+                break;
+            }
+#endif
             case API_Controller_SetRxMode:
             {
                 api_status = LL_API_Controller_SetRxMode(data[2]);
