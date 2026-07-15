@@ -1755,8 +1755,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
                         {
                             uint32_t nadm_fm_corr_value = ((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);
-                            XCVR_LCL_NormalizeNadmRawMetric((XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, nadm_fm_corr_value, (int16_t)fm_corr_target);
-                            XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, (int16_t)fm_corr_target, (int16_t)fm_corr_div, nadm_metric);
+                            XCVR_LCL_NormalizeNadmRawMetric((XCVR_RSM_RTT_TYPE_T)hadm_meas_p->config_p->rttTypes, nadm_fm_corr_value, fm_corr_target);
+                            XCVR_LCL_CalcNadmMetric(nadm_fm_corr_value, fm_corr_target, fm_corr_div, nadm_metric);
                             nadm_symb_err = (uint8_t)((nadm_error & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK)>>COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);
                         }
                     }
