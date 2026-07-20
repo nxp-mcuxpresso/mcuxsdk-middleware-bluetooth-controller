@@ -195,6 +195,15 @@ typedef struct
     uint32_t aa_rx;                     /*!< AA used in Rx */ 
 } hadm_data_in_flight_t;
 
+/*! Antenna configuration type, cached once per subevent to avoid repeated
+ *  per-step evaluation of role/ACI bitmask checks. */
+typedef enum
+{
+    HADM_ANT_CFG_TYPE_SINGLE   = 0U, /*!< Single antenna (no permutation needed)       */
+    HADM_ANT_CFG_TYPE_MULTI    = 1U, /*!< Multi-antenna 1:N or N:1 (direct AP mapping) */
+    HADM_ANT_CFG_TYPE_2X2      = 2U, /*!< 2:2 antenna configuration (HADM_ANT_CFG_IDX_7) */
+} hadm_ant_config_type_t;
+
 /*! Working structure for a subEvent */
 typedef struct
 {
@@ -211,6 +220,7 @@ typedef struct
     uint8_t                num_ant;             /*!< number of antennas from diversity config [1...4] */
     uint8_t                n_ap;                /*!< number of antenna paths from diversity config [1...4] */
     uint8_t                rtt_antenna_id;      /*!< Antenna Id to be applied to CS SYNC packets [0...3] */
+    hadm_ant_config_type_t ant_config_type;     /*!< Antenna config type, cached at subevent init (see hadm_ant_config_type_t) */
     uint16_t               iq_buff_size;        /*!< IQ buffer size for all IQs from mode 2 and 3's. Unit: number of IQ samples, hence in 4 bytes words */
     uint16_t               iq_buff_size_mode0;  /*!< IQ buffer size for mode 0's. Unit: number of samples */
     uint16_t               step_duration[4];    /*!< Step duration for modes 0,1,2,3 in us */

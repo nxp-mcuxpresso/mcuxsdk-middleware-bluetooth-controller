@@ -534,23 +534,80 @@ void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_
     mode_dur[3U] = 0;
 }
 
-#define INIT_ACI_SINGLE_ANT (1U<<6U | 1U<<5U | 1U<<4U | 1U<<0U) /* ACI of 6,5,4,0 all have single antenna for INIT role */
-#define REFL_ACI_SINGLE_ANT (1U<<3U | 1U<<2U | 1U<<1U | 1U<<0U) /* ACI of 3,2,1,0 all have single antenna for REFL role */
-static bool is_single_antenna_config(hadm_meas_t *hadm_meas_p)
+void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p)
 {
-  bool single_ant = false;
-  uint8_t aci_bit = 1U<<(uint8_t)(hadm_meas_p->config_p->toneAntennaConfigIdx);
-  /* ACI bits have role specific cases where a single antenna is needed */
-  if (hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR)
-  {
-    single_ant = ((INIT_ACI_SINGLE_ANT & aci_bit) == aci_bit);
-  }
-  else
-  {
-    single_ant = ((REFL_ACI_SINGLE_ANT & aci_bit) == aci_bit);
-  }
-  
-  return single_ant;
+    uint8_t role = (uint8_t)hadm_meas_p->config_p->role;
+    uint8_t configIdx = (uint8_t)hadm_meas_p->config_p->toneAntennaConfigIdx;
+
+    /* Derive num_ant, n_ap and ant_config_type from role and antenna config index.
+     * num_ant: number of physical antennas involved in the measurement.
+     * n_ap: number of antenna paths (IQ samples collected per step).
+     * ant_config_type: cached classification used in the per-step hot path to
+     *                  avoid repeated config_p dereferences and bitmask checks.
+     *
+     * ACI table (from BLE CS spec):
+     * ACI  N_AP  Num ant Init  Num ant Refl  Config
+     *  0    1        1             1           1:1  (no antenna switching)
+     *  1    2        2             1           2:1
+     *  2    3        3             1           3:1
+     *  3    4        4             1           4:1
+     *  4    2        1             2           1:2
+     *  5    3        1             3           1:3
+     *  6    4        1             4           1:4
+     *  7    4        2             2           2:2
+     *
+     * For ACI 0: special case, single path, no antenna switching.
+     * For ACI 7: special case, fixed 2:2 configuration.
+     * For ACI 1..3 (Init): N_AP = num_ant = ACI + 1  (N:1 configs)
+     * For ACI 4..6 (Init): num_ant = 1, N_AP = ACI - 2  (1:N configs)
+     * For ACI 1..3 (Refl): num_ant = 1, N_AP = ACI + 1  (1:N configs)
+     * For ACI 4..6 (Refl): N_AP = num_ant = ACI - 2  (N:1 configs) */
+    if (configIdx == (uint8_t)HADM_ANT_CFG_IDX_0)
+    {
+        /* ACI 0: 1:1, single antenna path, no switching */
+        hadm_meas_p->num_ant = 0U;
+        hadm_meas_p->n_ap = 1U;
+        hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_SINGLE;
+    }
+    else if (configIdx == (uint8_t)HADM_ANT_CFG_IDX_7)
+    {
+        /* ACI 7: 2:2, fixed 2 antennas each side, 4 antenna paths */
+        hadm_meas_p->num_ant = 2U;
+        hadm_meas_p->n_ap = 4U;
+        hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_2X2;
+    }
+    else if (configIdx <= (uint8_t)HADM_ANT_CFG_IDX_3)
+    {
+        /* ACI 1..3: N:1 configs, n_ap = ACI + 1
+         * Init has N antennas (N:1), Refl has 1 antenna (1:N) */
+        hadm_meas_p->n_ap = configIdx + 1U;
+        if (role == (uint8_t)HADM_ROLE_INITIATOR)
+        {
+            hadm_meas_p->num_ant = configIdx + 1U;
+            hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_MULTI;
+        }
+        else
+        {
+            hadm_meas_p->num_ant = 1U;
+            hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_SINGLE;
+        }
+    }
+    else
+    {
+        /* ACI 4..6: 1:N configs, n_ap = ACI - 2
+         * Init has 1 antenna (1:N), Refl has N antennas (N:1) */
+        hadm_meas_p->n_ap = configIdx - 2U;
+        if (role == (uint8_t)HADM_ROLE_INITIATOR)
+        {
+            hadm_meas_p->num_ant = 1U;
+            hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_SINGLE;
+        }
+        else
+        {
+            hadm_meas_p->num_ant = configIdx - 2U;
+            hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_MULTI;
+        }
+    }
 }
 
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping)
@@ -563,7 +620,7 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
      * In these configurations, antenna path AP1 is assigned to the 1:1 antenna combination, AP2 is assigned to the 1:2 or 2:1 combination,
      * AP3 is assigned to the 1:3 or 3:1 combination and AP4 is assigned to the 1:4 or 4:1 combination.
      * The exception is the 2:2 configuration where AP1 is assigned to 1:1, AP2 is assigned to 1:2, AP3 is assigned to 2:1 and AP4 is assigned to 2:2. " */
-    if (is_single_antenna_config(hadm_meas_p))
+    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE)
     {
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
         ant_gpio[0] = hadm_device.ant2gpio[default_antenna_idx];
@@ -803,7 +860,7 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
 
 void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq)
 {
-    if (is_single_antenna_config(hadm_meas_p))
+    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE)
     {
         /* A single antenna configuration requires no permutation, only antenna_id 0 is used */
         (void)memset(ant_id_seq, 0, HADM_MAX_NB_ANTENNAS);
@@ -813,7 +870,7 @@ void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t st
         /* Perform antenna permutation index to antenna index mapping */
         uint8_t perm_idx = (uint8_t)hadm_meas_p->config_p->chModePmAntMap[step_id].ant_perm;
 
-        if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7)
+        if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_2X2)
         {
             /* 2:2 configuration: use precomputed merged LUT to avoid double indirection.
              * hadm_ant_seq_2x2[role][perm_idx] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]]

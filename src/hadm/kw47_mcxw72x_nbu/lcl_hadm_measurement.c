@@ -711,8 +711,9 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     else
     { /* MISRA */ }
 #endif
-    HADM_COMPUTE_NUM_ANTENNA(hadm_config->role, (uint8_t)hadm_config->toneAntennaConfigIdx, hadm_meas_p->num_ant, hadm_meas_p->n_ap);
-    
+    /* Compute num_ant, n_ap and cache antenna configuration type once per subevent */
+    lcl_hadm_utils_init_ant_config(hadm_meas_p);
+
     /* Compute IQ buffer size */
     if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_IQ_DMA) != 0U)
     {
