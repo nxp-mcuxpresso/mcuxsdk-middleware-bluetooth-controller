@@ -73,6 +73,68 @@ static const uint8_t hadm_ant_perm_to_ap[24][HADM_MAX_NB_ANTENNA_PATHS] =
     {1U, 2U, 3U, 0U}, // AP2, AP3, AP4, AP1
 };
 
+/* Precomputed merged LUT: hadm_ant_seq_2x2[role][perm_idx][ap]
+ * = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][ap]]
+ * Eliminates double indirection in lcl_hadm_utils_get_antenna_id_sequence()
+ * for the 2:2 antenna configuration (HADM_ANT_CFG_IDX_7).
+ * Size: 2 x 24 x 4 = 192 bytes (flash, read-only).
+ */
+static const uint8_t hadm_ant_seq_2x2[2U][24U][HADM_MAX_NB_ANTENNA_PATHS] =
+{
+    { /* role=INIT */
+        {0U, 0U, 1U, 1U}, /* perm= 0: AP1,AP2,AP3,AP4 */
+        {0U, 0U, 1U, 1U}, /* perm= 1: AP2,AP1,AP3,AP4 */
+        {0U, 1U, 0U, 1U}, /* perm= 2: AP1,AP3,AP2,AP4 */
+        {1U, 0U, 0U, 1U}, /* perm= 3: AP3,AP1,AP2,AP4 */
+        {1U, 0U, 0U, 1U}, /* perm= 4: AP3,AP2,AP1,AP4 */
+        {0U, 1U, 0U, 1U}, /* perm= 5: AP2,AP3,AP1,AP4 */
+        {0U, 0U, 1U, 1U}, /* perm= 6: AP1,AP2,AP4,AP3 */
+        {0U, 0U, 1U, 1U}, /* perm= 7: AP2,AP1,AP4,AP3 */
+        {0U, 1U, 0U, 1U}, /* perm= 8: AP1,AP4,AP2,AP3 */
+        {1U, 0U, 0U, 1U}, /* perm= 9: AP4,AP1,AP2,AP3 */
+        {1U, 0U, 0U, 1U}, /* perm=10: AP4,AP2,AP1,AP3 */
+        {0U, 1U, 0U, 1U}, /* perm=11: AP2,AP4,AP1,AP3 */
+        {0U, 1U, 1U, 0U}, /* perm=12: AP1,AP4,AP3,AP2 */
+        {1U, 0U, 1U, 0U}, /* perm=13: AP4,AP1,AP3,AP2 */
+        {0U, 1U, 1U, 0U}, /* perm=14: AP1,AP3,AP4,AP2 */
+        {1U, 0U, 1U, 0U}, /* perm=15: AP3,AP1,AP4,AP2 */
+        {1U, 1U, 0U, 0U}, /* perm=16: AP3,AP4,AP1,AP2 */
+        {1U, 1U, 0U, 0U}, /* perm=17: AP4,AP3,AP1,AP2 */
+        {1U, 0U, 1U, 0U}, /* perm=18: AP4,AP2,AP3,AP1 */
+        {0U, 1U, 1U, 0U}, /* perm=19: AP2,AP4,AP3,AP1 */
+        {1U, 1U, 0U, 0U}, /* perm=20: AP4,AP3,AP2,AP1 */
+        {1U, 1U, 0U, 0U}, /* perm=21: AP3,AP4,AP2,AP1 */
+        {1U, 0U, 1U, 0U}, /* perm=22: AP3,AP2,AP4,AP1 */
+        {0U, 1U, 1U, 0U}  /* perm=23: AP2,AP3,AP4,AP1 */
+    },
+    { /* role=REFL */
+        {0U, 1U, 0U, 1U}, /* perm= 0: AP1,AP2,AP3,AP4 */
+        {1U, 0U, 0U, 1U}, /* perm= 1: AP2,AP1,AP3,AP4 */
+        {0U, 0U, 1U, 1U}, /* perm= 2: AP1,AP3,AP2,AP4 */
+        {0U, 0U, 1U, 1U}, /* perm= 3: AP3,AP1,AP2,AP4 */
+        {0U, 1U, 0U, 1U}, /* perm= 4: AP3,AP2,AP1,AP4 */
+        {1U, 0U, 0U, 1U}, /* perm= 5: AP2,AP3,AP1,AP4 */
+        {0U, 1U, 1U, 0U}, /* perm= 6: AP1,AP2,AP4,AP3 */
+        {1U, 0U, 1U, 0U}, /* perm= 7: AP2,AP1,AP4,AP3 */
+        {0U, 1U, 1U, 0U}, /* perm= 8: AP1,AP4,AP2,AP3 */
+        {1U, 0U, 1U, 0U}, /* perm= 9: AP4,AP1,AP2,AP3 */
+        {1U, 1U, 0U, 0U}, /* perm=10: AP4,AP2,AP1,AP3 */
+        {1U, 1U, 0U, 0U}, /* perm=11: AP2,AP4,AP1,AP3 */
+        {0U, 1U, 0U, 1U}, /* perm=12: AP1,AP4,AP3,AP2 */
+        {1U, 0U, 0U, 1U}, /* perm=13: AP4,AP1,AP3,AP2 */
+        {0U, 0U, 1U, 1U}, /* perm=14: AP1,AP3,AP4,AP2 */
+        {0U, 0U, 1U, 1U}, /* perm=15: AP3,AP1,AP4,AP2 */
+        {0U, 1U, 0U, 1U}, /* perm=16: AP3,AP4,AP1,AP2 */
+        {1U, 0U, 0U, 1U}, /* perm=17: AP4,AP3,AP1,AP2 */
+        {1U, 1U, 0U, 0U}, /* perm=18: AP4,AP2,AP3,AP1 */
+        {1U, 1U, 0U, 0U}, /* perm=19: AP2,AP4,AP3,AP1 */
+        {1U, 0U, 1U, 0U}, /* perm=20: AP4,AP3,AP2,AP1 */
+        {0U, 1U, 1U, 0U}, /* perm=21: AP3,AP4,AP2,AP1 */
+        {0U, 1U, 1U, 0U}, /* perm=22: AP3,AP2,AP4,AP1 */
+        {1U, 0U, 1U, 0U}  /* perm=23: AP2,AP3,AP4,AP1 */
+    }
+};
+
 static const int16_t hadm_rxtx_fine_latency[HADM_RTT_PHY_MAX] =
 {
     HADM_RXTX_FINE_LATENCY_1MBPS_HNS,
@@ -741,7 +803,6 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
 
 void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq)
 {
-    
     if (is_single_antenna_config(hadm_meas_p))
     {
         /* A single antenna configuration requires no permutation, only antenna_id 0 is used */
@@ -750,20 +811,19 @@ void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t st
     else
     {
         /* Perform antenna permutation index to antenna index mapping */
-        uint8_t role = (uint8_t)hadm_meas_p->config_p->role;
         uint8_t perm_idx = (uint8_t)hadm_meas_p->config_p->chModePmAntMap[step_id].ant_perm;
 
-        if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7) 
+        if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7)
         {
-            for (uint32_t i = 0U; i < HADM_MAX_NB_ANTENNAS; i++)
-            {
-                /* Map antenna paths for 2:2 configuration */
-                ant_id_seq[i] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]];
-            }
+            /* 2:2 configuration: use precomputed merged LUT to avoid double indirection.
+             * hadm_ant_seq_2x2[role][perm_idx] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]]
+             * for all antenna paths, resolved at compile time. */
+            uint8_t role = (uint8_t)hadm_meas_p->config_p->role;
+            (void)memcpy(ant_id_seq, hadm_ant_seq_2x2[role][perm_idx], HADM_MAX_NB_ANTENNAS);
         }
         else
         {
-            /* Direct mapping btw antenna path and antenna id*/
+            /* Direct mapping between antenna path and antenna id */
             (void)memcpy(ant_id_seq, hadm_ant_perm_to_ap[perm_idx], HADM_MAX_NB_ANTENNAS);
         }
     }
