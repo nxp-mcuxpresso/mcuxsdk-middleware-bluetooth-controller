@@ -207,7 +207,7 @@ typedef struct TBleHadmConfiguration_tag
     /* parameters received via HCI Procedure Set Parameters or CS_REQ */
     uint16  uiProcedureCnt;                         //@CS_Spec #LL_CS_REQ #Procedure_Count
     uint8   ucToneAntCfgSel;                        //@CS_Spec #LL_CS_IND #ACI
-    int8    ucPhy;                                  //@CS_Spec #LL_CS_IND #PHY
+    uint8   ucPhy;                                  //@CS_Spec #LL_CS_IND #PHY
     int8    cTxPowerDelta;                          //@CS_Spec #LE_CS_SET_PROCEDURE_PARAMS #Tx_Power_Delta
     int8    cPwrDelta;                              //@CS_Spec #LL_CS_REQ/LL_CS_RSP/LL_CS_IND #Pwr_Delta
     uint8   ucPreferred_Peer_Antennas;              //@CS_Spec #LL_CS_REQ #Preferred_Peer_Antennas

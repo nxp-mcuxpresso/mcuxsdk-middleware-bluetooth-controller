@@ -63,10 +63,10 @@ uint32 hybrid_gfsk_get_rx_pkt_min_dur_us(void);
  * \param[in]  generic_channel  generic channel index o to 127. RF frequency = 2360 + generic_channel (Mhz)
  * \param[in]  param            bit 0: 0/1 for 1M/2M PHY, 
  *                              other bits are reserved.
- * \param[in]  tx_power_slice   tx power level in nslice 0 to 62
+ * \param[in]  power_index      power amplifier index 1 to 63
  * \return uint32 API status 0 success, others failure
 */
-uint32 hybrid_gfsk_hal_continuous_tx(uint8 test, uint8 generic_channel, uint8 param, uint8 power_level_nslice);
+uint32 hybrid_gfsk_hal_continuous_tx(uint8 test, uint8 generic_channel, uint8 param, uint8 power_index);
 
 #ifdef __cplusplus
 }

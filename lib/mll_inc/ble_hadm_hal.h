@@ -477,7 +477,7 @@ typedef struct BLE_HADM_HalCapabilities_tag
  *              +   Tone_Quality_Indicator (1 byte, TQI PCT for antenna path #k)
 */
 /*! Step report size based on step mode and number of APs */
-#define BLE_HADM_STEP0_REPORT_SIZE(role)   (((role) == HADM_ROLE_REFLECTOR) ? 3U : 5U)
+#define BLE_HADM_STEP0_REPORT_SIZE(role)   (((role) == HADM_ROLE_REFLECTOR) ? 3U : 5U) /* sniffer and initiator are same here */
 #define BLE_HADM_STEP1_REPORT_SIZE      (6U)
 #define BLE_HADM_STEP2_REPORT_SIZE(n_ap)   (1U + 4U * (1U + (n_ap)))
 #define BLE_HADM_STEP3_REPORT_SIZE(n_ap)   (BLE_HADM_STEP2_REPORT_SIZE(n_ap) + BLE_HADM_STEP1_REPORT_SIZE)

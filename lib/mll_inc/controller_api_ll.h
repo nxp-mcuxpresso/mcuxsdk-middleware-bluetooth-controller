@@ -71,8 +71,8 @@ extern void (* unlock_LTC)(void);
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
-/* update tx power level 0-31 by channel */
-uint32 LL_API_SetTxPowerLevel(uint8 level, uint8 channel);
+/* update tx power index by channel */
+uint32 LL_API_SetTxPowerLevel(uint8 power_index, uint8 channel);
 
 /* update tx power level in dBm by channel. Capted to max if too big */
 uint32 LL_API_SetTxPowerLevelDbm(int8 level_dbm, uint8 channel);
@@ -82,14 +82,14 @@ void LL_API_SetTxPowerLevelDbmImmediate(int8 level_dbm);
 
 uint32 LL_API_SetRandomSeed(uint32 seed);
 
-/* convert dBm to PA N slice */
-uint32 LL_API_ConvertDbmToPowerNSlice(int8 cInDbm);
+/* convert dBm to power index */
+uint8 LL_API_ConvertDbmToPowerIndex(int8 cInDbm);
 
-/* convert PA N slice to dBm */
-int8 LL_API_ConvertPowerNSliceToDbm(uint8 n_slice);
+/* convert power index to dBm */
+int8 LL_API_ConvertPowerIndexToDbm(uint8 power_index);
 
-/* update tx power in N slice 0 to 63 */
-uint32 LL_API_SetTxPowerNSlice(uint8 pa_n_slice);
+/* update tx power using power amplifier index */
+uint32 LL_API_SetTxPowerIndex(uint8 power_index);
 
 /* update the maximum target tx power 0, 7 or 10dBm */
 uint32 LL_API_SetMaxTxPower(int8 power_dBm);
@@ -273,6 +273,7 @@ extern uint32 Controller_GetSystemCoreClockSel(void);
 extern uint32 Controller_GetSystemCoreClockFreq(void);
 #define MAX_FREQ_CONSTRAINT    4U  // max frequency selection
 extern void   PLATFORM_SetFrequencyConstraintFromController(uint8 freq_constraint);
+
 void LL_API_ClockUpdated(void);
 #ifdef EP_MEAS_CRITICAL_SECTION
 extern void GetCriticalSectionStat(uint32 *pAddr, uint16 *pSize, uint16 *pUser);
@@ -358,6 +359,10 @@ void LL_API_NotifyWakeUp(void);
  * \return 0 if success
  */
 int Controller_DebugEventNotification(ll_dbgEventType_t event_type);
+
+void hcic_handleReadP256PublicKeyRsp(uint8 *data, uint32 len);
+
+void hcic_handleGenerateDHKeyRsp(uint8 *data, uint32 len);
 
 #ifdef __cplusplus
 }
