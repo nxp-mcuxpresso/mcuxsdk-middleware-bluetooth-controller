@@ -30,15 +30,41 @@
  * Incude
  ******************************************************************************/
 #include "fsl_common.h"
+#include "fsl_port.h"
 #include "ll_types.h"
 #include "controller_hal.h"
 #include "fwk_debug_struct.h"
 #include "fwk_platform.h"
 #include "nxp2p4_xcvr.h"
+#include "fsl_os_abstraction.h"
+
 
 /*******************************************************************************
  * Types & defines
  ******************************************************************************/
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+ /* Antenna switching context */
+typedef struct {
+    uint8_t state;                /* antenna switching state */
+    uint8_t lant_ctrl;            /* localization antenna control */
+    uint32_t  bkp_lcl_cfg0;       /* LCL_CFG0 backup */
+    uint32_t  bkp_lcl_gpio_ctrl0; /* LCL_GPIO_CTRL0 backup */
+} antenna_switching_t;
+
+#define ANTENNA_SWITCH_STATE_DISABLED                   0U
+#define ANTENNA_SWITCH_STATE_ENABLED_DEACTIVATED        1U        
+#define ANTENNA_SWITCH_STATE_ENABLED_ACTIVATED          2U
+#endif // defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+ /* antenna switching disabled by default */
+static antenna_switching_t antenna_switching;
+#endif // defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 
 /*******************************************************************************
  * Prototypes
@@ -116,3 +142,75 @@ boolean Controller_RssiMeasStop(void)
     status = XCVR_RssiEstimate(false);
     return status == gXcvrSuccess_c ? true:false;
 }
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+void Controller_AntennaSwitchingConfigure(uint8 enable, uint8 lant_ctrl)
+{
+    /* API called from rpmsg nbu req, with priority lower than LL, so 
+       Controller_AntennaSwitchingActivate and Controller_AntennaSwitchingDeactivate 
+       are never interrupted by this call. 
+       But protection is necessary as this API can be interrupted by LL. */
+    OSA_DisableIRQGlobal();
+    if( antenna_switching.state == ANTENNA_SWITCH_STATE_ENABLED_ACTIVATED )
+    {
+        /* disabling first */
+        Controller_AntennaSwitchingDeactivate();
+        antenna_switching.state = ANTENNA_SWITCH_STATE_DISABLED;
+    }
+    
+    if( enable )
+    {
+        antenna_switching.lant_ctrl = lant_ctrl;
+        antenna_switching.state = ANTENNA_SWITCH_STATE_ENABLED_DEACTIVATED;
+    }
+    OSA_EnableIRQGlobal();
+}
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+void Controller_AntennaSwitchingActivate(uint8 antenna_number)
+{
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+    if( antenna_switching.state == ANTENNA_SWITCH_STATE_ENABLED_DEACTIVATED )
+    {
+        uint32_t temp = XCVR_MISC->LCL_CFG0;
+        
+        /* backup LCL_CFG0 */
+        antenna_switching.bkp_lcl_cfg0 = temp;
+        
+        /* set LCL_MODE and clear LCL_ANT_PERMUT_EN in LCL_CFG0 */
+        temp |= XCVR_MISC_LCL_CFG0_LCL_MODE_MASK;
+        temp &= ~XCVR_MISC_LCL_CFG0_LCL_ANT_PERMUT_EN_MASK;
+        XCVR_MISC->LCL_CFG0 = temp;
+        
+        /* backup LCL_GPIO_CTRL0 */
+        antenna_switching.bkp_lcl_gpio_ctrl0 = XCVR_MISC->LCL_GPIO_CTRL0;
+        if ( antenna_number == 0U )
+        {
+            /* 1st antenna */
+            XCVR_MISC->LCL_GPIO_CTRL0 = 0U;
+        }
+        else
+        {
+            /* second antenna */
+            XCVR_MISC->LCL_GPIO_CTRL0 = antenna_switching.lant_ctrl;
+        }
+        antenna_switching.state = ANTENNA_SWITCH_STATE_ENABLED_ACTIVATED;
+    }
+#else
+    (void)antenna_number;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+}
+
+void Controller_AntennaSwitchingDeactivate(void)
+{
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+    if( antenna_switching.state == ANTENNA_SWITCH_STATE_ENABLED_ACTIVATED )
+    {
+        // restore to previous values
+        XCVR_MISC->LCL_GPIO_CTRL0 = antenna_switching.bkp_lcl_gpio_ctrl0;
+        XCVR_MISC->LCL_CFG0 = antenna_switching.bkp_lcl_cfg0;
+        antenna_switching.state = ANTENNA_SWITCH_STATE_ENABLED_DEACTIVATED;
+    }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+}
+
