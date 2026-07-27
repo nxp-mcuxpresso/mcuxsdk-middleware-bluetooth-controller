@@ -12,6 +12,7 @@
 #include "ll_types.h"
 #include "controller_init.h"
 #include "controller_api_ll.h"
+#include "controller_hal.h"
 #include "fwk_platform_dbg.h"
 #include "board.h"
 #include "fwk_platform_mcu_nbu_common.h"
@@ -74,6 +75,7 @@ typedef enum
     API_Controller_ConfigureIDSSecurityEvent,
     API_Controller_ReadMemory,
     API_Controller_SuspendResume,
+    API_Controller_AntennaSwitching,
     API_Last
 } PLATFORM_NbuApiId;
 
@@ -103,6 +105,7 @@ static const uint8_t api_param_lenth[] =
     1U,   /* Controller_ConfigureIDSSecurityEvent */
     8U,   /* Controller_ReadMemory */
     1U,   /* Controller_SuspendResume */
+    2U,   /* API_Controller_AntennaSwitching */
 };
 
 enum { assert_api_param_lenth = 1/(API_Last==sizeof(api_param_lenth)?1:0) };
@@ -293,6 +296,18 @@ uint32_t Controller_HandleNbuApiReq(uint8_t *api_return, uint8_t *data, uint32_t
                 break;
             }
 #endif
+
+            case API_Controller_AntennaSwitching:
+            {
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+                // supported from KW47
+                Controller_AntennaSwitchingConfigure(data[2], data[3]);
+#else
+                // not supported for KW45
+                api_status = gBleUnavailable_c;
+#endif // defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+                break;
+            }
             default:
                 /* invalid api id */
                 nb_returns = 0U;
