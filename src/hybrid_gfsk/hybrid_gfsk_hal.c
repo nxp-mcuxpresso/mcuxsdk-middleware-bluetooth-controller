@@ -283,7 +283,7 @@ uint32 hybrid_gfsk_hal_enabled(void)
     return 1U;
 }
 
-uint32 hybrid_gfsk_hal_continuous_tx(uint8_t test, uint8_t generic_channel, uint8_t param, uint8_t power_level_nslice)
+uint32 hybrid_gfsk_hal_continuous_tx(uint8_t test, uint8_t generic_channel, uint8_t param, uint8_t power_index)
 {
     uint32 status = 0U;
 
@@ -311,7 +311,7 @@ uint32 hybrid_gfsk_hal_continuous_tx(uint8_t test, uint8_t generic_channel, uint
         XCVR_SetActiveLL(XCVR_ACTIVE_LL_GENFSK);
         
         // setup TX power level
-        GENFSK->TX_POWER = power_level_nslice;
+        GENFSK->TX_POWER = power_index;
         GENFSK->CHANNEL_NUM0 = generic_channel;
 
         // PHY valid for modulated TX
