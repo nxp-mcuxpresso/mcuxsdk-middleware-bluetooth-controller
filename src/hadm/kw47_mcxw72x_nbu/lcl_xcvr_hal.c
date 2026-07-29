@@ -189,6 +189,14 @@ void lcl_hal_xcvr_program_time_adjustement(int32_t ppm)
 
 //* ******************************* Common ************************************/
 
+static void lcl_hal_xcvr_set_txpower(int8_t txPwrLevel)
+{
+    uint8_t pa_power_idx;
+    /* Use manual control of TxPower (TGT_PWR_SRC / PA_TGT_POWER) */
+    pa_power_idx = LL_API_ConvertDbmToPowerIndex(txPwrLevel);
+    (void)XCVR_ForcePAPower(pa_power_idx);
+}
+
 static uint32_t lcl_hal_xcvr_dtest_set_page(uint32_t page)
 {
     uint32_t dtest_ctrl = RADIO_CTRL_DTEST_CTRL_DTEST_PAGE(RADIO_CTRL->DTEST_CTRL);
@@ -365,11 +373,18 @@ void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas
     lcl_hal_xcvr_setup_agc();
     lcl_hal_xcvr_setup_rssi(hadm_config->rttPhy);
     lcl_hal_xcvr_setup_rssi_continuous(TRUE);
-    
+    lcl_hal_xcvr_set_txpower(hadm_config->txPwrLevel);
+    /* Disable long range using override
+     * (BLE_LR_EN_OVRD restored via xcvr_radio_ctrl_rf_ctrl backup in deinit)
+     */
+    RADIO_CTRL->RF_CTRL &= ~RADIO_CTRL_RF_CTRL_BLE_LR_EN_OVRD_MASK;
+    RADIO_CTRL->RF_CTRL |= RADIO_CTRL_RF_CTRL_BLE_LR_EN_OVRD_EN_MASK;
 }
 
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
 {
+    XCVR_ReleasePAPower();
+
     /* Restore all TSM/XCVR modified registers */
     (void)XCVR_LCL_RsmRegRestore(&xcvr_settings.xcvr_regs_backup);
     (void)XCVR_LCL_ReprogramTsmTimings(&xcvr_settings.tsm_regs_backup);
@@ -389,7 +404,7 @@ void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
     XCVR_RX_DIG->AGC_CTRL = xcvr_settings.xcvr_rx_dig_agc_ctrl;
     XCVR_RX_DIG->AGC_OVRD = xcvr_settings.xcvr_rx_dig_agc_ovrd;
     XCVR_RX_DIG->AGC_CTRL_STAT = xcvr_settings.xcvr_rx_dig_agc_ctrl_stat;
-       
+
     (void)lcl_hal_xcvr_dtest_set_page(xcvr_settings.dtest_page_backup);
 
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
