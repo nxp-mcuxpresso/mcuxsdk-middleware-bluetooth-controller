@@ -36,6 +36,7 @@ typedef struct soc_xcvr_settings_tag
     uint32_t xcvr_rx_dig_dcoc_ctrl_2;
     uint32_t xcvr_rx_dig_ctrl_1;
     uint32_t xcvr_radio_ctrl_rf_ctrl;
+    uint32_t xcvr_misc_xcvr_ctrl;
     uint32_t dtest_page_backup;
 
     /* used by XCVR RSM driver */
@@ -363,6 +364,7 @@ void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas
     xcvr_settings.xcvr_rx_dig_dcoc_ctrl_0 = XCVR_RX_DIG->DCOC_CTRL0;
     xcvr_settings.xcvr_rx_dig_dcoc_ctrl_2 = XCVR_RX_DIG->DCOC_CTRL2;
     xcvr_settings.xcvr_radio_ctrl_rf_ctrl = RADIO_CTRL->RF_CTRL;
+    xcvr_settings.xcvr_misc_xcvr_ctrl = XCVR_MISC->XCVR_CTRL;
     
     assert(hadm_device_p->dcoc_cal_results[hadm_config->rttPhy].dcoc_ctrl2_value != 0);
     XCVR_LCL_OverrideDcoc(hadm_device_p->dcoc_cal_results[hadm_config->rttPhy].dcoc_ctrl2_value, true);
@@ -374,11 +376,18 @@ void lcl_hal_xcvr_hadm_init(hadm_device_t *hadm_device_p, hadm_meas_t *hadm_meas
     lcl_hal_xcvr_setup_rssi(hadm_config->rttPhy);
     lcl_hal_xcvr_setup_rssi_continuous(TRUE);
     lcl_hal_xcvr_set_txpower(hadm_config->txPwrLevel);
-    /* Disable long range using override
-     * (BLE_LR_EN_OVRD restored via xcvr_radio_ctrl_rf_ctrl backup in deinit)
+    /* Reset (override to zero) all settings normally controlled by the RIF interface.
+     * This is required in particular for long range (LR) setting which is not controlled by the RSM.
+     * (RF_CTRL restored via xcvr_radio_ctrl_rf_ctrl backup in deinit)
      */
-    RADIO_CTRL->RF_CTRL &= ~RADIO_CTRL_RF_CTRL_BLE_LR_EN_OVRD_MASK;
-    RADIO_CTRL->RF_CTRL |= RADIO_CTRL_RF_CTRL_BLE_LR_EN_OVRD_EN_MASK;
+    RADIO_CTRL->RF_CTRL = RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK |
+                          RADIO_CTRL_RF_CTRL_BLE_LR_EN_OVRD_EN_MASK |
+                          RADIO_CTRL_RF_CTRL_RX_CON_EN_OVRD_EN_MASK |
+                          RADIO_CTRL_RF_CTRL_RBME_MODE_OVRD_EN_MASK;
+    /* Ensures that active LL (RSM) signals are captured on raising edge from TSM tx_on/rx_on.
+     * This is specifically important since CFG_CAPT_DIS is set to 1 for BLE LL auto_load feature.
+     */
+    XCVR_MISC->XCVR_CTRL &= ~(XCVR_MISC_XCVR_CTRL_LL_CFG_CAPT_DIS(0));
 }
 
 void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
@@ -397,6 +406,7 @@ void lcl_hal_xcvr_hadm_deinit(const BLE_HADM_SubeventConfig_t *hadm_config)
     XCVR_RX_DIG->DCOC_CTRL0 = xcvr_settings.xcvr_rx_dig_dcoc_ctrl_0;
     XCVR_RX_DIG->DCOC_CTRL2 = xcvr_settings.xcvr_rx_dig_dcoc_ctrl_2;
     RADIO_CTRL->RF_CTRL = xcvr_settings.xcvr_radio_ctrl_rf_ctrl;
+    XCVR_MISC->XCVR_CTRL = xcvr_settings.xcvr_misc_xcvr_ctrl;
     
     XCVR_RX_DIG->RSSI_GLOBAL_CTRL = xcvr_settings.xcvr_rx_dig_rssi_global_ctrl;
     XCVR_RX_DIG->NB_RSSI_CTRL0 = xcvr_settings.xcvr_rx_dig_nb_rssi_ctrl0;
