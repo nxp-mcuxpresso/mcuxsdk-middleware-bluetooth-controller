@@ -29,6 +29,16 @@
 /* Size of a preallocted HAL result buffer. For now assuming that mode3/n_ap=4 is the largest step report */
 #define HADM_HAL_BUFFER_SIZE (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*BLE_HADM_STEP3_REPORT_SIZE(HADM_MAX_NB_ANTENNA_PATHS))
 
+/* RSM does not allow to adjust antenna switching pattern on T_IP (it's a per-step configuration).
+ * For that reason, when acting as a sniffer, we have to choose initior/reflector swithcing sequence for the entire step.
+ * It means only one of the two periods (before/after T_IP) will actually produce 4 antenna paths (2 identicals AP out of 4 AP otherwise).
+ */
+/* Sniffer role will use reflector's antenna switching pattern */
+#define HADM_ROLE_TO_ANT_SWITCH_INDEX(role) (((role) == HADM_ROLE_INITIATOR) ? 0U:1U)
+
+/* Sniffer role will use initiator's antenna switching pattern */
+//#define HADM_ROLE_TO_ANT_SWITCH_INDEX(role) (((role) == HADM_ROLE_REFLECTOR) ? 1U:0U)
+
 /* === Globals ============================================================= */
 //uint32_t nvic_backup;
 
@@ -633,7 +643,7 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
     if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7)
     {
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
-        uint32_t role = (uint32_t)hadm_meas_p->config_p->role;
+        uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
         ant_gpio[0] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][0]];
         ant_gpio[1] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][1]];
         ant_gpio[2] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][2]];
@@ -651,11 +661,12 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
 uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
 {
     uint32_t ant_id; /* to be used for this CS step */
+    uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
 
     if (hadm_meas_p->config_p->rttAntennaID == HADM_RTT_ANT_NO_RECOMMENDATION)
     {
         /* Custom implementation to cross antennas on both devices */
-        ant_id = hadm_ant_perm_to_idx[hadm_meas_p->config_p->role][hadm_meas_p->rtt_antenna_id];
+        ant_id = hadm_ant_perm_to_idx[role][hadm_meas_p->rtt_antenna_id];
         /* Compute next */
         hadm_meas_p->rtt_antenna_id = (hadm_meas_p->rtt_antenna_id + 1U) % hadm_meas_p->n_ap;
     }
@@ -875,7 +886,7 @@ void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t st
             /* 2:2 configuration: use precomputed merged LUT to avoid double indirection.
              * hadm_ant_seq_2x2[role][perm_idx] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]]
              * for all antenna paths, resolved at compile time. */
-            uint8_t role = (uint8_t)hadm_meas_p->config_p->role;
+            uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
             (void)memcpy(ant_id_seq, hadm_ant_seq_2x2[role][perm_idx], HADM_MAX_NB_ANTENNAS);
         }
         else
