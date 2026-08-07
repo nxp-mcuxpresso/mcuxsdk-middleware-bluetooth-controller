@@ -77,9 +77,6 @@ uint32 LL_API_SetTxPowerLevel(uint8 power_index, uint8 channel);
 /* update tx power level in dBm by channel. Capted to max if too big */
 uint32 LL_API_SetTxPowerLevelDbm(int8 level_dbm, uint8 channel);
 
-/* update tx power level in dBm immediately in HW */
-void LL_API_SetTxPowerLevelDbmImmediate(int8 level_dbm);
-
 uint32 LL_API_SetRandomSeed(uint32 seed);
 
 /* convert dBm to power index */
