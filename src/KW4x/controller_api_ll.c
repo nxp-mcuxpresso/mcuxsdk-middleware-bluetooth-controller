@@ -336,3 +336,10 @@ uint32 Controller_GetSystemCoreClockFreq(void)
 {
     return BOARD_GetSystemCoreClockFreq();
 }
+
+void Controller_FeedHostWatchdog(void)
+{
+    // Feed the NBU software watchdog through the framework platform layer.
+    PLATFORM_FeedHostWatchdog();
+}
+

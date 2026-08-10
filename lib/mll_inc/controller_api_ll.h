@@ -327,11 +327,11 @@ __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
 }
 
 /*!
- * \brief Do an handcheck with application core that will work as a watchdog to detect 
- * if the NBU is stuck.
+ * \brief Feed the host software watchdog through the framework platform layer.
+ *        Called periodically from the NBU idle loop to signal liveness to the host.
  *
  */
-void LL_API_NotifyWakeUp(void);
+void Controller_FeedHostWatchdog(void);
 
 /*!
  * \brief  Informs the Host about the NBU state (Warnings / Fatal errors)

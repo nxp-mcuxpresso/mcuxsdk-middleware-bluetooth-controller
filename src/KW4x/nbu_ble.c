@@ -10,6 +10,7 @@
 #include "fwk_platform_ble.h"
 #include "fwk_platform_ics.h"
 #include "fwk_platform_lowpower.h"
+#include "fwk_platform_dbg.h"
 #include "fwk_debug.h"
 #include "fwk_config.h"
 
@@ -825,7 +826,7 @@ static void idle_task(void* param)
     {
         NBU_Idle();
         NB_API_Idle();
-        LL_API_NotifyWakeUp();
+        PLATFORM_FeedHostWatchdog();
     }
 }
 
