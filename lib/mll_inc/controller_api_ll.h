@@ -50,20 +50,6 @@ typedef enum
     ll_warningEvent
 } ll_dbgEventType_t;
 
-/* enum below should be aligned with ble_general.h on app side */
-#ifndef BLE_GENERAL_H
-#define  gAdvTxChannel_c            0U
-#define  gConnTxChannel_c           1U
-#if defined(BT54_TEST_TX_POWER)
-#define  gTestTxChannel_c           3U
-#endif
-#define  gBleSuccess_c              0U
-#define  gBleInvalidParameter_c     1U
-#define  gBleFeatureNotSupported_c  4U
-#define  gBleConnNotifAll_c         0U
-#define  gBleConnNotifDataOnly_c    1U
-#endif
-
 /* LTC access protection */
 extern void (* lock_LTC)(void);
 extern void (* unlock_LTC)(void);
@@ -84,9 +70,6 @@ uint8 LL_API_ConvertDbmToPowerIndex(int8 cInDbm);
 
 /* convert power index to dBm */
 int8 LL_API_ConvertPowerIndexToDbm(uint8 power_index);
-
-/* update tx power using power amplifier index */
-uint32 LL_API_SetTxPowerIndex(uint8 power_index);
 
 /* update the maximum target tx power 0, 7 or 10dBm */
 uint32 LL_API_SetMaxTxPower(int8 power_dBm);
