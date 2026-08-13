@@ -22,6 +22,7 @@ static const uint8_t hybrid_gfsk_ble_channel_to_generic_channel[40] =
 void hybrid_gfsk_init(void)
 {
     uint32_t temp;
+    volatile uint32_t dummy;
     
     // enable or disable BTLL & GENLL clock overrides
     temp = RADIO_CTRL->RF_CLK_CTRL;
@@ -29,6 +30,10 @@ void hybrid_gfsk_init(void)
     temp |= RADIO_CTRL_RF_CLK_CTRL_GENLL_CLK_EN_OVRD(1U);
 
     RADIO_CTRL->RF_CLK_CTRL = temp;
+
+    /* Make sure the clock is applied before GFSK update */
+    dummy = RADIO_CTRL->RF_CLK_CTRL;
+    (void)dummy;
 
     // set to default config
     hybrid_gfsk_set_default_config();
