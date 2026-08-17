@@ -327,8 +327,8 @@ __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
 }
 
 /*!
- * \brief Feed the host software watchdog through the framework platform layer.
- *        Called periodically from the NBU idle loop to signal liveness to the host.
+ * \brief Do an handcheck with application core that will work as a watchdog to detect 
+ * if the NBU is stuck.
  *
  */
 void Controller_FeedHostWatchdog(void);
