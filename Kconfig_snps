@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 
 menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
@@ -45,4 +45,7 @@ menuconfig MCUX_COMPONENT_middleware.wireless.snps_ll
 
         config MCUX_COMPONENT_middleware.wireless.snps_ll_controller_api
         bool "controller_api"
+
+        config MCUX_COMPONENT_middleware.wireless.snps_ll_ble_controller_if
+        bool "BLE controller interface"
     endif
