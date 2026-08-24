@@ -233,7 +233,7 @@ typedef enum
 #define LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX_SNIFFER  (LCL_HAL_PKT_RAM_STEP_RESULT_SIZE_MAX * 2U) /* 20 words */
 
 /* pkt_ram_w_ptr SHOULD NOT be a composite expression */
-#define LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, pkt_ram_w_ptr, cfo, hpm_cal_val, cs_sync_ant_id, role) \
+#define LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, pkt_ram_w_ptr, cfo, hpm_cal_val, cs_sync_ant_id, role, phase_add) \
     {\
         uint16_t *w_ptr16 = (uint16_t *)(void *)(pkt_ram_w_ptr);\
         uint16_t mapped_chan_num = (step_config_p)->channel >> 1U; /* divide by 2 to get the normal BLE channel index for format #2 HOP_TBL_CFG_OVRD */    \
@@ -266,7 +266,7 @@ typedef enum
         *w_ptr16++ = (cfo); /* STEP_CFO */\
         *w_ptr16++ = ((hpm_cal_val)>>1); /* HPM_CAL_FACTOR */\
         (pkt_ram_w_ptr) += 2;\
-        *(pkt_ram_w_ptr)++ = 0; /* CTUNE_MANUAL + PHASE_ADD */\
+        *(pkt_ram_w_ptr)++ = (phase_add); /* CTUNE_MANUAL + PHASE_ADD */\
     }
 
 #define LCL_HAL_UPDATE_CFO_IN_PKT_RAM_CONFIG_STEP(pkt_ram_w_ptr, cfo) \

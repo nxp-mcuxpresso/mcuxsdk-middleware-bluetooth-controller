@@ -1229,7 +1229,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
     int16_t cfo = 0;
     uint8_t aa_offset = 1U - ((uint8_t)hadm_meas_p->config_p->role & 0x1U); /* offset to Rx AA. & 0x1U to avoid wrong index with HADM_ROLE_SNIFFER */
     uint8_t cs_sync_ant_id = 0U;
-    
+    uint32_t phase_add = 0U;
     DEBUG_PIN1_SET
 
     assert(circ_buff_p->curr_step_idx < hadm_meas_p->config_p->stepsNb);
@@ -1281,8 +1281,13 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         {
           step_config_p->pm_ext = 0x3U;
         }
+        if ((hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR))
+        {
+            int32_t res_mult = (int32_t)hadm_device.phase_rotation.offset_table[0] * (int32_t)(step_config_p->channel);
+            phase_add = ((((uint32)res_mult) << 9) & 0x00FF0000UL); // use AP1 offset for the moment
+        }
         /* Build common config header to PKT RAM circular buffer */
-        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role);
+        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role, phase_add);
 
         /* COMMON MODE 13 */
         if (step_config_p->mode != HADM_STEP_MODE2)
