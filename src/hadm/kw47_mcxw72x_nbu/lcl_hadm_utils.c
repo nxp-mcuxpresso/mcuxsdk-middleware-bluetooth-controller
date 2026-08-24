@@ -630,8 +630,9 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
      * In these configurations, antenna path AP1 is assigned to the 1:1 antenna combination, AP2 is assigned to the 1:2 or 2:1 combination,
      * AP3 is assigned to the 1:3 or 3:1 combination and AP4 is assigned to the 1:4 or 4:1 combination.
      * The exception is the 2:2 configuration where AP1 is assigned to 1:1, AP2 is assigned to 1:2, AP3 is assigned to 2:1 and AP4 is assigned to 2:2. " */
-    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE)
+    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE || hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER)
     {
+        /* Always use single antenna for sniffer */
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
         ant_gpio[0] = hadm_device.ant2gpio[default_antenna_idx];
         ant_gpio[1] = hadm_device.ant2gpio[default_antenna_idx];
