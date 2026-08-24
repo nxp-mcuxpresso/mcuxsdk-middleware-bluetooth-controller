@@ -101,9 +101,12 @@ _tx_initialize_low_level
   LDR r1, =0x40FF0000                     ; SysT, PnSV, Rsrv, DbgM
   STR r1, [r0, #0xD20]                    ; Setup System Handlers 12-15 Priority Registers
                                           ; Note: PnSV must be lowest priority, which is 0xFF
+
   LDR r1, [r0, #0xD24]
-  ORR r1, #0x70000
-  STR r1, [r0, #0xD24]
+  BIC r1, #0x70000                        ; Clear USGFAULTENA|BUSFAULTENA|MEMFAULTENA
+                                          ; Disable configurable faults -> escalate to HardFault as soon as possible
+                                          ; Makes sure out-of-bounds writes escalate to HardFault because configurable
+  STR r1, [r0, #0xD24]                    ; faults can be masked with PRIMASK and delayed
 ;
 ;    /* Return to caller.  */
 ;

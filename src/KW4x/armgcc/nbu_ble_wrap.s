@@ -24,7 +24,7 @@
   .extern     _tx_timer_interrupt
   .extern     _tx_thread_system_stack_ptr
   .extern     __vector_table
-  
+
   .global     SVC_Handler
   .global     SysTick_Handler
   .global     BLE_INT0_IRQHandler
@@ -50,7 +50,7 @@ BLE_INT0_IRQHandler:
   LDR     R1, =BleDispatchIRQ
   BX      R1
   .size BLE_INT0_IRQHandler, . - BLE_INT0_IRQHandler
-  
+
   .align 1
   .thumb_func
   .type BLE_INT1_IRQHandler, %function
@@ -88,7 +88,7 @@ CTI_IRQ1_IRQHandler:
 SVC_Handler:
   B     PendSV_Handler
   .size SVC_Handler, . - SVC_Handler
-  
+
   .align 1
   .thumb_func
   .type SysTick_Handler, %function
@@ -118,12 +118,15 @@ _tx_initialize_low_level:
   LDR r1, =0x40FF0000                     // SysT, PnSV, Rsrv, DbgM
   STR r1, [r0, #0xD20]                    // Setup System Handlers 12-15 Priority Registers
                                           // Note: PnSV must be lowest priority, which is 0xFF
+
   LDR r1, [r0, #0xD24]
-  ORR r1, #0x70000
-  STR r1, [r0, #0xD24]
+  BIC r1, #0x70000                        // Clear USGFAULTENA|BUSFAULTENA|MEMFAULTENA
+                                          // Disable configurable faults -> escalate to HardFault as soon as possible
+                                          // Makes sure out-of-bounds writes escalate to HardFault because configurable
+  STR r1, [r0, #0xD24]                    // faults can be masked with PRIMASK and delayed
 //
 //    /* Return to caller.  */
-//    
-  BX  lr 
+//
+  BX  lr
 
 //        END
