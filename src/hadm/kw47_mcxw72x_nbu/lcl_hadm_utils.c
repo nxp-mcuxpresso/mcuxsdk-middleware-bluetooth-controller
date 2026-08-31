@@ -575,7 +575,7 @@ void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p)
     if (configIdx == (uint8_t)HADM_ANT_CFG_IDX_0)
     {
         /* ACI 0: 1:1, single antenna path, no switching */
-        hadm_meas_p->num_ant = 0U;
+        hadm_meas_p->num_ant = 1U;
         hadm_meas_p->n_ap = 1U;
         hadm_meas_p->ant_config_type = HADM_ANT_CFG_TYPE_SINGLE;
     }
@@ -620,6 +620,15 @@ void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p)
     }
 }
 
+/* Setup XCVR for RF switch control, especially LCL_GPIO_CTRL0 [4*ant_cs_sync +: 4] with LUT values.
+   Calculate a mapping value allowing to rapidly convert an antenna index to its corresponding LUT index in LCL_GPIO_CTRL0.
+   ant_index_2_LUT_index with 0x7654xxxx is for futur WA on KW43.
+            ANT7    ANT6    ANT5    ANT4    ANT3    ANT2    ANT1    ANT0
+    bit     31..28  27..24  23..20  19..16  15..12  11..8   7..4    3..0
+    index > 7       6       5       4       3       2       1       0       direct map
+            7       6       5       4       0       0       2       0       Initiator ACI7
+            7       6       5       4       0       0       1       0       Reflector ACI7
+*/
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping)
 {
     uint8_t default_antenna_idx = 0U; /* index of default antenna for 1:1 (A1) */
@@ -630,7 +639,8 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
      * In these configurations, antenna path AP1 is assigned to the 1:1 antenna combination, AP2 is assigned to the 1:2 or 2:1 combination,
      * AP3 is assigned to the 1:3 or 3:1 combination and AP4 is assigned to the 1:4 or 4:1 combination.
      * The exception is the 2:2 configuration where AP1 is assigned to 1:1, AP2 is assigned to 1:2, AP3 is assigned to 2:1 and AP4 is assigned to 2:2. " */
-    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE || hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER)
+    if (((hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE) && (hadm_meas_p->n_ap != 1U)) || /* exclude HADM_ANT_CFG_IDX_0 */
+        (hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER))
     {
         /* Always use single antenna for sniffer */
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
@@ -639,6 +649,8 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
         ant_gpio[2] = hadm_device.ant2gpio[default_antenna_idx];
         ant_gpio[3] = hadm_device.ant2gpio[default_antenna_idx];
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, ant_gpio, ena_antsw_pa_ramping);
+
+        hadm_meas_p->ant_index_2_LUT_index = 0x76540000U;     /* only default antenna is available */
     }
     else
     if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7)
@@ -650,26 +662,37 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
         ant_gpio[2] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][2]];
         ant_gpio[3] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][3]];
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, ant_gpio, ena_antsw_pa_ramping);
+
+        hadm_meas_p->ant_index_2_LUT_index = (role == 0U) ? 0x76540020U : 0x76540010U;  /* only 2 antennas of tone are available */
     }
     else /* direct map btw antenna path and antenna index */
     {
         status = XCVR_LCL_ConfigLclBlock(&hadm_meas_p->rsm_config, (XCVR_RSM_T_CAPTURE_SEL_T)hadm_meas_p->config_p->T_PM_Time, hadm_device.ant2gpio, ena_antsw_pa_ramping);
+
+        hadm_meas_p->ant_index_2_LUT_index = 0x76543210U;   /* all antennas available for direct mapping */
     }
     assert(status == gXcvrLclStatusSuccess);
     (void)status;
 }
 
-uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
+uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lut_id)
 {
-    uint32_t ant_id; /* to be used for this CS step */
+    uint8_t ant_id; /* to be used for this CS step */
+    uint8_t num_ant_supported;
     uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
+
+#if 1
+    num_ant_supported = hadm_meas_p->num_ant_supported;
+#else
+    num_ant_supported = hadm_meas_p->num_ant;
+#endif
 
     if (hadm_meas_p->config_p->rttAntennaID == HADM_RTT_ANT_NO_RECOMMENDATION)
     {
         /* Custom implementation to cross antennas on both devices */
         ant_id = hadm_ant_perm_to_idx[role][hadm_meas_p->rtt_antenna_id];
         /* Compute next */
-        hadm_meas_p->rtt_antenna_id = (hadm_meas_p->rtt_antenna_id + 1U) % hadm_meas_p->n_ap;
+        hadm_meas_p->rtt_antenna_id = (hadm_meas_p->rtt_antenna_id + 1U) % num_ant_supported;
     }
     else
     {
@@ -677,9 +700,40 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p)
         if (hadm_meas_p->config_p->rttAntennaID == HADM_RTT_ANT_ROUND_ROBIN)
         {
             /* Compute next */
-            hadm_meas_p->rtt_antenna_id = (hadm_meas_p->rtt_antenna_id + 1U) % hadm_meas_p->num_ant; /* round robin */
+            hadm_meas_p->rtt_antenna_id = (hadm_meas_p->rtt_antenna_id + 1U) % num_ant_supported;
         }
+        else if (hadm_meas_p->config_p->rttAntennaID == HADM_RTT_ANT_REPEATED)
+        {
+            ant_id = (hadm_meas_p->rtt_antenna_id / num_ant_supported) % num_ant_supported;
+            hadm_meas_p->rtt_antenna_id++;            /* used as counter, limitted by HADM_N_STEPS_MAX=256 */
+            /*  rtt_antenna_id      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15 ...
+                ant_id              0   0   0   1   1   1   2   2   2   3   3   3   0   0   0   1  ... if num_ant_supported=3
+                                    0   0   1   1   0   0   1   1   0   0   1   1   0   0   1   1  ... if num_ant_supported=2 */
+        }
+        else { /* MISRA */ }
     }
+
+// #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+//     // Work-around: 4 LUTs could be stored at positions 7 6 5 4 for all cases. Must fill them inside LCL_GPIO_CTRL0
+//     *lut_id = (uint8_t)((hadm_meas_p->ant_index_2_LUT_index >> ((ant_id * 4U) + 16U)) & 0xFU);
+// #else
+    if (hadm_meas_p->ant_index_2_LUT_index == 0x76540000U)
+    {
+        ant_id = 0U;                              /* use only default antenna */
+    }
+    else
+    if (hadm_meas_p->ant_index_2_LUT_index == 0x76543210U)  /* all 4 antenna LUTs available */
+    {
+        /* no change to ant_id */
+    }
+    else    /* 0x76540020U or 0x76540010U, only 2 antenna LUTs available */
+    {
+        /* before       0   1   2   3   0   1 ..        0   0   1   1   2   2   3   3   0   0 ..
+           after        0   1   0   1   0   1 ..        0   0   1   1   0   0   1   1   0   0 .. */
+        ant_id &= 0x0DU;    /* limit index to 2 antennas. See above */
+    }
+    *lut_id = (uint8_t)((hadm_meas_p->ant_index_2_LUT_index >> (ant_id * 4U)) & 0xFU);
+// #endif
     return (uint8_t)ant_id;
 }
 

@@ -407,7 +407,7 @@ void lcl_hadm_handle_temperature_change(int32_t temperature)
     OSA_EnableIRQGlobal();
 }
 
-BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable)
+BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_ant_supported)
 {
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
     
@@ -424,7 +424,8 @@ BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable)
            break;
         }
     }
-    
+    hadm_device.num_ant_supported = num_ant_supported;
+
     if (hal_status == HADM_HAL_SUCCESS)
     {
         LCL_HAL_SET_ANTENNA_PORT(hadm_device.ant2gpio[0]);
@@ -625,7 +626,8 @@ BLE_HADM_STATUS_t lcl_hadm_check_config(const BLE_HADM_SubeventConfig_t *hadm_co
     if ((hadm_config->toneAntennaConfigIdx != HADM_ANT_CFG_IDX_0) && (hadm_config->T_SW_Time < HADM_T_SW_2)) /* only T_SW >1us is supported */
     {   goto config_error; }
 
-    if ((hadm_config->rttAntennaID == 0U) || ((hadm_config->rttAntennaID > HADM_MAX_NB_ANTENNAS) && (hadm_config->rttAntennaID < HADM_RTT_ANT_ROUND_ROBIN)))
+    if ((hadm_config->rttAntennaID == 0U) ||
+        ((hadm_config->rttAntennaID > hadm_device.num_ant_supported) && (hadm_config->rttAntennaID < HADM_RTT_ANT_REPEATED)))
     {   goto config_error; }
 
     if (hadm_config->subeventIdx >= HADM_NUM_SUBEVENTS_MAX)
@@ -666,6 +668,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     
     hadm_meas_p->mode0_complete = false;
     hadm_meas_p->debug_flags = hadm_config->debugFlags;
+
+    hadm_meas_p->num_ant_supported = hadm_device.num_ant_supported;
     
     /* Configure iq_avg_win according to T_PM: choose the closest smaller power of 2 to generate 4 IQ avg windows whatever
      * the configuration.
@@ -727,8 +731,8 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
 
     /* Configure rttAntennaID to be used during first mode 0 */
     /* If no recommendation from the host then apply crossed roud robin in the controller since it gives better perf */
-    if (hadm_config->rttAntennaID >= HADM_RTT_ANT_ROUND_ROBIN)
-    {   hadm_meas_p->rtt_antenna_id = 0U;  }   /* start round robin */
+    if (hadm_config->rttAntennaID >= HADM_RTT_ANT_REPEATED)
+    {   hadm_meas_p->rtt_antenna_id = 0U;  }   /* start repetition */
     else
     {   hadm_meas_p->rtt_antenna_id = hadm_config->rttAntennaID - 1U;  }   /* fixed antenna */
     
@@ -792,6 +796,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     rsm_config_p->sniffer_mode_en = (hadm_config->role == HADM_ROLE_SNIFFER);
     rsm_config_p->enable_inpr = (bool)hadm_config->inlinePhaseReturn;
     rsm_config_p->hpm_cal_manual_val = hadm_device.cal_ch40[hadm_meas_p->config_p->rttPhy].hpm_cal_val;
+    rsm_config_p->ant_permut_mode = false;
     rsm_config_p->use_rccal_manual_override = hadm_device.rccal_manual_override_needed;
     rsm_config_p->manual_rccal_value = hadm_device.rtt_static_comp.rttRCcal;
     rsm_config_p->pa_ramp_time = hadm_device.paRampingTime;
@@ -836,6 +841,9 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
 
     DEBUG_PIN1_CLR
     DEBUG_PIN1_SET 
+
+    /* Configure Antenna switching */
+    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
 
     /* Build first configuration steps in PKT RAM: mode 0 steps without pushing RSM pointers */
     (void)lcl_hadm_set_steps_config(hadm_config->mode0Nb, hadm_meas_p, FALSE);
@@ -931,8 +939,6 @@ BLE_HADM_STATUS_t lcl_hadm_run_measurement(const BLE_HADM_SubeventConfig_t *hadm
 
         DEBUG_PIN1_PULSE
 
-        /* Configure Antenna switching */
-        lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
         /* Configure TQI and start LCL if needed */
         if (rsm_config_p->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE)
         {
@@ -1229,6 +1235,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
     int16_t cfo = 0;
     uint8_t aa_offset = 1U - ((uint8_t)hadm_meas_p->config_p->role & 0x1U); /* offset to Rx AA. & 0x1U to avoid wrong index with HADM_ROLE_SNIFFER */
     uint8_t cs_sync_ant_id = 0U;
+    uint8_t cs_sync_lut_id = 0U;
     uint32_t phase_add = 0U;
     DEBUG_PIN1_SET
 
@@ -1273,7 +1280,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         /* Compute CS_SYNC antenna ID to be used for this step */
         if (step_config_p->mode != HADM_STEP_MODE2)
         {
-            cs_sync_ant_id = lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_p);
+            cs_sync_ant_id = lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_p, &cs_sync_lut_id);
         }
 
         /* RSM timing requires TONE_EXT to be set for correct Stable Phase test TX timing */
@@ -1287,7 +1294,8 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
             phase_add = ((((uint32)res_mult) << 9) & 0x00FF0000UL); // use AP1 offset for the moment
         }
         /* Build common config header to PKT RAM circular buffer */
-        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val, cs_sync_ant_id, hadm_meas_p->config_p->role, phase_add);
+        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val,
+                                          cs_sync_lut_id, hadm_meas_p->config_p->role, phase_add);
 
         /* COMMON MODE 13 */
         if (step_config_p->mode != HADM_STEP_MODE2)
