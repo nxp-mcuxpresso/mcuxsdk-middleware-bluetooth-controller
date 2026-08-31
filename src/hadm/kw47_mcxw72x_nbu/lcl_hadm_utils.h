@@ -249,7 +249,7 @@ void lcl_hadm_utils_calc_rtt_static_delay(hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_calc_ts_delay(hadm_meas_t *hadm_meas_p, hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p);
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping);
-uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p);
+uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lut_id);
 uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 
 void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phaseRotation);

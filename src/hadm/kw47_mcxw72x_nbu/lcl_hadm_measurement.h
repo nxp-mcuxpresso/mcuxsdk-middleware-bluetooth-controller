@@ -218,6 +218,7 @@ typedef struct
     uint8_t                iq_avg_win;          /*!< averging window size (power of 2): valid values: 0 and  [2...8] */
     uint8_t                iq_capture_win;      /*!< capture window size in us, depends on T_PM config */
     uint8_t                num_ant;             /*!< number of antennas from diversity config [1...4] */
+    uint8_t                num_ant_supported;   /*!< number of antennas supported by controller */
     uint8_t                n_ap;                /*!< number of antenna paths from diversity config [1...4] */
     uint8_t                rtt_antenna_id;      /*!< Antenna Id to be applied to CS SYNC packets [0...3] */
     hadm_ant_config_type_t ant_config_type;     /*!< Antenna config type, cached at subevent init (see hadm_ant_config_type_t) */
@@ -234,6 +235,7 @@ typedef struct
     uint8_t                data_in_flight_w_idx;  /*!< write index for in flight data */
     uint8_t                data_in_flight_r_idx;  /*!< read index for in flight data */
     hadm_data_in_flight_t  pkt_ram_data_in_flight[HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE]; /*!< Working buffer of Rx AA currently in flight in config PKT RAM buffer It is required to keep a copy for HARTT frac delay computation ... */
+    uint32_t               ant_index_2_LUT_index; /*!< mapping of antenna index to LUT index, see lcl_hadm_utils_configure_antenna_switching() */
 } hadm_meas_t;
 
 /* HAL Data associated to a CS procedure */
@@ -254,6 +256,7 @@ typedef struct
     bool                   is_rsm_cal_done;     /*!< Set to 1 if PLL calibration was successful (done once for all)  */
     uint16_t               sys_clock_freq;      /*!< Cache system clock frequency for various usages (unit: MHz) */
     uint8_t                ant2gpio[HADM_MAX_NB_ANTENNAS]; /*!< pointer to the LUT performing mapping btw antenna index an GPIOs */
+    uint8_t                num_ant_supported;   /*!< number of antennas supported by controller */
 #ifdef HADM_PLL_CAL_INTERPOLATION
     /*! Store PLL calibration data for channel 40 */
     hadm_pll_cal_data_t    cal_ch40[HADM_RTT_PHY_MAX];
@@ -299,7 +302,7 @@ void BRF_INT_IRQHandler(void);
 BLE_HADM_STATUS_t lcl_hadm_init(void);
 BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx);
 void lcl_hadm_handle_temperature_change(int32_t temperature);
-BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable);
+BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_ant_supported);
 BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len);
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rtt_phy);
