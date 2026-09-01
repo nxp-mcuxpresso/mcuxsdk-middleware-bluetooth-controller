@@ -24,7 +24,7 @@ extern "C" {
 #define HADM_HAL_VERSION 2 /* For KW47/KW43 architecture */
 #endif
 
-#if defined(AW822)
+#if defined(KIBO)
 #define HADM_HAL_VERSION 3 /* For Kibo/WCS architectures */
 #endif
 
