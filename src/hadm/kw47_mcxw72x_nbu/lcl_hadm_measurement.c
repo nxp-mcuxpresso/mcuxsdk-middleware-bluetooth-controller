@@ -1432,15 +1432,18 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             for (step_idx = 0; step_idx < mode0Nb; step_idx++)
             {
                 sync_info2_p = &hadm_meas_p->sync_info2[step_idx];
-                if (hadm_proc->agc_idx2 > sync_info2_p->agc_idx)
+                if (sync_info2_p->valid != 0U)
                 {
-                    /* Record AGC index and keep the smallest */
-                    hadm_proc->agc_idx2 = sync_info2_p->agc_idx;
-                    /* Override the estimated CFO and channel used for CFO estimation.
-                     * Sniffer will use CFO vs Reflector as the Initiator will compensate its own CFO vs Reflector.
-                     */
-                    hadm_proc->cfo = sync_info2_p->cfo;
-                    hadm_proc->cfo_channel = (uint8_t)step_config_p[step_idx].channel;
+                    if (hadm_proc->agc_idx2 > sync_info2_p->agc_idx)
+                    {
+                        /* Record AGC index and keep the smallest */
+                        hadm_proc->agc_idx2 = sync_info2_p->agc_idx;
+                        /* Override the estimated CFO and channel used for CFO estimation.
+                         * Sniffer will use CFO vs Reflector as the Initiator will compensate its own CFO vs Reflector.
+                         */
+                        hadm_proc->cfo = sync_info2_p->cfo;
+                        hadm_proc->cfo_channel = (uint8_t)step_config_p[step_idx].channel;
+                    }
                 }
             }
         }
@@ -1554,7 +1557,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
     uint8_t *res_buff_p;
     uint8_t nb_steps = 0;
     uint8_t step_mode0_no = 0;
-    uint8_t rtt_pkt_no = 0;
     /* A sniffer will be reported as an initiator for both devices */
     BLE_HADM_role_t role = (hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER) ? HADM_ROLE_INITIATOR : hadm_meas_p->config_p->role;
     bool_t synch_done = FALSE;
@@ -1680,12 +1682,22 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
             /* Store Step_Data */
             if (step_config_p->mode == HADM_STEP_MODE0)
             {
-                bool vld = (bool)hadm_meas_p->sync_info[step_mode0_no].valid;
+                hadm_sync_info_t *sync_info_p;
+                /* Select sniffer section corrresponding to inititor then reflector on iter 2 */
+                if ((hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER) && (nb_iter == (HADM_SNIFFER_DEVICE_NB - 1U)))
+                {
+                    sync_info_p = &hadm_meas_p->sync_info2[step_mode0_no];
+                }
+                else
+                {
+                    sync_info_p = &hadm_meas_p->sync_info[step_mode0_no];
+                }
+                bool vld = (bool)sync_info_p->valid;
                 /* (Hz*100) / MHz  => 0.01 ppm unit */
-                int32_t ppm = (hadm_meas_p->sync_info[step_mode0_no].cfo * HADM_PPM_DIVIDER) / (int32_t)(uint32_t)HADM_CHAN_NUM_TO_MHZ((uint32_t)step_config_p->channel);
+                int32_t ppm = (sync_info_p->cfo * HADM_PPM_DIVIDER) / (int32_t)(uint32_t)HADM_CHAN_NUM_TO_MHZ((uint32_t)step_config_p->channel);
                 *res_buff_p++ = (uint8_t)BLE_HADM_STEP0_REPORT_SIZE(role); /* Step_Data_Length */
                 *res_buff_p++ = (uint8_t)HADM_SET_RTT_AA_QUALITY(vld); /* Packet_AA_Quality */
-                *res_buff_p++ = (uint8_t)HADM_SET_RTT_RSSI(vld, hadm_meas_p->sync_info[step_mode0_no].rssi); /* Packet RSSI */
+                *res_buff_p++ = (uint8_t)HADM_SET_RTT_RSSI(vld, sync_info_p->rssi); /* Packet RSSI */
                 *res_buff_p++ = hadm_meas_p->pkt_ram_data_in_flight[hadm_meas_p->data_in_flight_r_idx].cs_sync_ant_id + 1U;  /* Packet_Antenna (1 byte) */
                 if (role == HADM_ROLE_INITIATOR)
                 {
@@ -1701,8 +1713,11 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     hadm_meas_p->result_p->syncDelayUs -= (step_mode0_no * hadm_meas_p->step_duration[0]); /* cope for missed mode0s */
                     synch_done = TRUE;
                 }
-                step_mode0_no++;
-                rtt_pkt_no++;
+                /* Increase counter only after complete processing of mode0 result */
+                if ((hadm_meas_p->config_p->role != HADM_ROLE_SNIFFER) || (nb_iter == (HADM_SNIFFER_DEVICE_NB - 1U)))
+                {
+                    step_mode0_no++;
+                }
             }
             else
             {
@@ -1715,7 +1730,6 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     int32_t rtt_ts = 0;
                     uint8_t nadm_metric = 0xFF; /* NADM not available by default */
                     uint8_t nadm_symb_err = 0x0U; 
-                    rtt_pkt_no++;
                     (void)XCVR_LCL_UnpackRttResult((xcvr_lcl_rtt_data_raw_t *)(void *)&rtt_data_raw, &rtt_data, LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy));
                     if (rtt_data.rtt_vld && rtt_data.rtt_found)
                     {
