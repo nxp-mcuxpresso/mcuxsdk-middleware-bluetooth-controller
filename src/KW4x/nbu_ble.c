@@ -882,17 +882,23 @@ static void latency_test_init(void)
 
 void SystemInitHook(void)
 {
-    /* Configure NBU memory mapping as early as possible in the SystemInitHook() 
-     * to prevent any potential issues 
+    /* Configure NBU memory mapping as early as possible in the SystemInitHook()
+     * to prevent any potential issues
      */
     PLATFORM_ConfigureSmuDmemMapping();
 }
 
 int main(void)
 {
+    int ret;
+
 #ifdef LATENCY_TESTS
     latency_test_init();
 #endif
+
+    ret = PLATFORM_PreKernelInit();
+    assert(ret == 0);
+    (void)ret;
 
     /* Configure FRO192M clock */
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
