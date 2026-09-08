@@ -236,6 +236,7 @@ typedef struct
     uint8_t                data_in_flight_r_idx;  /*!< read index for in flight data */
     hadm_data_in_flight_t  pkt_ram_data_in_flight[HADM_HAL_PKT_RAM_IN_FLIGHT_DATA_BUFFER_SIZE]; /*!< Working buffer of Rx AA currently in flight in config PKT RAM buffer It is required to keep a copy for HARTT frac delay computation ... */
     uint32_t               ant_index_2_LUT_index; /*!< mapping of antenna index to LUT index, see lcl_hadm_utils_configure_antenna_switching() */
+    BLE_HADM_role_t        antSwitchRole;       /*!< which role the antenna switching sequence derives from (indirection needed for sniffer) */
 } hadm_meas_t;
 
 /* HAL Data associated to a CS procedure */
@@ -257,6 +258,7 @@ typedef struct
     uint16_t               sys_clock_freq;      /*!< Cache system clock frequency for various usages (unit: MHz) */
     uint8_t                ant2gpio[HADM_MAX_NB_ANTENNAS]; /*!< pointer to the LUT performing mapping btw antenna index an GPIOs */
     uint8_t                num_ant_supported;   /*!< number of antennas supported by controller */
+	BLE_HADM_SniffAntSwitchMode_t snifferAntSwitchCfgMode; /*!< Sniffer antenna switching configuration */
 #ifdef HADM_PLL_CAL_INTERPOLATION
     /*! Store PLL calibration data for channel 40 */
     hadm_pll_cal_data_t    cal_ch40[HADM_RTT_PHY_MAX];
@@ -303,6 +305,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void);
 BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx);
 void lcl_hadm_handle_temperature_change(int32_t temperature);
 BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_ant_supported);
+BLE_HADM_STATUS_t lcl_hadm_set_sniffer_config(BLE_HADM_SniffAntSwitchMode_t antSwitchCfgMode);
 BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len);
 void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address);
 BLE_HADM_STATUS_t lcl_hadm_calibrate_pll(BLE_HADM_rttPhyMode_t rtt_phy);

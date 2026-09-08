@@ -435,6 +435,37 @@ BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_an
     return hal_status;
 }
 
+/*
+ * Controls how a sniffer supporting multiple antenna will determine the antenna switching pattern.
+ * RSM does not allow to adjust antenna switching pattern on T_IP (it's a per-step configuration).
+ * For that reason, when acting as a sniffer, we have to choose initiator/reflector switching sequence for the entire step.
+ * It means only one of the two periods (before/after T_IP) will actually produce 4 antenna paths (2 identicals AP out of 4 AP otherwise).
+ *
+ * antennaConfigIdx can be any of:
+ * 1- use single antenna
+ * 2- use initiator antenna permutation pattern
+ * 3- use reflector antenna permutation pattern
+ * 
+ * Note that the number of antenna paths reported by the sniffer will always match the number of antenna path
+ * of the connection being monitored, even if a single antenna is used.
+ *
+ */
+BLE_HADM_STATUS_t lcl_hadm_set_sniffer_config(BLE_HADM_SniffAntSwitchMode_t antSwitchCfgMode)
+{
+    BLE_HADM_STATUS_t hal_status;
+    if (antSwitchCfgMode < HADM_SNIFFER_ANTSW_INVALID)
+    {
+        hadm_device.snifferAntSwitchCfgMode = antSwitchCfgMode;
+        hal_status = HADM_HAL_SUCCESS;
+    }
+    else
+    {
+        hadm_device.snifferAntSwitchCfgMode = HADM_SNIFFER_ANTSW_NO_SWITCH;
+        hal_status = HADM_HAL_INVALID_ARGS;
+    }
+    return hal_status;
+}
+
 BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len)
 {
     /* check for consistency of parameter number w.r.t XCVR */
@@ -671,7 +702,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     hadm_meas_p->debug_flags = hadm_config->debugFlags;
 
     hadm_meas_p->num_ant_supported = hadm_device.num_ant_supported;
-    
+
     /* Configure iq_avg_win according to T_PM: choose the closest smaller power of 2 to generate 4 IQ avg windows whatever
      * the configuration.
      * iq_avg_win is the number of samples (power of 2) per averaging window, based on
@@ -718,6 +749,15 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
 #endif
     /* Compute num_ant, n_ap and cache antenna configuration type once per subevent */
     lcl_hadm_utils_init_ant_config(hadm_meas_p);
+    /* Use reflector switching pattern for no switching (N:1) or reflector pattern requested, use initiator pattern otherwise  */
+    if (hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER)
+    {
+        hadm_meas_p->antSwitchRole = (hadm_device.snifferAntSwitchCfgMode == HADM_SNIFFER_ANTSW_USE_INITIATOR_SWITCH) ? HADM_ROLE_INITIATOR:HADM_ROLE_REFLECTOR;
+    }
+    else
+    {
+        hadm_meas_p->antSwitchRole = hadm_meas_p->config_p->role;
+    }
 
     /* Compute IQ buffer size */
     if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_IQ_DMA) != 0U)
@@ -733,7 +773,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     /* Configure rttAntennaID to be used during first mode 0 */
     /* If no recommendation from the host then apply crossed roud robin in the controller since it gives better perf */
     if (hadm_config->rttAntennaID >= HADM_RTT_ANT_REPEATED)
-    {   hadm_meas_p->rtt_antenna_id = 0U;  }   /* start repetition */
+    {   hadm_meas_p->rtt_antenna_id = 0U;  }   /* start repetition / round robin */
     else
     {   hadm_meas_p->rtt_antenna_id = hadm_config->rttAntennaID - 1U;  }   /* fixed antenna */
     

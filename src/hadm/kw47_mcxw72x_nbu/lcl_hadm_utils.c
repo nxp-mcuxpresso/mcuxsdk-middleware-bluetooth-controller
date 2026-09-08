@@ -29,16 +29,6 @@
 /* Size of a preallocted HAL result buffer. For now assuming that mode3/n_ap=4 is the largest step report */
 #define HADM_HAL_BUFFER_SIZE (HADM_HAL_PKT_RAM_MAX_NB_STEPS_ENGAGED*BLE_HADM_STEP3_REPORT_SIZE(HADM_MAX_NB_ANTENNA_PATHS))
 
-/* RSM does not allow to adjust antenna switching pattern on T_IP (it's a per-step configuration).
- * For that reason, when acting as a sniffer, we have to choose initior/reflector swithcing sequence for the entire step.
- * It means only one of the two periods (before/after T_IP) will actually produce 4 antenna paths (2 identicals AP out of 4 AP otherwise).
- */
-/* Sniffer role will use reflector's antenna switching pattern */
-#define HADM_ROLE_TO_ANT_SWITCH_INDEX(role) (((role) == HADM_ROLE_INITIATOR) ? 0U:1U)
-
-/* Sniffer role will use initiator's antenna switching pattern */
-//#define HADM_ROLE_TO_ANT_SWITCH_INDEX(role) (((role) == HADM_ROLE_REFLECTOR) ? 1U:0U)
-
 /* === Globals ============================================================= */
 //uint32_t nvic_backup;
 
@@ -620,8 +610,8 @@ void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p)
     }
 }
 
-/* Setup XCVR for RF switch control, especially LCL_GPIO_CTRL0 [4*ant_cs_sync +: 4] with LUT values.
-   Calculate a mapping value allowing to rapidly convert an antenna index to its corresponding LUT index in LCL_GPIO_CTRL0.
+/* Setup XCVR with antenna path to RF switch GPIO CTRL mapping (LCL LUT indexed by AP).
+   Also calculate a mapping value allowing to rapidly convert an antenna index to its corresponding LUT index in LCL_GPIO_CTRL0.
    ant_index_2_LUT_index with 0x7654xxxx is for futur WA on KW43.
             ANT7    ANT6    ANT5    ANT4    ANT3    ANT2    ANT1    ANT0
     bit     31..28  27..24  23..20  19..16  15..12  11..8   7..4    3..0
@@ -631,18 +621,43 @@ void lcl_hadm_utils_init_ant_config(hadm_meas_t *hadm_meas_p)
 */
 void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool ena_antsw_pa_ramping)
 {
-    uint8_t default_antenna_idx = 0U; /* index of default antenna for 1:1 (A1) */
     xcvrLclStatus_t status;
 
-    /* Perform antenna permutation index to antenna index mapping */
-    /* " Most antenna configurations described below are 1:X or X:1 orientations where X is in the set of 1 to 4.
-     * In these configurations, antenna path AP1 is assigned to the 1:1 antenna combination, AP2 is assigned to the 1:2 or 2:1 combination,
-     * AP3 is assigned to the 1:3 or 3:1 combination and AP4 is assigned to the 1:4 or 4:1 combination.
-     * The exception is the 2:2 configuration where AP1 is assigned to 1:1, AP2 is assigned to 1:2, AP3 is assigned to 2:1 and AP4 is assigned to 2:2. " */
-    if (((hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE) && (hadm_meas_p->n_ap != 1U)) || /* exclude HADM_ANT_CFG_IDX_0 */
-        (hadm_meas_p->config_p->role == HADM_ROLE_SNIFFER))
+    /*
+     * The HW is using antenna path index, not the antenna index to access the GPIO "LUT" table.
+     * This is the reason why we have to perform AP=>A(ntenna) mapping as part of this GPIO LUT programming, with the consequence that not all antenna
+     * may be represented in this LUT (limiting CS_Sync_antenna switching), and the need to swap GPIO order based on the role in 2x2 case.
+     *
+     * If 1:N
+     *   AP1 => 1:1
+     *   AP2 => 1:2
+     *   AP3 => 1:3
+     *   AP4 => 1:4
+     * Initiator LUT is A1,A1,A1,A1
+     * Reflector LUT is A1,A2,A3,A4
+     *
+     * If N:1
+     *   AP1 => 1:1
+     *   AP2 => 2:1
+     *   AP3 => 3:1
+     *   AP4 => 4:1
+     * Initiator LUT is A1,A2,A3,A4
+     * Reflector LUT is A1,A1,A1,A1
+     *
+     * If 2:2
+     *   AP1 => 1:1
+     *   AP2 => 1:2
+     *   AP3 => 2:1
+     *   AP4 => 2:2
+     * Initiator LUT is A1,A1,A2,A2
+     * Reflector LUT is A1,A2,A1,A2
+     *
+     */
+
+    if ((hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_SINGLE) && (hadm_meas_p->n_ap != 1U))
     {
-        /* Always use single antenna for sniffer */
+        /* Single antenna config with more than one antenna path requires all LUT to point at A1 */
+        uint8_t default_antenna_idx = 0U; /* index of default antenna for 1:1 (A1) */
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
         ant_gpio[0] = hadm_device.ant2gpio[default_antenna_idx];
         ant_gpio[1] = hadm_device.ant2gpio[default_antenna_idx];
@@ -653,10 +668,10 @@ void lcl_hadm_utils_configure_antenna_switching(hadm_meas_t *hadm_meas_p, bool e
         hadm_meas_p->ant_index_2_LUT_index = 0x76540000U;     /* only default antenna is available */
     }
     else
-    if (hadm_meas_p->config_p->toneAntennaConfigIdx == HADM_ANT_CFG_IDX_7)
+    if (hadm_meas_p->ant_config_type == HADM_ANT_CFG_TYPE_2X2)
     {
         uint8_t ant_gpio[HADM_MAX_NB_ANTENNA_PATHS];
-        uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
+        uint8_t role = (uint8_t)hadm_meas_p->antSwitchRole;
         ant_gpio[0] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][0]];
         ant_gpio[1] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][1]];
         ant_gpio[2] = hadm_device.ant2gpio[hadm_ant_perm_to_idx[role][2]];
@@ -679,11 +694,13 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lu
 {
     uint8_t ant_id; /* to be used for this CS step */
     uint8_t num_ant_supported;
-    uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
+    uint8_t role = (uint8_t)hadm_meas_p->antSwitchRole;
 
 #if 1
+    /* Specification expects CS_Sync_Antenna to be set to any available antenna, not only the ones used by Tone antenna config */
     num_ant_supported = hadm_meas_p->num_ant_supported;
 #else
+    /* Due to RSM/LUT indexing, we limit CS_sync_antenna to the one used by tones (it's also more realistic to use consistent set for feature such as NGD) */
     num_ant_supported = hadm_meas_p->num_ant;
 #endif
 
@@ -717,6 +734,7 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lu
 //     // Work-around: 4 LUTs could be stored at positions 7 6 5 4 for all cases. Must fill them inside LCL_GPIO_CTRL0
 //     *lut_id = (uint8_t)((hadm_meas_p->ant_index_2_LUT_index >> ((ant_id * 4U) + 16U)) & 0xFU);
 // #else
+    /* Specification expects CS_Sync_Antenna to be set to any available antenna, but due to LUT limitation we restrict it to available antennas */
     if (hadm_meas_p->ant_index_2_LUT_index == 0x76540000U)
     {
         ant_id = 0U;                              /* use only default antenna */
@@ -941,7 +959,7 @@ void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t st
             /* 2:2 configuration: use precomputed merged LUT to avoid double indirection.
              * hadm_ant_seq_2x2[role][perm_idx] = hadm_ant_perm_to_idx[role][hadm_ant_perm_to_ap[perm_idx][i]]
              * for all antenna paths, resolved at compile time. */
-            uint32_t role = HADM_ROLE_TO_ANT_SWITCH_INDEX(hadm_meas_p->config_p->role);
+            uint8_t role = (uint8_t)hadm_meas_p->antSwitchRole;
             (void)memcpy(ant_id_seq, hadm_ant_seq_2x2[role][perm_idx], HADM_MAX_NB_ANTENNAS);
         }
         else

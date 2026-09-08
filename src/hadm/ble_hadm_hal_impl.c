@@ -196,6 +196,33 @@ uint32 BLE_HADM_SetPARamping(uint8 paRampingTime, uint8 paRampAntSwitch)
     return status;
 }
 
+BLE_HADM_STATUS_t BLE_HADM_SetVendorConfig(uint8 paramId, uint8 length, const uint8 *pData)
+{
+    BLE_HADM_STATUS_t status;
+    switch (paramId) {
+        case 8U:
+        {
+            /* Sniffer configuration: antennaConfigIdx (1 byte), 3 bytes reserved */
+            if (length != 4U)
+            {
+                status = HADM_HAL_INVALID_ARGS;
+            }
+            else
+            {
+                BLE_HADM_SniffAntSwitchMode_t antSwitchCfgMode = (BLE_HADM_SniffAntSwitchMode_t)pData[0];
+                status = lcl_hadm_set_sniffer_config(antSwitchCfgMode);
+                /* pData [1..3] reserved */
+            }
+        }
+        break;
+
+        default:
+            status = HADM_HAL_INVALID_ARGS;
+            break;
+    }
+    return status;
+}
+
 BLE_HADM_STATUS_t BLE_HADM_SubeventCheckConfig(const BLE_HADM_SubeventConfig_t *config)
 {
     BLE_HADM_STATUS_t status;
