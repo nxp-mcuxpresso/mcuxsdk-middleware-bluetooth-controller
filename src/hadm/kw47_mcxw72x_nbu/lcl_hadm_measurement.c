@@ -282,6 +282,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     {
         hadm_device.ant2gpio[i] = 0U;
     }
+    hadm_device.num_ant_supported = hadm_hal_capabilities.numAntennasSupported;
 
     hadm_device.rccal_manual_override_needed = FALSE;
     hadm_device.rtt_static_comp.rttRCcal = HADM_RCCAL_CENTER;
