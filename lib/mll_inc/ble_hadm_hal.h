@@ -266,16 +266,14 @@ typedef struct
     uint32 rand2;  /*!< PN random payload Refl -> Init */
 } BLE_HADM_PN_rand_t;
 
-/*! Antenna board to be used: */
-typedef enum 
+/*! Sniffer Antenna configuration */
+typedef enum
 {
-    HADM_ANT_BOARD_EVK                  = 0U,   /*!< EVK board, no diversity */
-    HADM_ANT_BOARD_ANTDIV_SMA           = 1U,   /*!< X-FR ANTDIV board, EXT antennas (SMA) */
-    HADM_ANT_BOARD_ANTDIV_PRINTED       = 2U,   /*!< X-FR ANTDIV board, printed antennas */
-    HADM_ANT_BOARD_LOC_SMA              = 3U,   /*!< LOC board, EXT antennas (SMA) */
-    HADM_ANT_BOARD_LOC_PRINTED          = 4U,   /*!< LOC board, printed antennas */
-    HADM_ANT_BOARD_INVALID              = 5U,
-} BLE_HADM_AntennaBoardType_t;
+    HADM_SNIFFER_ANTSW_NO_SWITCH              = 0U, /*!< Sniffer uses single antenna */
+    HADM_SNIFFER_ANTSW_USE_INITIATOR_SWITCH   = 1U, /*!< Sniffer uses multiple antennas, initiator switching pattern */
+    HADM_SNIFFER_ANTSW_USE_REFLECTOR_SWITCH   = 2U, /*!< Sniffer uses multiple antennas, reflector switching pattern */
+    HADM_SNIFFER_ANTSW_INVALID                = 3U
+} BLE_HADM_SniffAntSwitchMode_t;
 
 /*! mode, T_PM extension presence, antenna permutation index for one particular step */
 typedef struct 
@@ -548,6 +546,12 @@ void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation)
  * Return 0 if success
  */
 uint32 BLE_HADM_SetPARamping(uint8 paRampingTime, uint8 paRampAntSwitch);
+
+/*!
+ * Abstract function that needs to be implemented by the HW-specific HAL implementation.
+ * This API allows to set generic vendor parameter (paramPresence bit from HCI vendor command))
+ */
+BLE_HADM_STATUS_t BLE_HADM_SetVendorConfig(uint8 paramId, uint8 length, const uint8 *pData);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
