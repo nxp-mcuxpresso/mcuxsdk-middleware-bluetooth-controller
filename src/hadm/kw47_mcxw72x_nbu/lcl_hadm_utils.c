@@ -778,13 +778,14 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
  * Initialize phase offset to default values.
  * Phase rotation happens but no rotation is applied.
  */
-void lcl_hadm_init_phase_offset(void)
+void lcl_hadm_init_phase_offset(hadm_device_t *hadm_device_p)
 {
     BLE_HADM_PCTPhaseRotation_t defaultPCTRotation;
     defaultPCTRotation.offset_table[0] = 0;
     defaultPCTRotation.offset_table[1] = 0;
     defaultPCTRotation.offset_table[2] = 0;
     defaultPCTRotation.offset_table[3] = 0;
+    hadm_device_p->phase_rotation = defaultPCTRotation;
     lcl_hadm_utils_calc_phase_rotation_offset(&defaultPCTRotation);
 }
 

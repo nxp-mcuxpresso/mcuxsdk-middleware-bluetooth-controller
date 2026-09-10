@@ -254,7 +254,7 @@ uint16_t lcl_hadm_get_hpm_cal_interpolation(uint8_t chan, uint16_t ref_cal);
 
 void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phaseRotation);
 void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_id);
-void lcl_hadm_init_phase_offset(void);
+void lcl_hadm_init_phase_offset(hadm_device_t *hadm_device_p);
 void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq);
 
 #ifdef __cplusplus

@@ -394,7 +394,7 @@ BLE_HADM_STATUS_t lcl_hadm_init(void)
     lcl_hadm_handle_temperature_change(HADM_TEMPERATURE_CENTER);
 
     /* Initialize default value for phase rotation offset */
-    lcl_hadm_init_phase_offset();
+    lcl_hadm_init_phase_offset(&hadm_device);
 
     /* Init LTC for DRBG */
     LTC_Init(LTC0);
@@ -912,7 +912,15 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     }
 	
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-    rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED, /* Disables the phase compensation by default */
+    if((rsm_config_p->enable_inpr) && (hadm_config->role == HADM_ROLE_REFLECTOR))
+    {
+        /* Enable TX Phase compensation for IPT */
+        rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_PLL_TX;
+    }
+    else
+    {
+        rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED; /* Disables the phase compensation by default */
+    }
 #endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     
     status = XCVR_LCL_ValidateRsmSettings(rsm_config_p);
@@ -1299,6 +1307,73 @@ static void lcl_hadm_measurement_cleanup(hadm_meas_t *hadm_meas_p)
     lcl_hadm_free_meas_instance(hadm_meas_p);
 }
 
+/* phase_add = angle_fp * channel * pi/4 [rad to deg] * 180/128 [HW unit] >> 9 [int32q14 -> int8q7]*/
+#define HADM_ROT_OFFSET_TO_HW_DEG(offset, chn) ((((offset) * (int32_t)(chn) * 180 * 9) / (128 * 10)) / 512)
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+static void lcl_hadm_phase_add_config(hadm_meas_t *hadm_meas_p)
+{
+    hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
+    BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[circ_buff_p->curr_step_idx];
+    uint32_t phase_add_apX[4] = {0};
+#if defined(SUPPORT_HADM_MULTI_ANT_MODE)
+    xcvr_lcl_rsm_config_t *rsm_config_p = &hadm_meas_p->rsm_config;
+    uint32_t multi_ant_permut[2] = {0};
+#endif
+
+    if  ((step_config_p->mode == HADM_STEP_MODE2) || (step_config_p->mode == HADM_STEP_MODE3))
+    {
+        uint8_t ant_id_seq[HADM_MAX_NB_ANTENNA_PATHS];
+        int32_t phase_add_ap = 0;
+
+        lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_p, circ_buff_p->curr_step_idx, ant_id_seq);
+
+        if ((hadm_meas_p->config_p->inlinePhaseReturn == 0U) ||
+            ((hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR)))
+        {
+            uint8_t ant_id = 0U;
+            uint8_t shift_phase_add_ap = 0U;
+#if defined(SUPPORT_HADM_MULTI_ANT_MODE)
+            uint8_t shift_mult_ant_perm = 0U;
+#endif
+
+            for (uint8_t ap=0U; ap<hadm_meas_p->n_ap; ap++)
+            {
+                ant_id = ant_id_seq[ap];
+#if defined(SUPPORT_HADM_MULTI_ANT_MODE)
+                /* multi_ant_permut[ 4*AP_X+4 : 4*AP_X ] */
+                multi_ant_permut[ap/8U] |= (ant_id << (shift_mult_ant_perm));
+                shift_mult_ant_perm = (shift_mult_ant_perm + 4U) % 32U;
+#endif
+                /* phase_add_apX[ 7:0 ] */
+                phase_add_ap = HADM_ROT_OFFSET_TO_HW_DEG(hadm_device.phase_rotation.offset_table[ant_id], step_config_p->channel);
+                phase_add_apX[ap/4U] |= ((uint32_t)(phase_add_ap) & 0xFFUL) << (shift_phase_add_ap);
+                shift_phase_add_ap = (shift_phase_add_ap + 8U) % 32U;
+            }
+        }
+#if defined(SUPPORT_HADM_MULTI_ANT_MODE)
+        if (rsm_config_p->ant_permut_mode)
+        {
+            /* Multi antenna mode = 1 */
+            for (uint8_t idx=0U; idx<((HADM_MAX_NB_ANTENNA_PATHS+7U)/8U); idx++)
+            {
+                *hadm_meas_p->pkt_ram.config_write_ptr++ = multi_ant_permut[idx];
+            }
+            for (uint8_t idx=0U; idx<((HADM_MAX_NB_ANTENNA_PATHS+3U)/4U); idx++)
+            {
+                *hadm_meas_p->pkt_ram.config_write_ptr++ = phase_add_apX[idx];
+            }
+        }
+        else
+#endif 
+        {
+            /* Multi antenna mode = 0 */
+            *hadm_meas_p->pkt_ram.config_write_ptr++ = phase_add_apX[0]; /* Set only phase_add_ap1-4 */
+        }
+    }
+}
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+
 /*!
  * This function is used to write subevent steps (#n_steps) configuration to PKT RAM Config circular buffer
  * This is called before subevent start (by BLE_HADM_SubeventConfigApply()) or by RSM step interrupt IRQ
@@ -1368,11 +1443,18 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
         {
           step_config_p->pm_ext = 0x3U;
         }
-        if ((hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR))
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+        /* IPT TX Phase compensation for KW47*/
+        if ((((hadm_meas_p->config_p->inlinePhaseReturn == 1U) && (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR)))
+            && ((step_config_p->mode == HADM_STEP_MODE2) || (step_config_p->mode == HADM_STEP_MODE3)))
         {
-            int32_t res_mult = (int32_t)hadm_device.phase_rotation.offset_table[0] * (int32_t)(step_config_p->channel);
-            phase_add = ((((uint32)res_mult) << 9) & 0x00FF0000UL); // use AP1 offset for the moment
+            /* PHASE_ADD_TX applied to all antenna paths */
+            /* phase_add = angle_fp * channel * pi/4 [rad to deg] * 180/128 [HW unit] >> 9 [int32q14 -> int8q7]*/
+            int32_t tmp = HADM_ROT_OFFSET_TO_HW_DEG(hadm_device.phase_rotation.offset_table[0], step_config_p->channel);
+            phase_add = (uint32_t)tmp;
+            phase_add = ((phase_add) << 16U) & 0x00FF0000UL;
         }
+#endif
         /* Build common config header to PKT RAM circular buffer */
         LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val,
                                           cs_sync_lut_id, hadm_meas_p->config_p->role, phase_add);
@@ -1415,14 +1497,10 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *
             assert(hadm_meas_p->data_in_flight_w_idx != hadm_meas_p->data_in_flight_r_idx);
             DEBUG_PIN1_CLR
         }
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 470)
-        /* COMMON MODE 23 */
-        if ((step_config_p->mode == HADM_STEP_MODE2) || (step_config_p->mode == HADM_STEP_MODE3))
-        {
-            /* Mode2-specific fields */
-            *hadm_meas_p->pkt_ram.config_write_ptr++ = 0; /* phase_add_ap1-4 */
-        }
-#endif // NXP_RADIO_GEN == 470
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+        /* PLL Phase compensation configuration (RADIO_GEN >= 475)*/
+        lcl_hadm_phase_add_config(hadm_meas_p);
+#endif
         if (update_rsm_ptr)
         {
             LCL_HAL_UPDATE_PKT_RAM_CONFIG_STEP_PTR(circ_buff_p->curr_page, hadm_meas_p->pkt_ram.config_write_ptr);
