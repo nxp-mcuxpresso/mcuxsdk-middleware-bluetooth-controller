@@ -101,7 +101,8 @@ extern "C" {
 #define HADM_ANT_PERM_A4_A3_A1_A2  (22U)
 #define HADM_ANT_PERM_A4_A3_A2_A1  (23U)
 
-#define HADM_RTT_ANT_ROUND_ROBIN         (0xFEU)
+#define HADM_RTT_ANT_REPEATED            (0xFDU) /*!< repetitive order {0x01, 0x01, ..., Num_Antennae_Supported, Num_Antennae_Supported} */
+#define HADM_RTT_ANT_ROUND_ROBIN         (0xFEU) /*!< repetitive order {0x01 to Num_Antennae_Supported} */
 #define HADM_RTT_ANT_NO_RECOMMENDATION   (0xFFU)
 
 /*!< type flags for a CS subEvent */
@@ -521,7 +522,7 @@ BLE_HADM_STATUS_t BLE_HADM_ProcedureInit(uint8 connIdx);
  * antBoardTable array size is MAX_ANTENNA (=4) + 1
  * value stored in antBoardTable[MAX_ANTENNA] corresponds to "all OFF" state
  */
-BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable);
+BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable, uint8_t num_ant_supported);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
