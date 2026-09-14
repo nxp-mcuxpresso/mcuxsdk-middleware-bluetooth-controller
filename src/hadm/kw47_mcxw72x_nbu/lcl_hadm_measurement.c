@@ -35,7 +35,7 @@
 
 /* === Macros ============================================================== */
 #define T_SLOT_US           (625U)
-#define DCOC_CAL_RETRY_NBR  (2U)
+#define DCOC_CAL_RETRY_NBR  (4U)
 
 /* The following timings have been measured in debug mode with IAR 9.30.1 */
 /* TODO OJE: Exact HAL timings need to be measured on KW47 */
