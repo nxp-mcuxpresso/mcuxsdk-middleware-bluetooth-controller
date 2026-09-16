@@ -142,9 +142,10 @@ static const int16_t hadm_rxtx_fine_latency[HADM_RTT_PHY_MAX] =
     HADM_RXTX_FINE_LATENCY_2MBPS_2BT_HNS,
 };
 
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
 static int32_t pct_sin_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
 static int32_t pct_cos_phase_offset[HADM_MAX_NB_ANTENNAS][HADM_MAX_CHANNELS];
-
+#endif
 /* === Externals =========================================================== */
 
 /* === Prototypes ========================================================== */
@@ -755,6 +756,24 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lu
     return (uint8_t)ant_id;
 }
 
+/**
+ * Initialize phase offset to default values.
+ * Phase rotation happens but no rotation is applied.
+ */
+void lcl_hadm_init_phase_offset(hadm_device_t *hadm_device_p)
+{
+    BLE_HADM_PCTPhaseRotation_t defaultPCTRotation;
+    defaultPCTRotation.offset_table[0] = 0;
+    defaultPCTRotation.offset_table[1] = 0;
+    defaultPCTRotation.offset_table[2] = 0;
+    defaultPCTRotation.offset_table[3] = 0;
+    hadm_device_p->phase_rotation = defaultPCTRotation;
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
+    lcl_hadm_utils_calc_phase_rotation_offset(&defaultPCTRotation);
+#endif
+}
+
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
 #define PCT_FIXED_POINT_UNIT  14U
 #define PCT_FIXED_POINT_ONE   0x4000U   /* unsigned 1 << PCT_FIXED_POINT_UNIT */
 
@@ -772,21 +791,6 @@ void lcl_hadm_measurement_phase_rotation(uint32_t *iq, uint8_t ch, uint8_t ant_i
     q_out = (((int32_t)q * pct_cos_phase_offset[ant_id][ch]) + ((int32_t)i * pct_sin_phase_offset[ant_id][ch])) / (int32_t)PCT_FIXED_POINT_ONE;
 
     *iq = ((uint32_t)i_out & 0xfffU) | (((uint32_t)q_out & 0xfffU) << 12U);
-}
-
-/**
- * Initialize phase offset to default values.
- * Phase rotation happens but no rotation is applied.
- */
-void lcl_hadm_init_phase_offset(hadm_device_t *hadm_device_p)
-{
-    BLE_HADM_PCTPhaseRotation_t defaultPCTRotation;
-    defaultPCTRotation.offset_table[0] = 0;
-    defaultPCTRotation.offset_table[1] = 0;
-    defaultPCTRotation.offset_table[2] = 0;
-    defaultPCTRotation.offset_table[3] = 0;
-    hadm_device_p->phase_rotation = defaultPCTRotation;
-    lcl_hadm_utils_calc_phase_rotation_offset(&defaultPCTRotation);
 }
 
 #define PI_4_FIXED_POINT      12868U  /* PI/4    * 2^14 */
@@ -942,6 +946,7 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
         }
     }
 }
+#endif /* !defined(SUPPORT_HW_RX_PHASE_COMPENSATION) */
 
 void lcl_hadm_utils_get_antenna_id_sequence(hadm_meas_t *hadm_meas_p, uint8_t step_id, uint8_t *ant_id_seq)
 {

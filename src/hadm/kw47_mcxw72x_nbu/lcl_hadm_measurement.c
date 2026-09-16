@@ -919,7 +919,11 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     }
     else
     {
+#if defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
+        rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_PLL_RX; /* Enable the RX phase compensation by default */
+#else
         rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED; /* Disables the phase compensation by default */
+#endif 
     }
 #endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     
@@ -1963,7 +1967,9 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
 
                 if (step_config_p->mode != HADM_STEP_MODE1)    /* MODE2 and MODE3 */
                 {
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
                     int pm_ext_ap_ind = 0;
+#endif /* !defined(SUPPORT_HW_RX_PHASE_COMPENSATION) */
                     uint32_t curr_iq;
                     uint8_t ant_id_seq[HADM_MAX_NB_ANTENNA_PATHS];
                     if (step_config_p->mode == HADM_STEP_MODE2)
@@ -1977,14 +1983,16 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                     for(ap = 0; ap < (int)hadm_meas_p->n_ap; ap++)
                     {
                         HADM_DECODE_HW_RTP_PCT(iq[ap], ipt_refl, curr_iq);
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
                         if (!ipt_refl)
                         {
                             /* Do not rotate PCTs as it has no effect on IPT HW implementation and it would corrupt Q=0 */
                             lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[ap]);
                         }
+                        pm_ext_ap_ind = ap;
+#endif /* !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)*/
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY(iq[ap], res_buff_p, 0U/*NA*/);
-                        pm_ext_ap_ind = ap;
                     }
                     /* Determine if N_AP+1 PCT has been received or not */
                     if ((step_config_p->mode == HADM_STEP_MODE2) || (role == HADM_ROLE_REFLECTOR) || ((step_config_p->pm_ext & 0x1U) != 0U))
@@ -1992,11 +2000,13 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm
                         /* Keep pm extension bit corresponding to peer device role */
                         uint8_t t_pm_ext = ((uint8_t)step_config_p->pm_ext >> (uint8_t)role) & 0x1U;
                         HADM_DECODE_HW_RTP_PCT(iq[ap], ipt_refl, curr_iq);
+#if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
                         if (!ipt_refl)
                         {
                             /* Do not rotate PCTs as it has no effect on IPT HW implementation and it would corrupt Q=0 */
                             lcl_hadm_measurement_phase_rotation(&curr_iq, (uint8_t)step_config_p->channel, ant_id_seq[pm_ext_ap_ind]);
                         }
+#endif /* !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)*/
                         HADM_ENCODE_HCI_RTP_PCT(curr_iq, res_buff_p);
                         HADM_SET_RTP_TONE_QUALITY_WITH_EXT_SLOT(iq[ap], res_buff_p, t_pm_ext);
                     }
