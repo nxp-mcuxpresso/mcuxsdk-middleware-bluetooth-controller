@@ -270,7 +270,7 @@ void BLE_HADM_SubeventStop(const BLE_HADM_SubeventConfig_t *config)
     lcl_hadm_stop_measurement(config);
 }
 
-BLE_HADM_STATUS_t BLE_HADM_Init(void)
+BLE_HADM_STATUS_t BLE_HADM_Init(uint8 bReset)
 {
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
     return lcl_hadm_init();
