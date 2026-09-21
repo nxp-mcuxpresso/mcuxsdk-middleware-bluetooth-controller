@@ -119,7 +119,16 @@
 extern const uint8_t rtt_type_2_payload_size[7U]; /* in 32 bits words */
 
 /* === Types ================================================================ */
-/*! Contains some register backup values captured after Mode0 phase */
+/*! DCOC calibration progress state */
+typedef enum
+{
+    HADM_DCOC_CAL_STATE_NOTDONE  = 0U, /*!< DCOC calibration not yet performed */
+    HADM_DCOC_CAL_STATE_1MBPS    = 1U, /*!< DCOC calibration done for 1 Mbps PHY */
+    HADM_DCOC_CAL_STATE_2MBPS    = 2U, /*!< DCOC calibration done for 1 Mbps and 2 Mbps PHYs */
+    HADM_DCOC_CAL_STATE_COMPLETE = 3U, /*!< DCOC calibration complete for all PHYs */
+} hadm_dcoc_cal_state_t;
+
+/*! HAL measurement state */
 typedef enum
 {
     HADM_HAL_MEAS_STATE_IDLE = 0U,
@@ -267,6 +276,7 @@ typedef struct
     hadm_pll_cal_data_t    cal_data[HADM_RTT_PHY_MAX][HADM_MAX_CHANNELS];
 #endif
     xcvr_dc_cal_results_t dcoc_cal_results[HADM_RTT_PHY_MAX];
+    hadm_dcoc_cal_state_t dcoc_cal_state; /*!< DCOC calibration progress state */
 
     /* Device characterisation data obtained from IFR */
     BLE_HADM_RttBiasParameters_t rtt_static_comp;

@@ -231,10 +231,10 @@ static void lcl_hadm_init_rtt_static_comp(const rf_ifr_rtt_trim_t *rtt_trim_valu
     }
 }
 
+/* bReset indicates an HCI Reset (as opposed to boot initialization) */
 BLE_HADM_STATUS_t lcl_hadm_init(bool bReset)
 {
     uint32_t i;
-    uint32_t retry_nbr = 0U;
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
 
     lcl_hadm_utils_init_buffers();
@@ -317,24 +317,42 @@ BLE_HADM_STATUS_t lcl_hadm_init(bool bReset)
 
     /* Perform initial calibration */
     hadm_device.is_rsm_cal_done = false;
+    /* On boot, reset DCOC calibration state so all PHYs are re-calibrated.
+     * On HCI Reset (bReset == true), preserve the state to avoid repeating
+     * a calibration that is already complete. */
+    if (!bReset)
+    {
+        hadm_device.dcoc_cal_state = HADM_DCOC_CAL_STATE_NOTDONE;
+    }
 
 #ifndef SIMULATOR
-    /* Calibration sequence for 1Mbps, 2Mbps BT0.5 and BT2.0 */
-    do
+    /* Calibration sequence for 1 Mbps, 2 Mbps BT0.5 and BT2.0,
+     * advancing the state on each successful step.
+     * On boot (bReset == false) a calibration failure is silently
+     * accepted and the function returns success.
+     * On HCI Reset (bReset == true) a failure is propagated as an error. */
+    if (hadm_device.dcoc_cal_state != HADM_DCOC_CAL_STATE_COMPLETE)
     {
         hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_1MBPS);
-        retry_nbr++;
-    } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
-
-    if (hal_status == HADM_HAL_SUCCESS)
-    {
-        retry_nbr = 0U;
-        do
+        if (hal_status == HADM_HAL_SUCCESS)
         {
+            hadm_device.dcoc_cal_state = HADM_DCOC_CAL_STATE_1MBPS;
+
             hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS);
-            retry_nbr++;
-        } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
+            if (hal_status == HADM_HAL_SUCCESS)
+            {
+                hadm_device.dcoc_cal_results[HADM_RTT_PHY_2MBPS_2BT] = hadm_device.dcoc_cal_results[HADM_RTT_PHY_2MBPS];
+                hadm_device.dcoc_cal_state = HADM_DCOC_CAL_STATE_COMPLETE;
+            }
+        }
+
+        if (!bReset)
+        {
+            /* Do not report error on boot (only for HCI Reset) */
+            hal_status = HADM_HAL_SUCCESS;
+        }
     }
+
     if (hal_status == HADM_HAL_SUCCESS)
     {
         hal_status = lcl_hadm_calibrate_pll(HADM_RTT_PHY_1MBPS);
@@ -347,15 +365,6 @@ BLE_HADM_STATUS_t lcl_hadm_init(bool bReset)
     if (hal_status == HADM_HAL_SUCCESS)
     {
         lcl_enable_BT2p0_modulation();
-    }
-    if (hal_status == HADM_HAL_SUCCESS)
-    {
-        retry_nbr = 0U;
-        do
-        {
-            hal_status = lcl_hadm_calibrate_dcoc(HADM_RTT_PHY_2MBPS_2BT);
-            retry_nbr++;
-        } while ((hal_status != HADM_HAL_SUCCESS) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
     }
     if (hal_status == HADM_HAL_SUCCESS)
     {
@@ -544,14 +553,19 @@ void lcl_hadm_set_dma_debug_buffer(uint16_t dma_debug_buff_size, uint32_t dma_de
 BLE_HADM_STATUS_t lcl_hadm_calibrate_dcoc(BLE_HADM_rttPhyMode_t rtt_phy)
 {   
     xcvrLclStatus_t status;
+    uint32_t retry_nbr = 0U;
     XCVR_RSM_SQTE_RATE_T xcvr_rate = LCL_HAL_PHY_TO_XCVR_RATE(rtt_phy);
-    
+
     DEBUG_PIN0_SET
 
-    /* trigger calibration */
-    XCVR_LCL_CalibrateDcocStart(xcvr_rate);
-    /* wait for results */
-    status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rtt_phy]);
+    do
+    {
+        /* trigger calibration */
+        XCVR_LCL_CalibrateDcocStart(xcvr_rate);
+        /* wait for results */
+        status = XCVR_LCL_CalibrateDcocCompleteFine(&hadm_device.dcoc_cal_results[rtt_phy]);
+        retry_nbr++;
+    } while ((status != gXcvrLclStatusSuccess) && (retry_nbr <= DCOC_CAL_RETRY_NBR));
 
     DEBUG_PIN0_CLR
 
