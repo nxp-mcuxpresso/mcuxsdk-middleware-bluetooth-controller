@@ -34,7 +34,7 @@
 
 static BLE_HADM_SubeventConfig_t configBuffer[HADM_MAX_NB_HAL_CONFIG_BUFFERS];
 static BLE_HADM_SubeventResultsData_t resultsDataBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS];
-static uint8 gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
+static uint8_t gpHadmHalResultBuffer[HADM_MAX_NB_SIMULT_RESULT_BUFFERS*HADM_SNIFFER_DEVICE_NB*HADM_HAL_BUFFER_SIZE];
 
 /* Conversion LUT for 2x2: from permutation index to antenna index */
 /* "A1 is assigned to 1:1, A2 is assigned to 1:2, A3 is assigned to 2:1 and A4 is assigned to 2:2" */
@@ -188,7 +188,7 @@ BLE_HADM_SubeventConfig_t *lcl_hadm_utils_get_config_buffer(void)
 }
 
 /* Free HAL config buffer(s) belonging to connIdx */
-void lcl_hadm_utils_free_config_buffer(uint8 connIdx)
+void lcl_hadm_utils_free_config_buffer(uint8_t connIdx)
 {
     for (uint32_t i=0U; i < HADM_MAX_NB_HAL_CONFIG_BUFFERS; i++)
     {
@@ -227,7 +227,7 @@ BLE_HADM_SubeventResultsData_t *lcl_hadm_utils_get_result_buffer(void)
 }
 
 /* Free HAL config buffer(s) belonging to connIdx */
-void lcl_hadm_utils_free_result_buffer(uint8 connIdx)
+void lcl_hadm_utils_free_result_buffer(uint8_t connIdx)
 {
     for (uint32_t i=0U; i < HADM_MAX_NB_SIMULT_RESULT_BUFFERS; i++)
     {

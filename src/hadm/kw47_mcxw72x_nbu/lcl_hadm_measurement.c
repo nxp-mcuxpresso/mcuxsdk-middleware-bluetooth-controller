@@ -187,15 +187,15 @@ static void lcl_hadm_consume_drbg(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_shutdown(hadm_meas_t *hadm_meas_p, bool_t abort_subevent);
 static void lcl_hadm_measurement_cleanup(hadm_meas_t *hadm_meas_p);
 static void lcl_hadm_measurement_setup(hadm_proc_t *hadm_proc, hadm_meas_t *hadm_meas_p, const BLE_HADM_SubeventConfig_t *hadm_config);
-static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm_meas_t *hadm_meas_p);
-static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr);
+static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16_t n_steps_required, hadm_meas_t *hadm_meas_p);
+static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16_t n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr);
 static hadm_meas_t *lcl_hadm_alloc_meas_instance(void);
 static void lcl_hadm_free_meas_instance(hadm_meas_t *meas_p);
 static hadm_meas_t *lcl_hadm_get_meas_instance(const BLE_HADM_SubeventConfig_t *config_p);
 
 /* === Implementation (public) ============================================= */
 
-BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8 connIdx)
+BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8_t connIdx)
 {
     hadm_proc_t *hadm_proc;
 
@@ -231,7 +231,7 @@ static void lcl_hadm_init_rtt_static_comp(const rf_ifr_rtt_trim_t *rtt_trim_valu
     }
 }
 
-BLE_HADM_STATUS_t lcl_hadm_init(void)
+BLE_HADM_STATUS_t lcl_hadm_init(bool bReset)
 {
     uint32_t i;
     uint32_t retry_nbr = 0U;
@@ -415,7 +415,7 @@ void lcl_hadm_handle_temperature_change(int32_t temperature)
     OSA_EnableIRQGlobal();
 }
 
-BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8 *antBoardTable, uint8_t num_ant_supported)
+BLE_HADM_STATUS_t lcl_hadm_set_antenna_type(uint8_t *antBoardTable, uint8_t num_ant_supported)
 {
     BLE_HADM_STATUS_t hal_status = HADM_HAL_SUCCESS;
     
@@ -473,7 +473,7 @@ BLE_HADM_STATUS_t lcl_hadm_set_sniffer_config(BLE_HADM_SniffAntSwitchMode_t antS
     return hal_status;
 }
 
-BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_len)
+BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8_t *fem_config_ptr, uint8_t config_len)
 {
     /* check for consistency of parameter number w.r.t XCVR */
     if ((fem_config_ptr != NULL) && (config_len == sizeof(xcvr_pa_fem_config_t)))
@@ -504,7 +504,7 @@ BLE_HADM_STATUS_t lcl_hadm_set_fem_config(uint8 *fem_config_ptr, uint8_t config_
 }
 
 /* Apply RF RTT Trim values sent from Core0 through inter-core message */
-BLE_HADM_STATUS_t lcl_hadm_set_rtt_trim(uint8 *rtt_trim_ptr, uint8_t rtt_trim_size)
+BLE_HADM_STATUS_t lcl_hadm_set_rtt_trim(uint8_t *rtt_trim_ptr, uint8_t rtt_trim_size)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
     /* check for consistency of parameter number w.r.t XCVR */
@@ -535,7 +535,7 @@ BLE_HADM_STATUS_t lcl_hadm_set_rtt_trim(uint8 *rtt_trim_ptr, uint8_t rtt_trim_si
 #endif
 }
 
-void lcl_hadm_set_dma_debug_buffer(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address)
+void lcl_hadm_set_dma_debug_buffer(uint16_t dma_debug_buff_size, uint32_t dma_debug_buff_address)
 {
     hadm_device.dma_debug_buff_size = dma_debug_buff_size;
     hadm_device.dma_debug_buff_address = dma_debug_buff_address;
@@ -666,7 +666,7 @@ void lcl_hadm_get_preparation_timings(const BLE_HADM_SubeventConfig_t *hadm_conf
     *warmdown_time = 0;
 }
 
-const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(uint8 isExperimental)
+const BLE_HADM_HalCapabilities_t *lcl_hadm_get_capabilities(uint8_t isExperimental)
 {
 #ifdef HADM_ENABLE_EXPERIMENTAL_CAPABILITIES
     if (isExperimental != 0U)
@@ -1190,7 +1190,7 @@ void lcl_hadm_stop_measurement(const BLE_HADM_SubeventConfig_t *config)
 }
 
 /* Stop a whole procedure */
-void lcl_hadm_stop_procedure(uint8 connIdx)
+void lcl_hadm_stop_procedure(uint8_t connIdx)
 {
     DEBUG_PIN0_SET
     
@@ -1382,7 +1382,7 @@ static void lcl_hadm_phase_add_config(hadm_meas_t *hadm_meas_p)
  * This function is used to write subevent steps (#n_steps) configuration to PKT RAM Config circular buffer
  * This is called before subevent start (by BLE_HADM_SubeventConfigApply()) or by RSM step interrupt IRQ
  */
-static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16 n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr)
+static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16_t n_steps, hadm_meas_t *hadm_meas_p, bool_t update_rsm_ptr)
 {
     uint32_t step_idx;
     hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
@@ -1714,7 +1714,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
  * Note: instead of passing the number of steps to process we should rather rely on PKTRAM circular buffer to detect end of available steps,
  * but this pointer is not reliable on KW47 as it is flushed right after EOS (HW bug fixed on next generations)
  */
-static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16 n_steps_required, hadm_meas_t *hadm_meas_p)
+static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16_t n_steps_required, hadm_meas_t *hadm_meas_p)
 {
     hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_result;
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[circ_buff_p->curr_step_idx];
