@@ -763,10 +763,10 @@ uint8_t lcl_hadm_utils_get_CS_SYNC_antenna(hadm_meas_t *hadm_meas_p, uint8_t *lu
 void lcl_hadm_init_phase_offset(hadm_device_t *hadm_device_p)
 {
     BLE_HADM_PCTPhaseRotation_t defaultPCTRotation;
-    defaultPCTRotation.offset_table[0] = 0;
-    defaultPCTRotation.offset_table[1] = 0;
-    defaultPCTRotation.offset_table[2] = 0;
-    defaultPCTRotation.offset_table[3] = 0;
+    defaultPCTRotation.offset_table[0] = HADM_DEFAULT_PCT_ROTATION;
+    defaultPCTRotation.offset_table[1] = HADM_DEFAULT_PCT_ROTATION;
+    defaultPCTRotation.offset_table[2] = HADM_DEFAULT_PCT_ROTATION;
+    defaultPCTRotation.offset_table[3] = HADM_DEFAULT_PCT_ROTATION;
     hadm_device_p->phase_rotation = defaultPCTRotation;
 #if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
     lcl_hadm_utils_calc_phase_rotation_offset(&defaultPCTRotation);
@@ -926,8 +926,7 @@ void lcl_hadm_utils_calc_phase_rotation_offset(BLE_HADM_PCTPhaseRotation_t *phas
 
     for (uint32_t ant_id=0U; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
     {
-        angle_fp = phaseRotation->offset_table[ant_id] + HADM_DEFAULT_PCT_ROTATION;
-        if(angle_fp != 0)
+        angle_fp = phaseRotation->offset_table[ant_id];
         {
             for (uint32_t chn=0U; chn<HADM_MAX_CHANNELS; chn++)
             {

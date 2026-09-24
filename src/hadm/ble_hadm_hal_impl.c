@@ -162,6 +162,11 @@ void BLE_HADM_SetRTTBiasCompValue(BLE_HADM_RttBiasParameters_t *rttBias)
 
 void BLE_HADM_SetPhaseRotationOffset(BLE_HADM_PCTPhaseRotation_t *phaseRotation)
 {
+    /* Add default compensation */
+    for (uint32_t ant_id=0U; ant_id<HADM_MAX_NB_ANTENNAS; ant_id++)
+    {
+        phaseRotation->offset_table[ant_id] +=  HADM_DEFAULT_PCT_ROTATION;
+    }
     hadm_device.phase_rotation = *phaseRotation;
 #if !defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
     lcl_hadm_utils_calc_phase_rotation_offset(phaseRotation);
