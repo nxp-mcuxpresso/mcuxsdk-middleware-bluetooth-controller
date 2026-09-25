@@ -500,7 +500,7 @@ void BLE_HADM_NotifyLL(uint8 connIdx, BLE_HADM_SubeventResultsData_t *result_p, 
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
  * This API initializes HADM HAL resources.
  */
-BLE_HADM_STATUS_t BLE_HADM_Init(void);
+BLE_HADM_STATUS_t BLE_HADM_Init(uint8 bReset);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
