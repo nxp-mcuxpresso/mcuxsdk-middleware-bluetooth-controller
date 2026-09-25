@@ -737,6 +737,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     assert(NULL != hadm_meas_p);
     xcvr_lcl_rsm_config_t *rsm_config_p = &hadm_meas_p->rsm_config;
     uint16_t mode0_timeout_usec;
+    bool paRampingAntSwitchEnabled = hadm_device.paRampingAntSwitchEnabled;
 
     DEBUG_PIN0_SET
 
@@ -941,6 +942,13 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     }
 #endif /* defned(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     
+    if (((bool)hadm_config->inlinePhaseReturn) && (hadm_meas_p->n_ap > 1U))
+    {
+        /* LL-3549: Overwritte PA ramping config for IPT multi-antenae */
+        rsm_config_p->pa_ramp_time = XCVR_RSM_PA_RAMP_0_USEC;
+        paRampingAntSwitchEnabled = TRUE;
+    }
+
     status = XCVR_LCL_ValidateRsmSettings(rsm_config_p);
     if (gXcvrLclStatusSuccess != status)
     {   goto config_error; }
@@ -949,7 +957,7 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
     DEBUG_PIN1_SET 
 
     /* Configure Antenna switching */
-    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, hadm_device.paRampingAntSwitchEnabled);
+    lcl_hadm_utils_configure_antenna_switching(hadm_meas_p, paRampingAntSwitchEnabled);
 
     /* Build first configuration steps in PKT RAM: mode 0 steps without pushing RSM pointers */
     (void)lcl_hadm_set_steps_config(hadm_config->mode0Nb, hadm_meas_p, FALSE);
