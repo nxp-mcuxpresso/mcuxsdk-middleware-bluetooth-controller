@@ -14,6 +14,11 @@
 /*******************************************************************************
  * API
  ******************************************************************************/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*!
  * \brief Enable or disable hybrid GENFSK module
  *
@@ -25,6 +30,10 @@ void hybrid_gfsk_init(void);
  *
  */
 void hybrid_gfsk_set_default_config(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif // defined(gAppEnableHybridGenfsk_d) && (gAppEnableHybridGenfsk_d!=0)
 

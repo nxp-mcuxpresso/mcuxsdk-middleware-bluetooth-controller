@@ -11,12 +11,16 @@
  * install, activate or otherwise use the software.
  ********************************************************************************** */
 /*!
-    This file defines the Harware Abstraction Layer that the LL uses to access platform-specific services.
+    This file defines the Hardware Abstraction Layer that the LL uses to access platform-specific services.
     It contains function prototypes that must be implemented by the platform (outside LL library).
 */
 
 #ifndef CONTROLLER_HAL_H_
 #define CONTROLLER_HAL_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*******************************************************************************
  * Definitions
@@ -74,5 +78,9 @@ void Controller_AntennaSwitchingConfigure(uint8 enable, uint8 pin_number);
 #endif // defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 void Controller_AntennaSwitchingActivate(uint8 antenna_number);
 void Controller_AntennaSwitchingDeactivate(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif // CONTROLLER_HAL_H_
