@@ -297,14 +297,14 @@ void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config
                                       warmdown_time);
 }
 
-const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental)
+BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental)
 {
     return lcl_hadm_get_capabilities(isExperimental);
 }
 
-BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable, uint8_t num_ant_supported)
+BLE_HADM_STATUS_t BLE_HADM_SetAntennaConfig(uint8 *antBoardTable, uint8_t num_ant_supported, uint8_t num_ap, uint8_t t_sw)
 {
-    return lcl_hadm_set_antenna_type(antBoardTable, num_ant_supported);
+    return lcl_hadm_set_antenna_config(antBoardTable, num_ant_supported, num_ap, t_sw);
 }
 
 void BLE_HADM_SetDmaDebugBuff(uint16 dma_debug_buff_size, uint32 dma_debug_buff_address)

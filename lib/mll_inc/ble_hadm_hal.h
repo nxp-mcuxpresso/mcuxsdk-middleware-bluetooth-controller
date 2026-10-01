@@ -520,7 +520,7 @@ BLE_HADM_STATUS_t BLE_HADM_ProcedureInit(uint8 connIdx);
  * antBoardTable array size is MAX_ANTENNA (=4) + 1
  * value stored in antBoardTable[MAX_ANTENNA] corresponds to "all OFF" state
  */
-BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable, uint8_t num_ant_supported);
+BLE_HADM_STATUS_t BLE_HADM_SetAntennaType(uint8 *antBoardTable, uint8_t num_ant_supported, uint8_t num_ap, uint8_t t_sw);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
@@ -583,7 +583,7 @@ void BLE_HADM_GetPreparationTimings(const BLE_HADM_SubeventConfig_t *hadm_config
  * This API allows the LL to retrieve HAL-specific capabilities.
  * The HAL can expose 2 sets of capabilities: experimental or certified.
  */
-const BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental);
+BLE_HADM_HalCapabilities_t *BLE_HADM_GetCapabilities(uint8 isExperimental);
 
 /*!
  * Abstract function that needs to be implemented by the HW-specific HAL implementation.
