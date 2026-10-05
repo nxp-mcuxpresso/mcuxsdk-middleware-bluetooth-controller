@@ -1759,11 +1759,13 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             /* Program time-grid adjustment (Initiator only) */
             lcl_hal_xcvr_program_time_adjustement((int32_t)hadm_proc->ppm/HADM_PPM_DIVIDER);
         }
-        if (hadm_meas_p->config_p->role == HADM_ROLE_REFLECTOR)
-        {   /* Reflector Only */
+
+        {
             /*
              * In some PKT-Tone cases, cfo_est may be non-null (depends on received AA) after PKT Rx, affecting badly tone phase.
-             * To workaround this effect, we force cfo_est to zero by enabling ovveride.
+             * To workaround this effect, we force cfo_est to zero by enabling override.
+             * Additionally, even for RTT, it's best to keep CFO completely under control of HARTT CFO estimation to avoid small
+             * CFO variation due to the possible residual compensation that cfo_est bloc could introduce.
              * Affected register XCVR_RX_DIG->CTRL1 is part of XCVR backup/restore.
              */
             LCL_HAL_SETUP_PKT_TONE_RX();
@@ -2010,11 +2012,8 @@ static BLE_HADM_STATUS_t lcl_hadm_get_step_results(uint16_t n_steps_required, ha
                         }
                         if ((rtt_ts < -32768) || (rtt_ts > 32767))
                         {
-#ifndef SIMULATOR
-                            //assert(false);
-#endif
-                            //rtt_data.rtt_vld = false;
-                            rtt_ts = 12345; /* OJE TODO */
+                            /* This should not occur other than in sniffer mode */
+                            rtt_data.rtt_vld = false;
                         }
                         if (hadm_meas_p->config_p->rttTypes != HADM_RTT_TYPE_CS_AA_ONLY_TIMING)
                         {
