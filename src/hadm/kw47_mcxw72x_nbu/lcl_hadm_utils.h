@@ -30,6 +30,11 @@
 #endif
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475) */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+/* Enable hardware phase compensation for KW43 */
+#define SUPPORT_HW_RX_PHASE_COMPENSATION
+#endif
+
 /* Control CFO compensation refinment on each step */
 /* TKT0598229: disabled due to HW issue on KW47 A0 */
 //#define HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
