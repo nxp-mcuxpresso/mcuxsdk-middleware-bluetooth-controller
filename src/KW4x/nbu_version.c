@@ -78,7 +78,7 @@
                                      .variant = {VERSION_VARIANT}, \
                                      .build_type = {VERSION_BUILD_TYPE}, \
                                      .versionBuildNo = versionNoBuild}
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
 #define RegisterNbuInfo(versionNoMajor, versionNoMinor, versionNoPatch, versionNoBuild) \
     const NbuInfo_t nbu_version =  { .versionNumber = {versionNoMajor, versionNoMinor, versionNoPatch}, \
                                      .repo_digest = {VERSION_SHA},\

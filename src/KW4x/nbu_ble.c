@@ -832,7 +832,10 @@ static void idle_task(void* param)
 
 void tx_application_define(void *first_unused_memory)
 {
-    OSA_TaskCreate(idle_task_handle, OSA_TASK(idle_task), NULL);
+    osa_status_t status;
+    status = OSA_TaskCreate(idle_task_handle, OSA_TASK(idle_task), NULL);
+    assert(status == KOSA_StatusSuccess);
+    (void)status;
 
     /* Enable Systick */
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
