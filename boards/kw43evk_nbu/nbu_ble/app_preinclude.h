@@ -11,7 +11,7 @@
  ***********************************************************************************/
 
 /* Enable SFC for FRO32K calibration used during NBU start up */
-#define gUseSfcRf_d             0
+#define gUseSfcRf_d             1
 
 /* Enable MWS (Mobile Wireless System) coexistence at protocol level */
 #define gMWS_Enabled_d          0
