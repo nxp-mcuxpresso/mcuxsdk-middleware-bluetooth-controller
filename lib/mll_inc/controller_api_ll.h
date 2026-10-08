@@ -197,6 +197,9 @@ uint32 LL_API_SCHED_GetSleepTime(void);
 /* Get number of pending HCI commands */
 uint8 LL_API_BLE_HCI_GetNofPendingCommand(void);
 
+/* Do whatever needed to stop a test.*/
+void LL_API_StopTest(void);
+
 /*!
  * \brief Suspend or resume LL activities
  * \param[in]  suspend 1 for suspend and 0 for resume
@@ -324,6 +327,7 @@ __STATIC_FORCEINLINE uint32 os_if_save_EnterCriticalSectionV2(uint32 source)
 
 __STATIC_FORCEINLINE void os_if_save_ExitCriticalSection(uint32 int_save)
 {
+    (void) int_save;
     nbuInterf->nbuExitCritical();
 }
 
