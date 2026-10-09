@@ -476,16 +476,24 @@ BLE_HADM_STATUS_t lcl_hadm_set_antenna_config(uint8_t *antBoardTable, uint8_t nu
     }
     hadm_device.num_ant_supported = num_ant_supported;
     
+    /*
+     * t_sw parameter passed as argument represents board/RF switch capability that may override internal capability if less performant.
+     * So the same t_sw value is used to derive T_SW and T_SW_IPT exposed as final capabilities.
+     * If n_ap=1, both should be set to zero (no antenna switching at all).
+     */
     hadm_hal_capabilities.T_SW_TimeSupported = (num_ant_supported > 1U) ? MAX(t_sw, HADM_HAL_T_SW_SUPPORTED) : 0U;
+    hadm_hal_capabilities.T_SW_IPT_TimeSupported = (num_ant_supported > 1U) ? MAX(t_sw, HADM_HAL_T_SW_IPT_SUPPORTED) : 0U;
+
+    /* Here again, passed arguments represent board capabilities that may be "less" performant than internal values. */
     hadm_hal_capabilities.numAntennasSupported = MIN(num_ant_supported, HADM_MAX_NB_ANTENNAS);
     hadm_hal_capabilities.nNumAPSupported = MIN(num_ap, HADM_MAX_NB_ANTENNA_PATHS);
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+    /* This XCVR version does not support IPT on more than one antenna path */
     if ((num_ap == 1U) && (num_ant_supported == 1U))
     {
         hadm_hal_capabilities.InlinePhaseReturn         = 1U;
         hadm_hal_capabilities.T_IP2_IPT_TimesSupported  = HADM_HAL_T_IP2_IPT_SUPPORTED;
-        hadm_hal_capabilities.T_SW_IPT_TimeSupported    = HADM_HAL_T_SW_IPT_SUPPORTED;
     }
     else
     {
