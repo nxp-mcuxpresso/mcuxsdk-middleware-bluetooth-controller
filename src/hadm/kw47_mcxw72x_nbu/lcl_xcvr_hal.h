@@ -314,11 +314,57 @@ typedef enum
 
 #define HADM_PPM_DIVIDER (100)
 
-#define LCL_HAL_COMPUTE_STEP_CFO(proc_cfo_channel, step_channel, ppm) \
-        ((((int32_t)step_channel - (int32_t)proc_cfo_channel) * ppm)/HADM_PPM_DIVIDER) /* in Hz */
+/*
+ * Conversion factor numerator/denominator: Hz -> XCVR PLL offset HW unit (~0.9536 Hz per LSB).
+ * The XCVR uses a 2^14 / 15625 Hz step (16384/15625 = 1/0.9536).
+ */
+#define HADM_CFO_HZ_TO_HW_NUM  (16384)
+#define HADM_CFO_HZ_TO_HW_DEN  (15625)
+
+/*
+ * Pre-compute the per-channel CFO slope in XCVR HW units (~0.9536 Hz/LSB) for a
+ * given ppm value (in 0.01 ppm units). The coarse RSM correction is anchored at
+ * channel 0 (2402 MHz), so each 1-MHz HADM channel step contributes one additional
+ * 'slope' HW unit of residual CFO.
+ *
+ * Derivation (1 Mbps CS channel spacing = 1 MHz per channel index unit):
+ *   slope [HW/ch] = 1e6 [Hz/MHz] * ppm [0.01ppm] / HADM_PPM_DIVIDER [0.01ppm/ppm]
+ *                   / 1e6 [ppm base] * HADM_CFO_HZ_TO_HW_NUM / HADM_CFO_HZ_TO_HW_DEN
+ *                 = ppm * 16384 / (100 * 15625)
+ */
+#define LCL_HAL_CFO_HW_PER_CH(ppm) \
+    ((int16_t)(((int32_t)(ppm) * (int32_t)HADM_CFO_HZ_TO_HW_NUM) / \
+               ((int32_t)HADM_PPM_DIVIDER * (int32_t)HADM_CFO_HZ_TO_HW_DEN)))
+
+/*
+ * Per-step residual CFO in XCVR HW units, anchored at channel 0 (2402 MHz).
+ * cfo_hw_per_ch: slope computed by LCL_HAL_CFO_HW_PER_CH(ppm).
+ * step_channel:  HADM channel index (0 = 2402 MHz, 1 = 2403 MHz, ...).
+ */
+#define LCL_HAL_COMPUTE_STEP_CFO_HW(cfo_hw_per_ch, step_channel) \
+    ((int16_t)((int32_t)(cfo_hw_per_ch) * (int32_t)(step_channel)))
+
+/*
+ * CFO in Hz at channel 0 (2402 MHz), derived from ppm (in 0.01 ppm units).
+ * Used for the initial coarse XCVR_LCL_RsmCompCfo() call so that the
+ * per-step residual anchoring at channel 0 is consistent.
+ */
+#define LCL_HAL_COMPUTE_CFO_AT_CH0_HZ(ppm) \
+    (((int32_t)2402 * (int32_t)(ppm)) / (int32_t)HADM_PPM_DIVIDER)
 
 #define LCL_HAL_COMPUTE_CHANNEL_CFO(channel, ppm) \
         ((((int32_t)2402 + (int32_t)(channel)) * (int32_t)(ppm)) / ((int32_t)HADM_PPM_DIVIDER)) /* in Hz */
+
+/*
+ * Full absolute per-step CFO in XCVR HW units for the FOM path.
+ * = cfo_hw_per_ch * (2402 + channel)  [HW units, ~0.9536 Hz/LSB]
+ * Equivalent to LCL_HAL_COMPUTE_CHANNEL_CFO() converted to HW units, but
+ * computed in one multiply by reusing the precomputed slope cfo_hw_per_ch.
+ * cfo_hw_per_ch: slope computed by LCL_HAL_CFO_HW_PER_CH(ppm).
+ * step_channel:  HADM channel index (0 = 2402 MHz, 1 = 2403 MHz, ...).
+ */
+#define LCL_HAL_COMPUTE_FULL_STEP_CFO_HW(cfo_hw_per_ch, step_channel) \
+    ((int32_t)(cfo_hw_per_ch) * (int32_t)(2402 + (int32_t)(step_channel)))
 
 #define LCL_HAL_PROGRAM_MODE0_TIMEOUT(timeout_us) \
     {\

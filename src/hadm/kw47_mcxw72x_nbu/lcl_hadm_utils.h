@@ -30,16 +30,17 @@
 #endif
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475) */
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-/* Enable hardware phase compensation for KW43 */
+/* Initialize sub-features that depend on platform */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+/* -- KW47 HW features */
+/* TKT0598229: HW issue on KW47 - use SW (IRQ-based) implementation instead of pktram config step_cfo  */
+#define HADM_CFO_COMP_PER_STEP_VIA_FOM
+#else
+/* -- KW43 HW features */
+/* Enable hardware phase compensation */
 #define SUPPORT_HW_RX_PHASE_COMPENSATION
 #endif
 
-/* Control CFO compensation refinment on each step */
-/* TKT0598229: disabled due to HW issue on KW47 A0 */
-//#define HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
-/* Use SW implementation instead */
-#define HADM_CFO_COMP_PER_STEP_VIA_FOM
 
 #define HADM_TPM                   TPM2
 #define HADM_TPM_IRQ               TPM2_INT_IRQn
@@ -245,7 +246,7 @@ void lcl_hadm_enable_lcl_interrupts(void);
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
 void lcl_hadm_enable_interrupts_for_subevent(bool trig_on_tx);
 void lcl_hadm_restore_interrupts_for_subevent(void);
-uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo);
+uint8_t lcl_hadm_apply_cfo_hw_per_step(int32_t cfo_hw);
 #endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
 void lcl_hadm_utils_compute_iq_buff_size(const BLE_HADM_SubeventConfig_t *hadm_config_p, hadm_meas_t *hadm_meas_p, uint32_t sample_rate);
 void lcl_hadm_utils_compute_step_duration(const BLE_HADM_SubeventConfig_t *hadm_config_p, uint32_t n_ap, uint16_t *mode_dur);

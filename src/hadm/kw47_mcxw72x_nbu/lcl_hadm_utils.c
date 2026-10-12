@@ -421,26 +421,24 @@ void lcl_hadm_restore_interrupts_for_subevent(void)
                            XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_HI_MASK | XCVR_TSM_TIMING03_IRQ0_START_TRIG_RX_LO_MASK);
 }
 
-/* Programm FOM register values.
+/* Program FOM register values with a CFO already expressed in XCVR HW units (~0.9536 Hz/LSB).
+ * Use when the caller precomputed cfo_hw via LCL_HAL_COMPUTE_FULL_STEP_CFO_HW().
  * Those values do not have to be reset after use since they are not relevant
  * without a FOM trigger (cleared via LCL_HAL_DISABLE_FO_ENTRY).
- * Return  0/1 for success/error correspondingly.
+ * Return 0/1 for success/error correspondingly.
  */
-uint8_t lcl_hadm_apply_cfo_per_step(int32_t cfo)
+uint8_t lcl_hadm_apply_cfo_hw_per_step(int32_t cfo_hw)
 {
-    uint32_t temp = (cfo >= 0) ? (uint32_t)cfo : (uint32_t)(-cfo);
-
-    if ((cfo > 262143) || (cfo < -262143))  /* check CFO limitation: (2^32 / 16384) - 1 */
+    /* Range check:
+     * PLL_NUMERATOR_OFFSET is a 19-bit signed field: max magnitude is 2^18-1 = 262143. */
+    if ((cfo_hw > 262143) || (cfo_hw < -262143))
     {
         return 1U;
     }
-    /* Hz to 0.95Hz unit, see XCVR_LCL_RsmCompCfo() */
-    temp = ((temp * 16384U) / 15625U);
-    cfo = (cfo >= 0) ? (int32_t)temp : (-(int32_t)temp);
-    /* 1Mbps PHY */
-    XCVR_MISC->IPS_FO_DRS0_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+    /* 1 Mbps PHY */
+    XCVR_MISC->IPS_FO_DRS0_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo_hw);
     /* 2 Mbps PHY */
-    XCVR_MISC->IPS_FO_DRS1_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo);
+    XCVR_MISC->IPS_FO_DRS1_DATA[HADM_FO_ENTRY] = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(cfo_hw);
 
     return 0U;
 }

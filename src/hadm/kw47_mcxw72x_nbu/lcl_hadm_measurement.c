@@ -241,6 +241,7 @@ BLE_HADM_STATUS_t lcl_hadm_init_procedure(uint8_t connIdx)
     hadm_proc->ppm = 0;
     hadm_proc->cfo_channel = 0;
     hadm_proc->cfo = 0;
+    hadm_proc->cfo_hw_per_ch = 0;
     hadm_proc->agc_idx = 0xFF;
     hadm_proc->agc_idx2 = 0xFF;
     hadm_proc->is_proc_init_done = true;
@@ -1469,11 +1470,11 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16_t n_steps, hadm_meas_t
     uint32_t step_idx;
     hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
     BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p;
-#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
+#ifndef HADM_CFO_COMP_PER_STEP_VIA_FOM
     hadm_proc_t *hadm_proc = &hadm_procs[hadm_meas_p->config_p->connIdx];
     bool_t compensate_cfo = (hadm_meas_p->config_p->role != HADM_ROLE_REFLECTOR) && (hadm_proc->ppm != 0) && ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0U);
 #endif
-    int16_t cfo = 0;
+    int16_t cfo_hw = 0;
     uint8_t aa_offset = 1U - ((uint8_t)hadm_meas_p->config_p->role & 0x1U); /* offset to Rx AA. & 0x1U to avoid wrong index with HADM_ROLE_SNIFFER */
     uint8_t cs_sync_ant_id = 0U;
     uint8_t cs_sync_lut_id = 0U;
@@ -1511,11 +1512,11 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16_t n_steps, hadm_meas_t
 #else
         hpm_cal_val = hadm_device->cal_data[hadm_meas_p->config_p->rttPhy][step_config_p->channel].hpm_cal_val;
 #endif
-#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
+#ifndef HADM_CFO_COMP_PER_STEP_VIA_FOM
         /* Compute CFO compensation */
         if (compensate_cfo && (step_config_p->mode != HADM_STEP_MODE0))
         {
-            cfo = LCL_HAL_COMPUTE_STEP_CFO(hadm_proc->cfo_channel, step_config_p->channel, hadm_proc->ppm);
+            cfo_hw = LCL_HAL_COMPUTE_STEP_CFO_HW(hadm_proc->cfo_hw_per_ch, step_config_p->channel);
         }
 #endif
         /* Compute CS_SYNC antenna ID to be used for this step */
@@ -1542,7 +1543,7 @@ static BLE_HADM_STATUS_t lcl_hadm_set_steps_config(uint16_t n_steps, hadm_meas_t
         }
 #endif
         /* Build common config header to PKT RAM circular buffer */
-        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo, hpm_cal_val,
+        LCL_HAL_BUILD_PKT_RAM_CONFIG_STEP(step_config_p, hadm_meas_p->pkt_ram.config_write_ptr, (uint16_t)cfo_hw, hpm_cal_val,
                                           cs_sync_lut_id, hadm_meas_p->config_p->role, phase_add);
 
         /* COMMON MODE 13 */
@@ -1705,6 +1706,7 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
     {
         /* Compute ppm based on measured CFO */
         hadm_proc->ppm = (int16_t)((hadm_proc->cfo * HADM_PPM_DIVIDER)/ ((int32_t)(uint32_t)HADM_CHAN_NUM_TO_MHZ((uint32_t)hadm_proc->cfo_channel)));
+        hadm_proc->cfo_hw_per_ch = LCL_HAL_CFO_HW_PER_CH(hadm_proc->ppm);
     }
 
     if (hadm_meas_p->mode0_complete)
@@ -1734,27 +1736,27 @@ static BLE_HADM_STATUS_t lcl_hadm_handle_last_mode0(hadm_meas_t *hadm_meas_p)
             if ((hadm_meas_p->debug_flags & HADM_DBG_FLG_CFO_COMP_DIS) == 0U)
             {
 #ifdef HADM_CFO_COMP_PER_STEP_VIA_FOM
-                int32_t cfo;
+                int32_t cfo_hw;
                 /* Enable FOM entry trigger for next step. TX trigger if initator, RX trigger otherwise. */
                 LCL_HAL_ENABLE_FO_ENTRY(hadm_meas_p->config_p->role == HADM_ROLE_INITIATOR);
                 /* Compute CFO compensation to apply at next step */
                 /* Initiator or sniffer */
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel,
-                                                  hadm_proc->ppm);
-                (void)lcl_hadm_apply_cfo_per_step(cfo);
+                cfo_hw = LCL_HAL_COMPUTE_FULL_STEP_CFO_HW(hadm_proc->cfo_hw_per_ch,
+                                                          hadm_meas_p->config_p->chModePmAntMap[mode0Nb].channel);
+                (void)lcl_hadm_apply_cfo_hw_per_step(cfo_hw);
 #else
                 /* Initial CFO compensation */
-                XCVR_LCL_RsmCompCfo(-hadm_proc->cfo);
-#endif /* HADM_CFO_COMP_PER_STEP_VIA_FOM */
+                /* Anchor coarse correction at channel 0 (2402 MHz) so that per-step
+                 * residuals computed via LCL_HAL_COMPUTE_STEP_CFO_HW() are consistent. */
+                XCVR_LCL_RsmCompCfo(-LCL_HAL_COMPUTE_CFO_AT_CH0_HZ(hadm_proc->ppm));
 
-#ifdef HADM_CFO_COMP_PER_STEP_VIA_PKTRAM
                 /* Update CFO programmed for already-built config steps */
                 /* At this point only 1 step has been prepared in addition of the mode 0 steps */
                 hadm_circ_buff_desc_t *circ_buff_p = &hadm_meas_p->pkt_ram.step_result;
                 int16_t step_cfo;
                 step_idx = mode0Nb + 1U;
 
-                step_cfo = LCL_HAL_COMPUTE_STEP_CFO(hadm_proc->cfo_channel, step_config_p[step_idx].channel, hadm_proc->ppm);
+                step_cfo = LCL_HAL_COMPUTE_STEP_CFO_HW(hadm_proc->cfo_hw_per_ch, step_config_p[step_idx].channel);
               
                 circ_buff_p = &hadm_meas_p->pkt_ram.step_config;
                 assert(circ_buff_p->curr_step_idx == step_idx);
@@ -2419,11 +2421,11 @@ void BRF_INT_IRQHandler(void)
             rsm_curr_step ++;
             if ((rsm_curr_step > hadm_meas_p->config_p->mode0Nb) && (rsm_curr_step < hadm_meas_p->config_p->stepsNb))
             {
-                int32_t cfo;
+                int32_t cfo_hw;
                 BLE_HADM_Chan_Mode_PmExt_AntPerm_t *step_config_p = &hadm_meas_p->config_p->chModePmAntMap[rsm_curr_step];
                 /* Initiator or sniffer */
-                cfo = LCL_HAL_COMPUTE_CHANNEL_CFO(step_config_p->channel, hadm_proc->ppm);
-                (void)lcl_hadm_apply_cfo_per_step(cfo);
+                cfo_hw = LCL_HAL_COMPUTE_FULL_STEP_CFO_HW(hadm_proc->cfo_hw_per_ch, step_config_p->channel);
+                (void)lcl_hadm_apply_cfo_hw_per_step(cfo_hw);
             }
         }
     }

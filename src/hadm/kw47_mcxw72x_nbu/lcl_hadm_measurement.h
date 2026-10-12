@@ -257,6 +257,7 @@ typedef struct
     uint8_t                agc_idx2;            /*!< Sniffer: Second AGC idx for the procedure (0xFF means AGC unlocked) */
     int16_t                ppm;                 /*!< ppm Unit: 0.01 ppm, computed based on mode0 CFO */
     int32_t                cfo;                 /*!< CFO [Hz] measured during alignment phase */
+    int16_t                cfo_hw_per_ch;       /*!< Per-channel CFO slope in XCVR HW units (~0.9536 Hz/LSB), anchored at channel 0 (2402 MHz) */
 } hadm_proc_t;
 
 /* HAL Data associated to this device */
