@@ -990,13 +990,13 @@ BLE_HADM_STATUS_t lcl_hadm_configure(const BLE_HADM_SubeventConfig_t *hadm_confi
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
     if((rsm_config_p->enable_inpr) && (hadm_config->role == HADM_ROLE_REFLECTOR))
     {
-        /* Enable TX Phase compensation for IPT using PLL_PHASE */
+        /* Enable TX Phase compensation for IPT */
         rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_PLL_TX;
     }
     else
     {
 #if defined(SUPPORT_HW_RX_PHASE_COMPENSATION)
-        rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DIG_RX; /* Enable the RX phase compensation by default using DIG_MIXER */
+        rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_PLL_RX; /* Enable the RX phase compensation by default */
 #else
         rsm_config_p->phase_comp_sel = XCVR_RSM_PHASE_COMP_DISABLED; /* Disables the phase compensation by default */
 #endif 

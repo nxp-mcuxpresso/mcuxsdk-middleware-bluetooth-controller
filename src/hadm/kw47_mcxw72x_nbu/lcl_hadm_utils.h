@@ -38,9 +38,8 @@
 #else
 /* -- KW43 HW features */
 /* Enable hardware phase compensation */
-#define SUPPORT_HW_RX_PHASE_COMPENSATION
+// #define SUPPORT_HW_RX_PHASE_COMPENSATION
 #endif
-
 
 #define HADM_TPM                   TPM2
 #define HADM_TPM_IRQ               TPM2_INT_IRQn
